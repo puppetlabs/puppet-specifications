@@ -38,5 +38,8 @@ The specifications follows semantic versioning with the following semantics:
 Index
 ---
 
+* [Introduction][2] - terminology and EBNF grammar
+* 
 
+[2]:language/introduction.md
 [1]:http://www.github.com/puppetlabs/puppet
