@@ -39,7 +39,32 @@ Index
 ---
 
 * [Introduction][2] - terminology and EBNF grammar
-* 
+* [Modus Operandi][3] - overview of the runtime (loading, start-point, order of execution)
+* [Types, Values and Variables][4] specification of types, values and variables
+* [Naming and Scoping][5] - specification of names, scopes, and references
+* [Lexical Structure][6] - specification of the textual aspects of the Puppet Language
+* [Expressions][7] - specification of all non catalog expressions in the language
+* [Catalog Expressions][8] - specification of all expressions related to catalog production
+* [Expression Precedence][9] - specification of the precedence of expressions / operators
+* [Deprecation][10] - specification of deprecated constructs
+* API
+  * [Function Ruby API][11] - the API for writing functions in Ruby
+  * [Plugin Ruby API][12] - the API for plugins in Ruby
+* General
+  * [Settings and Options][13] - specification of settings and options 
 
-[2]:language/introduction.md
+[2]:language/intro.md
+[3]:language/modus-operandi.md
+[4]:language/types_values_variables.md
+[5]:language/names.md
+[6]:language/lexical_structure.md
+[7]:language/expressions.md
+[8]:language/catalog_expressions.md
+[9]:language/expression_precedence.md
+[10]:language/deprecations.md
+
+[11]:language/func_api.md
+[12]:language/plugin-api.md
+[13]:language/settings.md
+
 [1]:http://www.github.com/puppetlabs/puppet
