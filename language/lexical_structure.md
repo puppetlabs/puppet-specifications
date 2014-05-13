@@ -137,7 +137,7 @@ All given numbers must be valid in their implied radix.
 Strings
 ---
 Strings of text are available in single and double quoted form. Both kinds of strings
-can extend over multiple lines. 
+can extend over multiple lines. Heredoc is an alternative form of String (see below).
 
 <table>
 <tr><th>Note</th></tr>
@@ -295,8 +295,7 @@ Examples:
 Variable
 ---
 A variable in the language is always preceded by `$`. (There are special cases in double quoted
-string expression interpolation where a `NAME` may be taken as a variable name, but this is
-not performed as part of lexical processing).
+string expression interpolation where a `NAME` may be taken as a variable name).
 
 ```
 VARIABLE
@@ -360,11 +359,10 @@ The following keywords are considered reserved for future use and should be avoi
 
 | Reserved Words
 | ---
-| lambda
 | type
 | function
 | private
-| public
+| attr
 
 These names are reserved for types, and are unsuitable as identifiers for other kinds of
 elements:
@@ -391,6 +389,11 @@ elements:
 | enum, Enum
 | variant, Variant
 | data, Data
+| struct, Struct
+| tuple, Tuple
+| optional, Optional
+
+**TODO** Decision on AbstractType
 
 While the lower case names are perfectly fine to use (they have no special meaning) when
 using them as names of classes, or user defined defined resource types, the name clashes
@@ -405,15 +408,16 @@ Separators / Punctuation
 
 ### Special Punctuation Processing
 
-* When a `[` is preceded by a `NAME` and `WHITESPACE` the delivered token is `LISTSTART`, else
-  the token `LBRACK`. This is done to disambiguate `$a[1]` (index operation on `$a`) from `$a [1]` 
-  (lookup of variable value `$a`, followed by an array with the value `1`).
+* When a `[` is preceded by `WHITESPACE` or is at the beginning of the input the delivered token is  
+  `LISTSTART`, else the token `LBRACK`. This is done to disambiguate `$a[1]` (index operation on `
+   $a`) from `$a [1]`  (lookup of variable value `$a`, followed by an array with the value `1`),
+   and similar ambiguities.
 
 * When a `{` is preceded by a `?` (`WHITESPACE` ignored) the delivered token is
   `SELBRACE` (select brace) instead of `LBRACE` to 
   disambiguate between the clash of a general expression (a hash value) and the start of a select 
   expression block. This is further discussed in the grammar / semantics of the language.
- 
+
 Operators
 ---
 These are the operators of the Puppet Programming Language. They are lexicographically delivered
