@@ -63,7 +63,7 @@ Index
 [9]:language/expression_precedence.md
 [10]:language/deprecations.md
 
-[11]:language/func_api.md
+[11]:language/func-api.md
 [12]:language/plugin-api.md
 [13]:language/settings.md
 
