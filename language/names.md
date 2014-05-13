@@ -148,14 +148,19 @@ A Qualified Name is a reference to a function when:
 
 **TODO:** Reference to where the list of statement like functions are
 
-### Resource Type
+### Resource Type Reference
 
 A Qualified Name is a reference to a Resource Type (plugin or definition expression) when it appears
 as the type name in a Resource Expression. e.g. the name `file` in this example:
 
     file { title: }
 
-### Name
+### Attribute Reference
+
+A Qualified Name is a reference to an Attribute of a Resource win it appears as the LHS in
+an Attribute Operation (operators `=>` and `+>`)
+
+### Name of Entity
 
 A Qualified Name is a name in Class-, and Define-expressions. It is not a name in a Node expression, there the name parts can be composed with interleaved dots, and with numbers to form a string.
 
