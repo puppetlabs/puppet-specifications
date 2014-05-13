@@ -19,7 +19,7 @@ of a sequence of identifiers separated by `::` tokens. A qualified name/referenc
 
 In determining the meaning of a name or reference, the context of the occurrence is used to disambiguate among the various kinds of named elements.
 
-Access control can be specified for a named element making this element only visible to a restricted set of contexts. Access control is a different from scope. Access specifies the part of the program
+Access control can be specified for a named element making this element only visible to a restricted set of contexts. Access control is different from scope. Access specifies the part of the program
 text within which the declared entity can be referenced by a qualified name/reference.
 
 Declarations
@@ -52,7 +52,7 @@ TODO: List of declarations and their scopes (W.I.P)
 * The scope of a Class
 
 
-Shadowing and Obscuring
+Shadowing, Obscuring, and Overloading
 ---
 A local variable can only be referred using a simple name (never a qualified name).
 
@@ -63,10 +63,22 @@ declaration(s).
 It is never allowed to declare a variable in a scope other than the current scope (i.e. it is
 not possible to assign a value to a variable in another scope by using a qualified name).
 
-TODO: Explain Shadow is a new declaration of an existing entity. Obscuring is the use of
-a name in a context in such a way that it obscures something else in another scope (i.e. it is not
-a shadow. THIS PROBABLY NEVERE HAPPENS IN PUPPET because variables are always $var (and type
-references and names are differentiated by case).
+Technically a Shadow is a new declaration of an existing entity, and Obscuring is the declaration of
+a name in a context in such a way that it obscures a named entity in another scope (i.e. it is not
+a shadow, but its existence blocks a name to resolve to what it obscures). 
+
+The Puppet Programming Language does not have any obscuring constructs as there is a distinction between variable references $var, names (initial lower cased Qualified Name), and references
+(initial upper case Qualified Reference).
+
+Overloading is the term used to resolve the binding of declaration to definition in the
+presence of multiple definitions of the same name. In the Puppet Programming Language overloading
+takes place when loading a named entity from a search path, the first entity found
+on the path wins. If a named entity has already been introduced, this will block access to
+an entity with the same name that would otherwise have been loaded.
+
+Future versions of this specification may impose stricter rules on where a named
+entity may be defined; this to reduce the risk of accidental overloading.
+
 
 Scopes
 ---
@@ -97,28 +109,61 @@ Parameters and Variables in a Class C is in scope for C, and in all classes inhe
 All Parameters and Variables are by default public and are visible to all other scopes.
 Parameters and Variables declared private are visible only to C.
 
-NOTE: Support for private variables is not yet implemented.
-
 ### User Defined Resource Scope
 
 A user defined resource type (just like plugin defined resource types) may be instantiated multiple
 times provided instances are given unique identifiers.
 
-Parameters and Variables in a user defined resource type are always private - they are not visible
-to any region outside of the resource type body.
+Variables (other than those referring to the resource parameters) in a user defined resource type are always private - they are not visible to any region outside of the resource type body.
 
-TODO: Is this true; since it is possible to refer to the parameters of resource via
-Resource[Type, title][param_name] - does that work for user defined resources as well? (yes it does
-work) - rephrase, variables are private, parameters are not.
+A resource's parameters can not be externally referenced via variables, but can be obtained
+via an access expression:
+
+    Resource[Type, title][param_name]
+    
+The result of such an operation is evaluation order dependent; the resource must have been created, evaluated, and the parameter must have been given a value.
 
 
 Determining the meaning of a name
 ---
-by context 
+### In General
 
+A Qualified Name in general is a Bare Word that evaluates to a String.
+
+    hello     ==  'hello'
+    abc::xyz  ==  'abc::xyz'
+    ::xyz     ==  '::xyz'
+
+### Function Name
+
+A Qualified Name is a reference to a function when:
+
+* it appears where an expression is accepted and:
+  * it is followed by arguments in parentheses e.g. `abc()`
+  * it is the RHS in a dot binary expression e.g. `$a.abc`
+* it appears in the top level body of a Program, conditional construct, define, or class, and:
+  * the name is one of the built in statement type functions, and
+  * is followed by one or a comma separated list of argument expressions (this is known as
+    an un-parenthesized function call).
+
+**TODO:** Reference to where the list of statement like functions are
+
+### Resource Type
+
+A Qualified Name is a reference to a Resource Type (plugin or definition expression) when it appears
+as the type name in a Resource Expression. e.g. the name `file` in this example:
+
+    file { title: }
+
+### Name
+
+A Qualified Name is a name in Class-, and Define-expressions. It is not a name in a Node expression, there the name parts can be composed with interleaved dots, and with numbers to form a string.
+
+A Qualified Name is a reference to the parent class when used after `inherits` in a class definition.
+ 
 Access Control
 ---
-NOTE: Access Control is not fully specified and has not yet been implemented.
+**NOTE: Access Control is not fully specified and has not yet been implemented.**
 
 Access control in the Puppet Programming Language consists of the keyword `private` applied to:
 
@@ -127,7 +172,7 @@ Access control in the Puppet Programming Language consists of the keyword `priva
 * parameter
 * variable
 
-This is explained in the following sections:
+This is explained in the following sections.
 
 ### Class
 
@@ -143,8 +188,8 @@ A private class may only be directly used from the module where it is declared. 
 The class itself is visible in the catalog, and it is possible to reference it and its parameters.
 Since its existence in the catalog is public so is referencing it, and its parameters. Access to a private class and its parameters will issue a warning as the intention is that it is an implementation concern of the particular module.
 
-TODO: The rules for access to resource instances and parameters for private resources/params
-requires more thought - warning / error / simply not visible...
+**TODO: The rules for access to resource instances and parameters for private resources/params
+requires more thought - warning / error / simply not visible...**
 
 ### User Defined Resource Type
 
