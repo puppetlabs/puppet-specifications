@@ -131,13 +131,13 @@ the lexicographically earlier of two strings (downcased to get case independence
 
     Puppet::Functions.create_function('min') do
       dispatch :min do
-        param Numeric, 'a'
-        param Numeric, 'b'
+        param 'Numeric', 'a'
+        param 'Numeric', 'b'
       end
 
       dispatch :min_s do
-        param String, 's1'
-        param String, 's2'
+        param 'String', 's1'
+        param 'String', 's2'
       end
 
       def min(x,y)
@@ -180,9 +180,9 @@ Care must be taken to specify a min/max that is compatible with the method being
 they do not have to be exactly the same - this is legal
 
     dispatch :special do
-      param Numeric, 'a'
-      param Numeric, 'b'
-      param Object, 'rest'
+      param 'Numeric', 'a'
+      param 'Numeric', 'b'
+      param 'Object', 'rest'
       arg_count 1, :default
     end
     
@@ -193,61 +193,109 @@ Here, for implementation reasons it is wanted that all arguments are passed in o
 to the special method but in the eyes of the user we want it to have one required `Numeric`,
 one optional `Numeric`, and then an optional amount of `Objects`.
 
-
-### Polymorphic Dispatch
-
-The new Function API also supports polymorphic dispatch based on the class name of
-the first given argument. This is useful when dispatch should be made to different functions as
-this would otherwise be a chore to specify manually.
-
-The term Polymorph, comes from Greek polys "many", and morpë "form, shape")
-
-The function `dispatch_polymorph` works like the dispatch function with respect to defining
-the parameter signature - the difference is how it dispatches the call. 
-
-Here is the min function we used earlier, now rewritten to use polymorphic dispatch:
-
-    Puppet::Functions.create_function('min') do
-      dispatch_polymorph :min do
-        param Scalar, 'a'
-        param Scalar, 'b'
-      end
-
-      def min_Numeric(x,y)
-        x <= y ? x : y
-      end
-
-      def min_String(x,y)
-        cmp = (x.downcase <=> y.downcase)
-        cmp <= 0 ? x : y
-      end
-      
-      def min_Object(x,y)
-        raise ArgumentError, "min(): Only Numeric and String arguments are supported"
-      end
-    end
-
-Polymorphic dispatch works by walking the class inheritance chain of the first given
-argument, combining the function dispatch name with the last part of the class name. If this
-yields a defined method it is called. The class hierarchy is walked until Object. If no
-method was found an error is raised stating that the class is not implemented to handle
-that type. (That is the reason a more specific error was added in the method `min_Object`).
-
-In the example above, the choice was made to use Scalar to get automatic type checking for
-all other types. We could just as well have chosen Object here and report with the logic
-in `min_Object` also for all non supported types.
-
 ### Defining Type in the Dispatch call
 
-There are several ways to make a reference to a type:
+Types are specified in String form with the syntax of the types as they are used in the
+Puppet Programming Language:
 
-* The Ruby types also represented by Puppet Types (i.e. `String`, `Integer`, `Float`)
-* A Puppet Type in String form e.g. `'Tuple[String, Integer]'`
-* Calls to the `Puppet::Pops::Types::TypeFactory`'s factory methods - these can be used directly
-  since calls are delegated there. This means it is possible to directly call methods like
-  `integer()`, `range(from,to)`, `array_of(T)`, `optional(T)`, etc.
-* An instance of a `Puppet::Pops::Types::PAbstractType` created manually.
+### Lambda Support
 
+The signature supports passing a block of code / lambda to a function as an extra trailing argument.
+It is always possible to have explicit lambdas as parameters. The language itself passes
+a lambda as the last argument. Since a method may want to specify optional and variable number
+of arguments before the lambda (and not repeat it), there is the need to specify it differently.
+
+Maybe like this?
+
+    dispatch :something do
+      param 'Scalar', 'a'
+      block_param Callable[...]
+    end
+
+**TODO** This changed - review implementation
+
+The type is always a lambda type, and it is always last (except if user passes a closure,
+but that is a different issue). There must be a way to define if the block is optional or
+not, suggest `required_block_param`, `block_param` as methods.
+
+
+### Manual Handling
+
+A Function can implement `call(scope, *args)`, perform additional checks etc, and either relay
+to the super version, or rewrite arguments and call:
+
+    self.class.dispatcher.dispatch(self, scope, args)
+
+It is not intended that the Function directly implements its function-logic in the
+call method.
+
+### Reserved method names
+
+The Function class reserves the following method names:
+
+* calling_scope
+* closure_scope
+* loader
+
+**NOTE** The API for this is still being designed.
+
+#### Overriding the initializer
+
+The `initialize` method takes two arguments, the calling_scope, and the loader, and if initialization
+is required of the function being created, the super version must be called.
+
+**NOTE** The API for this is still being designed.
+
+### Strict access
+
+A Function is defined in a top level scope (or system scope), and does not by default have access to the scope in which it is called.
+
+**The function may use things that is either given to it, or that it injects.**
+    
+Note that the scope given in the call to inject is the scope where the function
+is defined - i.e. the function's closure (works the same as a lambda, only that all
+functions are defined in a global system scope tied to the module where it is defined.
+
+Accessing the calling scope is a very smelly thing and it is questionable if it should
+be supported at all. If access is needed to any other part of the system, such accessors
+should be injected (i.e. access is not via scope).
+
+The only reason to get the calling scope is to read or write variables - i.e. bad behavior!
+A function should only communicate via its given arguments and returned value(s) and
+side effects only performed on objects that are injected (e.g. compiler, loader, etc).
+
+However... when a call is made, the calling scope is passed and we can provide
+access to it if needed, but we must then do one of the following:
+
+* The anonymous Function class defines all methods on the class, an instance of the function
+  represents a particular call
+* use one extra argument in every method that the evaluator dispatches to (e.g. max(scope, a, b)) -
+  which is bad because polymorphic dispatch works best on first arg, and becomes cumbersome
+  when using varargs (compare `max(a,b,scope)`, `vararg(a,b, scope, *var)`)
+  
+The choice of instantiating the function for each call is better, but will create garbage
+instances (slower). We could perhaps indicate if a function requires calling scope and
+only instantiate it then.
+
+The exploratory implementation does not have a mechanism yet for passing calling scope
+on to the methods. It seems best to do this via injection, or by special methods that
+behave like the injected_param method, e.g. injected_scope, injected_loader. This is much
+faster than having to construct a new injection override for each call and do real injection.
+
+
+### Function Documentation
+
+Currently, documentation is a parameter to new function. Seems like this could be written
+with ruby yardoc instead, thus avoiding that the string has to be parsed and created and
+kept in memory at runtime. 
+
+A scanner would process the documentation for the class, as well as the documentation for
+the individual methods that have been wired (i.e. the various overloads).
+
+
+
+Experimental / Internal Features
+---
 ### Injection
 
 It is possible to inject objects - both at the time the function is instantiated and
@@ -336,115 +384,4 @@ The ruby parameter default can be used even if there is a dispatch - that means 
 called directly from Ruby, then the default applies, if called from the puppet language, then
 the injected value is used. This may be ideal for unit testing the function since it
 can be tested without using injection and with default for available checkers.
-
-### Lambda Support
-
-The signature supports passing a block of code / lambda to a function as an extra trailing argument.
-It is always possible to have explicit lambdas as parameters. The language itself passes
-a lambda as the last argument. Since a method may want to specify optional and variable number
-of arguments before the lambda (and not repeat it), there is the need to specify it differently.
-
-Maybe like this?
-
-    dispatch :something do
-      param Scalar, 'a'
-      block_param LambdaType[...]
-    end
-
-* *TODO* A LambdaType must be implemented - it is currently missing
-
-The type is always a lambda type, and it is always last (except if user passes a closure,
-but that is a different issue). There must be a way to define if the block is optional or
-not, suggest `required_block_param`, `block_param` as methods.
-
-
-### Manual Handling
-
-A Function can implement `call(scope, *args)`, perform additional checks etc, and either relay
-to the super version, or rewrite arguments and call:
-
-    self.class.dispatcher.dispatch(self, scope, args)
-
-It is not intended that the Function directly implements its function-logic in the
-call method.
-
-### Reserved method names
-
-The Function class reserves the following method names:
-
-* calling_scope
-* closure_scope
-* loader
-
-**NOTE** The API for this is still being designed.
-
-#### Overriding the initializer
-
-The `initialize` method takes two arguments, the calling_scope, and the loader, and if initialization
-is required of the function being created, the super version must be called.
-
-**NOTE** The API for this is still being designed.
-
-### Binding Functions (i.e. name to code)
-
-The current implementation binds a function to Scope (i.e. all scopes) - obviously a bad
-place to bind a function since it prevents different resolution of a function from different
-locations in the logic.
-
-* Functions do not follow scope since it is not possible to shadow functions in inner scopes
-* Functions are not runtime system bindings, because they can be different for different parts
-  of the logic.
-
-Conclusion, Functions are handled by the Loader - the loader knows about the visibility of
-code; Module A sees modules B and C, the environment, and the system. When a request is made,
-the visible containers are searched for the wanted object (a Function). If found, the 
-object is loaded and remembered (in the loader). Next request returns the already loaded (if
-file changed, it is reloaded). (Loader for Module A in Environment X is not the same
-loader as loader for Module A in Environment Y).
-
-### Strict access
-
-A Function is defined in a top level scope (or system scope), and does not by default have access to the scope in which it is called.
-
-**The function may use things that is either given to it, or that it injects.**
-    
-Note that the scope given in the call to inject is the scope where the function
-is defined - i.e. the function's closure (works the same as a lambda, only that all
-functions are defined in a global system scope tied to the module where it is defined.
-
-Accessing the calling scope is a very smelly thing and it is questionable if it should
-be supported at all. If access is needed to any other part of the system, such accessors
-should be injected (i.e. access is not via scope).
-
-The only reason to get the calling scope is to read or write variables - i.e. bad behavior!
-A function should only communicate via its given arguments and returned value(s) and
-side effects only performed on objects that are injected (e.g. compiler, loader, etc).
-
-However... when a call is made, the calling scope is passed and we can provide
-access to it if needed, but we must then do one of the following:
-
-* The anonymous Function class defines all methods on the class, an instance of the function
-  represents a particular call
-* use one extra argument in every method that the evaluator dispatches to (e.g. max(scope, a, b)) -
-  which is bad because polymorphic dispatch works best on first arg, and becomes cumbersome
-  when using varargs (compare `max(a,b,scope)`, `vararg(a,b, scope, *var)`)
-  
-The choice of instantiating the function for each call is better, but will create garbage
-instances (slower). We could perhaps indicate if a function requires calling scope and
-only instantiate it then.
-
-The exploratory implementation does not have a mechanism yet for passing calling scope
-on to the methods. It seems best to do this via injection, or by special methods that
-behave like the injected_param method, e.g. injected_scope, injected_loader. This is much
-faster than having to construct a new injection override for each call and do real injection.
-
-
-### Function Documentation
-
-Currently, documentation is a parameter to new function. Seems like this could be written
-with ruby yardoc instead, thus avoiding that the string has to be parsed and created and
-kept in memory at runtime. 
-
-A scanner would process the documentation for the class, as well as the documentation for
-the individual methods that have been wired (i.e. the various overloads).
 
