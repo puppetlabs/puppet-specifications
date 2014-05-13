@@ -21,7 +21,8 @@ catalog application that are covered in a separate chapter. (*TODO: REF TO THIS 
 
 Auto Loading
 ---
-* Name of definitions must be stored in a file that corresponds to its name
+* Name of definitions must be stored in a file that corresponds to its name in order for it
+  to be automatically loaded.
 * Nested constructs are only visible if parent has been loaded, there is no search for elements
   inside of files with a name different than the file.
 * Auto Loading is performed from the perspective of the code that triggers the loading.
@@ -36,21 +37,14 @@ The parameter list is common to several of the catalog expressions:
       ;
       
     ParameterDeclaration
-      : private ?= 'private'? type ?= TypeRef? VariableExpression ('=' Expression)?
+      : private ?= 'private'? type ?= Expression<Type>? VariableExpression ('=' Expression<R>)?
       ;
     
     VariableExpression : VARIABLE ;
 
-* The VARIABLE must contain a simple name
-
-<table><tr><th>Future</th></tr>
-<tr><td>
-  The ParameterDeclaration may be given an extra option of 'private' **(PUP-523, PUP-521)**, and
-  may also be given a type <b>(PUP-514)</b>.
-</td></tr>
-</table>
-
-*TODO: either change the table, or the grammar*
+* The `VARIABLE` must contain a simple name
+* A *captures rest* (as allowed for functions) is not allowed in parameter lists for a
+  catalog entry.
 
 ### Node Definition
 
@@ -65,7 +59,7 @@ Syntax:
        ;
        
      HostMatch
-       : SimpleName ('.' SimpleName)*
+       : (NAME | NUMBER) ('.' (NAME | NUMBER))*
        | SingleQuotedStringExpression
        | DoubleQuotedStringExpression
        | LiteralDefault
@@ -73,31 +67,21 @@ Syntax:
        ;
        
      LiteralDefault: 'default' ;
-       
-* See **(PUP-989)** regarding HostMatch syntax - this is still open (the 3x implementation
-  and 3x documentation is not in sync; the docs state that only quoted string, literal default or
-  regular expression is accepted, whereas the implementation also allows NAME which in 3x includes
-  '.'
-* The HostMatch consisting of a sequence of period separated simple names
-* All host matches (except regular expression and literal default) must consist of a 
-  sequence of characters `a-z A-Z 0-9 _ - .`
-* The combination of regular expression host match, and inherits is undefined
-* Inheriting from a NodeDefinition with multiple host matches is possible by referencing
-  one of its host matches in an inherits clause in another node.
-* Circular inheritance is not allowed
-* The ambiguity of having multiple host matches that match a particular compilation request is
-  resolved by selection of the first NodeDefinition with a matching HostMatch.
-  * The order of the search is TO BE INVESTIGATED AND DEFINED
+
+* Use of `inherits` raises an error as node-inheritance is discontinued.
+  * An implementation may treat this as a syntax error, or parse and validate it as an error
+* The `HostMatch` consisting of a sequence of period separated `NAME` or `NUMBER` lexical tokens
+* Note that `WHITESPACE` between period separated `NAME`/`NUMBER` tokens is not included in the
+  result.
+* All host matches (except regular expression and literal `default`) must result in a string
+  that consist of a sequence of characters `a-z A-Z 0-9 _ - .`. An error is raised if the
+  resulting host match string does not comply with this rule.
 * node definitions may not be made in a module
 
 <table><tr><th>Note</th></tr>
 <tr><td>
-  The 4x implementation uses the 3x logic to evaluate NodeDefinitions, the only difference
-  is the parsing of HostMatch - 3x allowed QualifiedName to contain '.', but these are not
-  allowed elsewhere in the language.
-</td></tr>
-<tr><td>
-  <i>Deprecation of Node inheritance?</i>
+  The 4x implementation uses the 3x logic to evaluate NodeDefinitions, the above defined
+  rules are enforced by the grammar / validation.
 </td></tr>
 </table>
 
@@ -113,15 +97,16 @@ Syntax:
 * A class definition may only appear at the top level in a file, or inside a class definition
 * A class may inherit another class
 * A class may have parameters
-* A class may be private to the module it is defined in
+* A class may be private to the module it is defined in **(PUP-523)**
 * A class defined in the environment that is marked private is not visible to modules
 * A parameter declaration may have a default value expression
 * Parameter declarations with default value expression may appear anywhere in the list
-* Parameter default value expressions
-  * may not reference other parameters in the list - the evaluation order is undefined
+* Parameter default value expressions:
+  * should not reference other parameters in the list - the evaluation order is undefined when
+    using an implementation that does not guarantee the correct order.
   * may reference variables defined by the inherited class (it is initialized before the
     inheriting class).
-* A class defines a named scope and makes all of its parameters and variables visible
+* A class defines a named scope and makes all of its non private) parameters and variables visible
 * A parameter that is private can only be set from the same module (it is not part of the API)
 * A class defined inside another class automatically becomes prefixed with the containing class'
   name as its name space
@@ -136,14 +121,13 @@ Syntax:
 </td></tr>
 <tr><th>Future</th></tr>
 <tr><td>
-  A class may get a private keyword to denote that it is only allowed to be used from
-  within the same module. A mechanism making it possible to mark variables as private
-  may be introduced. <b>(PUP-523)</b>
+  The 3x implementation does not restrict that parameter default values may not
+  reference other parameters in the same parameter list, but does not always produce
+  the correct result. A future version of the specification should specify that
+  it is allowed to access parameters that are defined to the left of where the parameter
+  is used.
 </td></tr>
 </table>
-
-*TODO: Update table, rather than describing what may be added, describe what is not yet
-supported per version as this is more precise and give guidance for the future.*
 
 ### Resource Type Definition
 
@@ -154,30 +138,28 @@ Syntax:
            '{' Statements? '}'
        ;
 
-* A ResourceType named the same as a type provided in a plugin will never be selected
+* A Resource Type named the same as a type provided in a plugin will never be selected
 * The default parameter value expressions may not reference variables in the calling scope, and
-  may not reference any of the other parameters in the list. It may reference meta parameters.
+  should not reference any of the other parameters in the list when using a runtime where the
+  order is not guaranteed. It may reference meta parameters.
 * A define may occur at top level, or inside a class
 * A resource type defined inside a class automatically becomes prefixed with the containing class'
   name as its name space.
 * A resource type defined in a class only becomes visible if the class is loaded.
+* A resource type that is private may only be instantiated from with the same module
 
 <table><tr><th>Note</th></tr>
 <tr><td>
   The 4x implementation uses the 3x logic to evaluate Resource Type Definition. There are many
   additional (some unclear) rules that needs to be specified (and/or fixed).
 </td></tr>
-<tr><th>Future</th></tr>
-<tr><td>
-  A resource definition may get a private keyword to denote that it is only allowed to be used from
-  within the same module. <b>(PUP-523)</b>.
-</td></tr>
 </table>
 
 ### Resource Expression
 
 A resource expression instantiates a resource and realizes it, or optionally does not
-realize it (*virtual*), and optionally exports (*exported*) it to a central store for inclusion.
+realize it (*virtual*), and optionally exports (*exported*) it to a central store for inclusion
+elsewhere via *exported resource collection*.
 
      ResourceExpression
        : (virtual = '@' exported = '@'?)?
@@ -198,8 +180,7 @@ realize it (*virtual*), and optionally exports (*exported*) it to a central stor
        ;
        
      TitleExpression
-       : Expression<Variant<String, Numeric>>
-       | Expression<Array<Variant<String, Numeric>>>
+       : Expression<Variant<String<1>, Numeric, Array<Variant<String<1>, Numeric>>>>
        ;
 
 ** General **
@@ -212,8 +193,8 @@ realize it (*virtual*), and optionally exports (*exported*) it to a central stor
 
 ** Titles **
 
-* titles can be a single expression evaluating to String or Number, or an Array of
-  String or Number.
+* titles can be a single expression evaluating to `String[1]` or `Numeric`, or an Array of
+  the same types.
 * one resource instance is created per given title (minimum 1)
   * All created resources get the same set of attributes assigned (except those that represent
     the resource's title and identity).
@@ -221,15 +202,17 @@ realize it (*virtual*), and optionally exports (*exported*) it to a central stor
 * When the type name is `class`
   * a title is the name of the class, and it must conform to class naming rules.
   * this is similar to using include class, but with different order of evaluation
-    see REF: MODUS OPERANDI - TODO WRITE ABOUT THIS THERE
+    see [Modus Operandi] **TODO: Ensure that there is content about this there**
+    
+[Modus Operandi]: modus-operandi.md
 
 ** Order of Evaluation **
 
-* The type_name is evaluated first
-* Bodies are evaluated from top to bottom
-* For each body, the title expression is evaluated
+* The `type_name` is evaluated first
+* `Bodies` are evaluated from top to bottom
+* For each body, the `titles` expression is evaluated
 * each attribute value expression is evaluated and mapped to the attribute name
-* each body is added to the compiler which performs the multiplication based on the
+* each body is added to the compiler which (in 3x) performs the multiplication based on the
   given title(s)
   * virtual and exported resources are remembered for reference, and for future operations
   * regular resources are *realized* (placed in the catalog)
