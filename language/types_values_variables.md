@@ -10,7 +10,7 @@ The Kinds of Types and Values
 There are two kinds of types in the Puppet Programming Language; *Puppet Types*, and the types of
 the underlying runtime "platform" language - the *Platform Types*. There is also a special Puppet Type called *Undef*.
 
-## Platform Types
+### Platform Types
 
 At present, the only existing implementation of the
 Puppet Language is written in Ruby, but there may be other implementations in the future. In general,
@@ -30,18 +30,13 @@ the type parameter is a reference to the *type name in the platforms type system
 
 As an example, if there is a puppet extension written in Ruby with the name `Puppetx::MyModule::MyClass`, the platform type is `Ruby['Puppetx::MyModule::MyClass']`.
 
-## The Undef Type
+### The Undef Type
+
 There is a special undefined/null/nil type - called `Undef`; the type of the expression `undef`.
 Values of the `Undef` type can always undergo a widening reference conversion to any other type. The reverse is however not true; only the value `undef` has the type `Undef`.
 
-A value of `Undef` type is assignable to any other type with the meaning *having no value*.
+A value of `Undef` type is assignable to any other *optional* type with the meaning *it is allowed to have no value*. This is achieved by using the type `Optional[T]` instead of just the type `T`.
 
-<table><tr><th>Note</th></tr>
-<tr><td>
-  In practice the programmer can ignore the existence of the `Undef` type and pretend that
-  `undef` can be of any type.
-</td></tr>
-</table>
 
 ## Puppet Types
 
@@ -54,6 +49,7 @@ Puppet Types include the types that are meaningful in a Puppet Program - these a
 *  `Regexp`
 *  `String`
 *  `Array`
+*  `Hash`
 
 *Catalog Types* e.g.:
 
@@ -63,53 +59,62 @@ Puppet Types include the types that are meaningful in a Puppet Program - these a
 *Abstract Types* e.g.:
 
 * `Collection`; the parent type of `Array` and `Hash`
-* `Literal`; the parent type of all literal data types (`Integer`, `Float`, `String`, `Boolean`)
+* `Scalar`; the parent type of all literal data types (`Integer`, `Float`, `String`, `Boolean`)
 * `CatalogEntry`; the parent type of all types that are included in a *Puppet Catalog*
-* `Data`; a parent type of all kinds of general purpose "data" (`Literal` and `Array` of `Data`,
-  and `Hash` with `Literal` key and `Data` values).
-* `Optional`, either Undef or a specific type
+* `Data`; a parent type of all kinds of general purpose "data" (`Scalar` and `Array` of `Data`,
+  and `Hash` with `Scalar` key and `Data` values).
+* `Optional`, either `Undef` or a specific type
 * `Variant`; one of a selection of types
 * `Enum`; an enumeration of strings
 * `Pattern`; an enumeration of regular expression patterns
 
 and *Platform Types*:
 
+* `Callable`; something that can be called (function, lambda)
 * `Type`; the type of types
 * `Ruby`; the type of runtime (non puppet) types
 
 All types (Platform and Puppet) are organized into one *Type System*.
 
+Optional Typing
+---
+Typing is optional. When something is not typed, it has the type `Optional[Variant[Object, Type]]`, i.e. undef, any instance, or any type (which is every possible type).
+
 The Type System
 ===============
 
 The type system contains both concrete types; `Integer`, `Float`, `Boolean`, `String`, `Regexp` (regular expression),
-`Array`, `Hash`, and `Ruby` (represents a type in the Ruby type system - i.e. a Class), as well as abstract
-types `Literal`, `Data`, `Collection`, `Pattern`, `Enum`, `Variant`, `Optional`, and `Object`. 
+`Array`, `Hash`, `Callable`, and `Ruby` (represents a type in the Ruby type system - i.e. a Class), as well as abstract
+types `Scalar`, `Data`, `Collection`, `Pattern`, `Enum`, `Variant`, `Optional`, `Object`, and `Type`. 
 
 The `String` type is optionally parameterized (`String[<from>, <to>]`) with a size constraint.
 By default the size is from 0 to +Infinity.
 
-The `Array` and `Hash` types are parameterized, `Array[V]`, and `Hash[K,V]`, where if `K` is omitted, it defaults to `Literal`, and if `V` is omitted, it defaults to `Data`. Array and Hash can be further
-parameterized to constrain their size, the default is from 0 (empty) to +Infinity.
+The `Array` and `Hash` types are parameterized, `Array[V]`, and `Hash[K,V]`, where if `K` is omitted, it defaults to `Scalar`, and if `V` is omitted, it defaults to `Data`. `Array` and `Hash` can be further parameterized to constrain their size, the default is from 0 (empty) to +Infinity. The `Tuple` type is a subtype of `Array` that fully specifies the type per index in the `Array`. A `Tuple` can describe optional and required types/size, as well as a repetition of the last specified type. A `Struct` similarly fully specifies the content of a `Hash` as it provides the capability to
+individually type the content per key.
 
 The `Integer` type is also parameterized to enable integer range as a type. By default, an `Integer`
-represents all integral number +/- infinity. (See Integer for more information).
+represents all integral number +/- Infinity. (See Integer for more information).
 
-The `Enum` and `Pattern` types subtypes of `String` that describe subsets of all strings; those
-that match a concrete enumeration of strings, and those that match a regular expression pattern.
+The `Enum` and `Pattern` types are subtypes of `String` that describe subsets of all strings; those
+that match a concrete enumeration of strings, and those that match regular expression patterns.
 
-The `Ruby` type (i.e. representing a Ruby class not represented by any of the other types) does not have much
-value in puppet manifests but is valuable when describing bindings of puppet extensions.
-The Ruby type is parameterized with a string denoting the class name - i.e. `Ruby['Puppet::Bindings']` is a valid type.
+Objects in the catalog are of one of the types `Resource`, or `Class`.
+
+The `Ruby` type (i.e. representing a Ruby class not represented by any of the other types) does not have much value in puppet manifests but is valuable when describing bindings of puppet extensions / 
+runtime configurations. The Ruby type is parameterized with a string denoting the class name - i.e. `Ruby['Puppet::Bindings']` is a valid type.
 
 The abstract types are:
 
-- `Literal` - `Integer`, `Float`, `Boolean`, `String`, `Pattern`, `Enum`
-- `Data` - any `Literal`, `Array[Data]`, or `Hash[Literal, Data]`
+- `Scalar` - `Integer`, `Float`, `Boolean`, `String`, `Pattern`, `Enum`
+- `Data` - any `Scalar`, `Array[Data]`, or `Hash[Scalar, Data]`
 - `Collection` - any `Array` or `Hash`
 - `Variant` - a parameterized type describing a disjoint set of other types
 - `Optional` - a convenience type where `Optional[T]` is the same as `Variant[Undef, T]`
-- `Object` - any type
+- `CatalogEntry` - one of the types Resource (and subtypes), and Class (and subtypes).
+- `Object` - any type except `Type`.
+- `Type` - the type of types, parameterized with the type it is the meta-type of, e.g. `Type[String]`
+  is the type of `String`.
 
 The type hierarchy is shown in the figure below. (A single capital letter denotes a 
 reference to a type, lower case type parameters have special processing rules as shown
@@ -134,7 +139,9 @@ may appear more than once in the hierarchy, typically with different narrower ty
        |
        |- Collection
        |  |- Array[T]
+       |  |  |- Tuple[*types, from, to]
        |  |- Hash[K, V]
+       |  |  |- Struct[{ key => T, ...}]
        |
        |- Variant[*types]
        |- Optional[type]
@@ -142,8 +149,6 @@ may appear more than once in the hierarchy, typically with different narrower ty
        |- CatalogEntry
        |  |- Resource[type_name, title]
        |  |- Class[class_name]
-       |  |- Node[node_name]
-       |  |- Stage[stage_name]
        |
        |- Undef
        |- Data
@@ -152,15 +157,12 @@ may appear more than once in the hierarchy, typically with different narrower ty
        |  |- Hash[Literal, Data]
        |  |- Undef
        |
+       |-Callable[signature...]
        |- Type[T]
        |- Ruby[class_name]
 
-In addition to these types, a Qualified Reference that does not represent any of the other types is interpreted as `Resource[the_qualified_ref]` (e.g. `File` is shorthand notation for `Resource[File]`).
+In addition to these types, a Qualified Reference that does not represent any of the other types is interpreted as `Resource[the_qualified_reference]` (e.g. `File` is shorthand notation for `Resource[File]` / `Resource[file]`).
           
-          
-TODO: Node, and Stage are not yet implemented.
-**TODO: Reserved: Function, Lambda, Environment**
-
 Runtime Types
 ---
 
@@ -170,7 +172,11 @@ instances of types
 in the platform language's type system. In these cases, it is allowed to map these types
 directly to the puppet type system.
 
-As an example, the Ruby implementation of the Puppet Programming Language uses the Ruby classes `String`, `Integer` (`Fixnum`, `Bignum`, etc), `Float`, `Hash`, `Array`, `Regexp`, `TrueClass`, `FalseClass`, `NilObj`. Instances of these Ruby types are directly mapped to the corresponding puppet types (e.g. even if an instance of a puppet `String` is an instance of the Ruby class called `String`, it is not interpreted as `Ruby[String]`.
+### Ruby Object to Type Mapping
+
+The Ruby implementation of the Puppet Programming Language uses the Ruby classes `String`, `Integer` (`Fixnum`, `Bignum`, etc), `Float`, `Hash`, `Array`, `Regexp`, `TrueClass`, `FalseClass`, `NilObj`. Instances of these Ruby types are directly mapped to the corresponding puppet types (e.g. even if an instance of a puppet `String` is an instance of the Ruby class called `String`, it is not interpreted as `Ruby[String]`.
+
+The catalog types are mapped to their corresponding runtime implementation in Ruby.
 
 ### Ruby[T]
 
@@ -181,22 +187,31 @@ An non parameterized Ruby type represents all/any Ruby runtime type.
 
 ### Object
 
-Represents the abstract type "any".
+Represents the abstract type "any instance that is not a type".
 
 #### Type Algebra on Object
 
     Object ∪ Object   → Object
     Object ∪ any      → Object
+    Object ∪ Type     → undef  # there is no common type
+
+<table><tr><th>Note PUP-??? TO BE LOGGED</th></tr>
+<tr><td>
+  Technically, there is an internal <tt>Puppet::Pops::Types::PAbstractType</tt> that is the
+  common type of Object and Type, the inference does not produce this type since there
+  is no useful representation. We should either add add and infer the Puppet representation   
+  <tt>AbstractType</tt>, or infer <tt>Variant[Object, Type]</tt>.
+</td></tr>
+</table>
 
 ### Undef
 
-Represents the notion of "missing value". 
-`Undef` is the type of the expression `undef`.
+Represents the notion of "missing value". `Undef` is the type of the expression `undef`.
 
 Values of the `Undef` type can always undergo a widening reference conversion to any other type. The reverse is however not true; only the value `undef` has the type `Undef`.
 
 In practice, to accept a value that may be `Undef`, an `Optional[T]`, or `Variant[Undef, T]`
-should be used.
+must be used.
 
 #### Type Algebra on Undef
 
@@ -205,29 +220,29 @@ should be used.
 
 ### Data
 
-Represents the abstract notion of "data", its subtypes are `Literal`, and `Array[Data]` or
-`Hash[Literal, Data]`. Further, arrays and hashes may be empty and contain `Undef`. A
+Represents the abstract notion of "data", its subtypes are `Sclar`, and `Array[Data]` or
+`Hash[Scalar, Data]`. Further, arrays and hashes may be empty and contain `Undef`. A
 hash element key may not be `Undef`.
 
 #### Type Algebra on Object
 
     Data ∪ Data                 → Data
-    Data ∪ Literal              → Data
+    Data ∪ Scalar               → Data
     Data ∪ Array[Data]          → Data
     Data ∪ Hash[Literal, Data]  → Data
     Data ∪ Undef                → Data
     Data ∪ any                  → Object
  
-### Literal
+### Scalar
 
 Represents the abstract notion of "value", its subtypes are `Numeric`, `String` (including subtypes
 `Pattern`, and `Enum`), `Boolean`, and `Regexp`.
 
 #### Type Algebra on Literal
 
-    Literal ∪ Literal          → Literal
-    Literal ∪ (T ∈ Literal)    → Literal
-    Literal ∪ (T ∉ Literal)    → Object
+    Scalar ∪ Scalar          → Scalar
+    Scalar ∪ (T ∈ Scalar)    → Scalar
+    Scalar ∪ (T ∉ Scalar)    → Object
 
 ### Numeric
 
@@ -237,11 +252,12 @@ Represents the abstract notion of "number", its subtypes are `Integer`, and `Flo
 
     Numeric ∪ Numeric          → Numeric
     Numeric ∪ (T ∈ Numeric)    → Numeric
-    Numeric ∪ (T ∉ Numeric)    → Object
+    Numeric ∪ (T ∈ Scalar)     → Scalar
+    Numeric ∪ (T ∉ Scalar)     → Object
 
 ### Integer ([from, to])
 
-Represents a range of integral numeric value. The default is the range +/- infinity.
+Represents a range of integral numeric value. The default is the range +/- Infinity.
 
 There is no theoretical limit to the smallest or largest number that can be represented
 as an implementation should transparently represent the value as either a 32 or 64 bit
@@ -253,8 +269,9 @@ The Integer type can optionally be parameterized with `from`, `to` values to pro
 The range can be *ascending* or *descending*. (The direction is only important when iterating
 over the set of instances as the range of values is the same if `from > to` as when `from < to`).
 
-If `from` is unassigned, the default is -infinity, and if `to` is unassigned, the default is +infinity.
-From the Puppet Language, the default values are set by using a `LiteralDefault`. If only one
+If `from` is unassigned, the default is -Infinity, and if `to` is unassigned, the default is +Infinity.
+
+From the Puppet Language, the default values are set by using a literal `default`. If only one
 parameter is given, it is taken as both `from` and `to`, (thus producing a range of one value).
 The `from` and `to` are inclusive. It is not possible to create an empty range (such construct,
 if allowed would represent the set of all integers that are not integers, which would make it
@@ -293,24 +310,26 @@ Iterating over an integer range:
      Integer[1,5].each |$x| { notice $x } # => notices 1,2,3,4,5
      Integer[5,1].each |$x| { notice $x } # => notices 5,4,3,2,1
      
-     Integer[0,default].each |$x| { notice $x } # error, unbound range (infinite)
+     Integer[0, default].each |$x| { notice $x } # error, unbound range (infinite)
 
 #### Type Algebra on Integer
 
     Integer ∪ Integer               → Integer
     Integer ∪ Float                 → Numeric
     Integer ∪ Numeric               → Numeric
-    Integer ∪ (T ∉ Numeric)         → Object
+    Integer ∪ (T ∈ Scalar)          → Scalar
+    Integer ∪ (T ∉ Scalar)          → Object
     Integer[a, b] ∪ Integer[c, d]   → Integer[min(a, c), max(b,d)]
 
 ### Float ([from, to])
+
 Represents a range of *inexact* real number values. The default is the range +/- infinity.
 
 A float is an *inexact* real number using the native architecture's double precision floating
 point representation. In contrast to `Integer`, operations on `Float` can cause the result to be negative or positive *Infinity* (i.e. it loses precision to the point where there is no value digits left). This is treated as an error in the Puppet Programming Language (it can be observed by dividing a floating point value with 0).
 
-A float range behaves as an Integer range and accepts both Integer, and Float values when
-specifying the range. It is not however possible to iterate over a Float range.
+A `Float` range behaves as an `Integer` range and accepts both integer, and float values when
+specifying the range. It is not however possible to iterate over a `Float` range.
 
 You can learn more about floating point than you ever want to know from these articles:
 
@@ -323,7 +342,8 @@ You can learn more about floating point than you ever want to know from these ar
     Float ∪ Float               → Float
     Float ∪ Integer             → Numeric
     Float ∪ Numeric             → Numeric
-    Float ∪ (T ∉ Numeric)       → Object
+    Float ∪ (T ∈ Scalar)        → Scalar
+    Float ∪ (T ∉ Scalar)        → Object
     Float[a, b] ∪ Float[c, d]   → Float[min(a, c), max(b,d)]
 
 ### String([from, to])
@@ -331,7 +351,8 @@ You can learn more about floating point than you ever want to know from these ar
 Represents a sequence of Unicode characters up to a maximum length of 2^31-1 (the maximum
 non negative 32 bit value).
 
-The `String` type represents all strings. Abstract subtypes of String (`Enum`, `Pattern`) describes subsets matching an enumeration of strings, or those that match a pattern.
+The `String` type represents all strings. Abstract subtypes of String (`Enum`, `Pattern`) describes subsets matching an enumeration of strings, or those that match an enumeration of patterns
+(regular expressions).
 
 A `String` can be parameterized with a size constraint. One or two parameters can be used.
 When one parameter is used, it is either an integer value describing the minimum number of
@@ -343,8 +364,7 @@ range type.
     'abc' =~ String[1,2] # false, has more than two characters
     
     $size = Integer[1,2]
-    'abc' =~ String[$size] # false, hs more than 2 charaters
-    
+    'abc' =~ String[$size] # false, has more than 2 characters
 
 Internally, when performing type inference, the `String` type is also parameterized to the set of
 strings it represents - this has very little practical consequence in a Puppet Programs except
@@ -358,7 +378,7 @@ The type is inferred to `Array[String]`, internally the String type also holds t
 ['a', 'b', 'c']]`. This allows type calculations to assert:
 
      ['a', 'b', 'c'] =~ Array[Pattern['a-z']]  # true
-     
+
 
 #### Type Algebra on String
 
@@ -376,8 +396,8 @@ only, it can not be used in the Puppet Programming Language.
     String    ∪ Enum       → String
     String<x> ∪ Enum[x]    → String<x>
     String    ∪ Pattern    → String
-    String ∪ (T ∈ Literal) → Literal
-    String ∪ (T ∉ Literal) → Object
+    String ∪ (T ∈ Scalar)  → Literal
+    String ∪ (T ∉ Scalar)  → Object
 
 ### Enum[*strings]
 
@@ -449,18 +469,29 @@ this will result in an error (e.g. `/.*/m`).
 The result of `Regexp[pattern]` is a parameterized `Regexp` type that in certain operations
 can be used instead of a literal regular expression.
 
+<table><tr><th>Note</th></tr>
+<tr><td>
+  The Puppet Programming Language may be given control over options and support \A and \Z in
+  the future as it is unclear why this is not already supported. (The omission of these features
+  makes it difficult to work with multi line strings and regular expression matching).
+</td></tr>
+</table>
+
+
 #### Type Algebra on Regexp
 
     Regexp       ∪  Regexp         → Regexp
     Regexp[R]    ∪  Regexp[R]      → Regexp[R]
     Regexp[R]    ∪  Regexp[Q]      → Regexp
-    Regexp[R]    ∪  Literal        → Literal
+    Regexp[?]    ∪  (T ∈ Scalar)   → Scalar
+    Regexp[?]    ∪  (T ∉ Scalar)   → Object
 
 
 ### Array[V, from, to]
 
 `Array` represents an ordered collection of elements of type `V`, optionally constrained in
-size by the integer range parameters *from* and *to*. 
+size by the integer range parameters *from* and *to*.
+ 
 The first index in an array instance is a non negative integer and starts with 0.
 (Operations in the Puppet Language allows negative values to be used to perform different calculations w.r.t index). See Array [] operation (TODO: REFERENCE TO THIS EXPRESSION SPEC).
 
@@ -474,27 +505,84 @@ When used without parameters, the default is `Array[Data]`.
     Array[R]     ∪  Array[R]      → Array[R]
     Array[R]     ∪  Array[Q]      → Array[R ∪ Q]
     Array[R,a,b] ∪  Array[Q,c,d]  → Array[R ∪ Q, min(a,c), max(b,d)]
+    Array[?]     ∪  Hash[?,?]     → Collection
 
 ### Hash[K, V, from, to]
 
-Hash represents an unordered collection of associations between a key (of `K` type), and
+`Hash` represents an unordered collection of associations between a key (of `K` type), and
 a value (of `V` type), optionally constrained in size by the integer range parameters *from* and
 *to*.
 
-The types of K and V are unrestricted.
+The types of `K` and `V` are unrestricted.
 
 While the key is generally not restricted, it is recommended that `Undef` is not accepted
 as a key (this is the default, and default for hashes that conforms to the `Data` type).
 
 #### Type Algebra on Hash
 
-    Hash          ∪  Hash          → Hash
-    Hash[K,V]     ∪  Hash[Q,W]     → Hash[K ∪ Q, V ∪ W]
-    Hash[K,V,a,b] ∪  Hash[Q,W,c,d] → Hash[K ∪ Q, V ∪ W, min(a,c), max(b,d)]
+    Hash          ∪  Hash               → Hash
+    Hash[K,V]     ∪  Hash[Q,W]          → Hash[K ∪ Q, V ∪ W]
+    Hash[K,V,a,b] ∪  Hash[Q,W,c,d]      → Hash[K ∪ Q, V ∪ W, min(a,c), max(b,d)]
+    Hash[?]       ∪  (T ∈ Collection)   → Collection
+    Hash[?]       ∪  (T ∉ Collection)   → Object
+
+
+### Struct Type
+
+The `Struct` type fully specifies the content of a `Hash`. The type is parameterized with a hash where the keys must be non empty strings, and the values must be types.
+
+Here is an example, where the hash must contain the keys mode and path, and mode must have a value that is one of the strings "read", "write", or "update", and the key path must have a `String` value that is at least 1 character in length.
+
+    Struct[{mode=>Enum[read, write, update], path=>String[1]}]
+    
+A `Struct` type is compatible with a `Hash` type both ways, given that the constraints they express are met. A `Struct` is a `Collection`, but its size is controlled by the specified named entries.
+
+`Struct` supports `Optional` values - this means that a matching hash may either have `undef` bound to a key, or that the key is missing. A hash that has keys not specified in the `Struct` will not match.
+
+An unparameterized `Struct` matches all structs and all hashes.
+
+#### Type Algebra on Struct
+
+    Struct               ∪  Struct             → Struct
+    Struct[T]            ∪  Struct[T]          → Struct[x]
+    Struct[T]            ∪  Struct[S (S ∉ T)]  → Struct
+    Struct[{s => T}]     ∪  Hash[K,V]          → Hash[String ∪ K, T ∪ V]
+    Struct[?]            ∪  (T ∈ Collection)   → Collection
+    Struct[?]            ∪  (T ∉ Collection)   → Object
+
+### Tuple Type
+
+The `Tuple` type fully specifies the content of an `Array`. It is to `Array` what `Struct` is to `Hash`, with entries identified by their position instead of by name. A variable number of optional and trailing entries can also be specified.
+
+    Tuple[T1, T2]                   # A tuple of exactly T1 and T2
+    Tuple[T1, T2, 1]                # A tuple with a variable number of T2 (>= 0)
+    Tuple[T1, T2, 1, 3]             # A tuple with a variable number of T2 (0-3 inclusive)
+    Tuple[T1, 5, 5]                 # A tuple with exactly 5 T1
+    Tuple[T1, 5, 10]                # A tuple 5 to 10 T1
+    Tuple[T1, T1, T2, 1, 3]         # A tuple of one T1, two T1, or two T1 followed by T3
+
+All entries in the `Tuple` (except the optional size constraint min/max count) must be a type and denotes that there must be an occurrence of this type at this position. The tuple can be modified such that the min and max occurrences of the given types in the type sequence can be specified. The specification is made with one or two integer values or the keyword `default`. The min/max works the same way as for an `Integer` range. This way, if optional entries are wanted in the tuple the min is set to a value lower than the number of given types, and if the last type should repeat the max is given as a value higher than the number of given types. As an example, a size constraint entered as `Tuple[T, 0, 1]` means `T` occurs 0 or 1 time. If the max is unspecified, it defaults to infinity (which may also be spelled out with the keyword default).
+
+     ["a", 1]     =~ Tuple[String, Integer]      # true
+     ["a", 1,2,3] =~ Tuple[String, Integer, 1]   # true
+     ["a", 1,2,3] =~ Tuple[String, Integer, 0]   # true
+     ["a", 1,2,3] =~ Tuple[String, Integer, 0,2] # false
+     ["a", 1,2,3] =~ Tuple[String, Integer, 4]   # true
+     ["a", 1,2,3] =~ Tuple[String, Integer, 5]   # false
+
+The `Tuple` type is a subtype of `Collection`. Its size is specified by the given sequence and the size constraint (which defaults to exactly the given sequence).
+
+#### Type Algebra on Tuple
+
+    Array[T] == Tuple[T,0,default]
+
+    Tuple           ∪  Tuple           → Tuple
+    Tuple[R, ...]   ∪  Tuple[S, ...]   → Tuple[R ∪ S, ...]
+
 
 ### Collection[to, from]
 
-A Collection is the common type for Array and Hash, it may optionally be parameterized with a size constraint (`from` a min size to a `max` size). The `to` and `from` parameters 
+A Collection is the common type for `Array` and `Hash` (and subtypes `Tuple` and `Struct`), it may optionally be parameterized with a size constraint (`from` a min size to a `max` size). The `to` and `from` parameters 
 are the same as for an `Integer` range. The size constraint can also be specified with a
 single `Integer` range parameter.
 
@@ -506,7 +594,6 @@ single `Integer` range parameter.
     
     [1,2,3]      =~ Collection[1,3]  # true, size >= 1 and <= 3
     {a=>1, b=>2} =~ Collection[3]    # false, size is < 3
-
 
 ### Variant[*types]
 
@@ -523,6 +610,9 @@ which is true if all the numbers in an array of numbers are between 1000 and 199
 
     Variant         ∪  Variant          → Variant
     Variant[*T]     ∪  Variant[*Q]      → Variant[*T | *Q]
+    Variant[*T]     ∪  Q                → Variant[*T | Q]
+    
+    Variant[Optional[T]] == Variant[T, Undef] == Optional[Variant[T]] == Optional[T]
 
 ### Optional[T]
 
@@ -539,9 +629,13 @@ Undef. An unparameterized `Optional` represents nothing.
 ### Catalog Entry
 
 Represents the abstract notion of "something that is an entry in a puppet catalog". Its
-subtypes are `Resource`, `Class`, `Node`, and `Stage`.
+subtypes are `Resource`, and `Class`.
 
-TODO: **Node and State are not implemented**
+<table><tr><th>Note</th></tr>
+<tr><td>
+  Stage may get its own type in a future specification.
+</td></tr>
+</table>
 
 ### Resource[type_name, *title]
 
@@ -556,7 +650,8 @@ The Resource type is parameterized by `type_name`, and optionally `title`(s).
   to a `String` representing the title of a resource.
   
 * If no title is given, the result is a reference to the type itself; e.g. `Resource[File]`, 
-  `Resource['file']`, `Resource[file]` are all references to the puppet resource type called File.
+  `Resource['file']`, `Resource[file]` are all references to the puppet resource type called 
+  `"File"`.
   
 * When a single title is given, the result is a reference to the singleton instance of the
   resource uniquely identified by the title string.
@@ -566,8 +661,8 @@ The Resource type is parameterized by `type_name`, and optionally `title`(s).
   
 #### Shorthand Notation
 
-Any QualifiedReference that does not reference a known type is interpreted as a reference
-to a Resource type. Thus `Resource[File]` and `File` are equivalent references.
+Any Qualified Reference that does not reference a known type is interpreted as a reference
+to a `Resource` type. Thus `Resource[File]` and `File` are equivalent references.
 
 The shorthand notated resource types supports type parameterization with title(s). These
 are equivalent: `Resource[File, 'a', 'b']`, `File['a', 'b']`, they both produce an equivalent
@@ -576,59 +671,117 @@ array of two references - `File['a']` and `File['b']`.
 #### Type Algebra on Resource
 
     Resource <= Resource[RT] <= Resource[RT, T]
-    Resource[RT1] != Resource[RT2]
+    Resource[RT1]   != Resource[RT2]
     Resource[RT, T] != Resource[RT, T2]
-    Resource[RT] == RT
+    Resource[RT]    == RT
     Resource[RT, T] == RT[T]
     
-    Resource        ∩  Resource         → Resource
-    Resource[RT]    ∩  Resource[RT]     → Resource[RT]
-    Resource[RT1]   ∩  Resource[RT2]    → Resource
-    Resource[RT,T]  ∩  Resource[RT, T]  → Resource[RT, T]
-    Resource[RT,T1] ∩  Resource[RT, T2] → Resource[RT]
+    Resource        ∪  Resource            → Resource
+    Resource[RT]    ∪  Resource[RT]        → Resource[RT]
+    Resource[RT1]   ∪  Resource[RT2]       → Resource
+    Resource[RT,T]  ∪  Resource[RT, T]     → Resource[RT, T]
+    Resource[RT,T1] ∪  Resource[RT, T2]    → Resource[RT]
+    Resource[?]     ∪  (T ∈ CatalogEntry)  → CatalogEntry
+    Resource[?]     ∪  (T ∉ CatalogEntry)  → Object
     
 ### Class[*class_name]
 
 Represents a Puppet (Host) Class. The `Class` type is parameterized with the name of
-the class (`String`, or `QualifiedName`).
+the class (`String`, or Qualified Name).
 
 If multiple class names are given, an `Array` of parameterized `Class` types is produced.
 
-**TODO**: In 3x it is allowed to also use an upper case Resource reference e.g. `Class[Baz]`. This
-is currently supported in the new implementation. It should not if names are strict as this
-really means `Class[Resource[Baz]]`. Discuss if this support should be removed.
+<table><tr><th>Note</th></tr>
+<tr><td>
+  In 3x it is allowed to also use an upper case Resource reference e.g. <tt>Class[Baz]</tt>. This
+  is currently supported in the new implementation. It should not if names are strict as this
+  really means
+  <tt>Class[Resource[Baz]]</tt>. <b>Discuss if this support should be removed</b>.
+</td></tr>
+</table>
 
-### Class Inheritance - TODO
 
-The type system does currently not treat (Host) Class inheritance as subtyping.
-The reason for this is that if the type system were to do this, then classes need to be loaded in order for type operations to correctly answer if a class inherits another. There was a suspicion
+### Class Inheritance
+
+The type system does not treat (Host) Class inheritance as subtyping.
+
+The reason for this is that if the type system were to do this, then classes need to be loaded in order for type operations to correctly answer if a class inherits another. There is a suspicion
 that this may affect the result (logic may reference a class that should not be loaded because
-it is used as a condition to load classes that are not present). 
+it is used as a condition to load classes that are not present. Loading a class may also have other
+side effects as it is not a pure load operation). 
 
-**TODO**: Further work is needed to make a final decision. If the decision is made to keep it the way
-it is currently implemented, the user logic will need to check twice (is it the subclass or
-the superclass; this since Puppet only supports one level deep inheritance.
+<table><tr><th>Note</th></tr>
+<tr><td>
+  Further work is needed to make a final decision. If the decision is made to keep it the way
+  it is currently implemented, the user logic will need to check twice, or with a <tt>Variant</tt>   
+  (is it the subclass or the superclass); this since Puppet only supports one level deep inheritance.
+</td></tr>
+</table>
+
 
 #### Type Algebra on Class
 
-    Class <= Class[c]
-    Class       ∩  Class        → Class
-    Class[c]    ∩  Class[c]     → Class[c]
-    Class[c1]   ∩  Class[c2]    → Class
- 
-
-### Node - TODO
-
-The Node type represents a Puppet Node. This type is not yet implemented.
-
-### Stage - TODO
-
-The Stage type represents a Puppet Stage. This type is not yet implemented. 
+    Class > Class[c]
+    Class       ∪  Class               → Class
+    Class[c]    ∪  Class[c]            → Class[c]
+    Class[c1]   ∪  Class[c2]           → Class
+    Class[?]    ∪  (T ∈ CatalogEntry)  → CatalogEntry
+    Class[?]    ∪  (T ∉ CatalogEntry)  → Object
 
 ### Type[T]
 
-Type is the type of types. It is parameterized by the type e.g the type of `String` is `Type[String]`. Consequently, the type of `Type[String]` is `Type[Type[String]]`, and so on
+`Type` is the type of types. It is parameterized by the type e.g the type of `String` is `Type[String]`. Consequently, the type of `Type[String]` is `Type[Type[String]]`, and so on
 until infinity.
+
+<table><tr><th>Note</th></tr>
+<tr><td>
+  The common super type of Object, and Type does not have a representation in
+  the Puppet Language. <b>It probably should</b>
+</td></tr>
+</table>
+
+
+#### Type Algebra on Type
+
+    Type        ∪  Type                → Type
+    Type        ∪  Type[T]             → Type
+    Type[T]     ∪  Type[T]             → Type[T]
+    Type[?]     ∪  (T ∉ Type)          → undef   (see note above)
+
+
+### Callable[signature]
+
+Callable is the type of callable elements; functions and lambdas. The Callable type
+has little practical use in the Puppet Language until there is support for functions written
+in the Puppet Language. They of importance for those that write functions in Ruby and what to type
+check lambdas that are given as arguments to functions in Ruby.
+
+The signature of a Callable denotes the type and multiplicity of the arguments it accepts and consists of a sequence of parameters consisting of a list of types, where the three last entries may be optionally followed by min, max count, and a `Callable` which is taken as its block_type.
+
+* If neither min or max are specified the parameters must match exactly.
+* A min < size(params) means that the difference is optional. 
+* If max > size(params) means that the last type repeats until the given max cap number of arguments
+* if max is literal `default`, the max value is unbound (+Infinity).
+
+#### Type Algebra on Callable
+
+Internally the Callable is represented by a Tuple, and an optional Callable. Type algebra is
+performed on these individually.
+
+    Callable         ∪  Callable            → Callable
+    Callable[?]      ∪  T (T ∉ Callable)    → Object
+
+    B ∈ Callable
+    C ∈ Callable
+    S ∈ Tuple[X]
+    T ∈ Tuple[Y]
+    Callable[*S, B]  ∪  Callable[*T, C]    → Callable[*(S ∪ T), B ∪ C]
+
+Here `*S`, `*T` denotes, the syntax of the Tuple parameters expanded.
+
+As an example:
+
+    Callable[String] ∪ Callable[Numeric] → Callable[Scalar]
 
 Operations per Type
 ---
@@ -636,23 +789,21 @@ The operations available per type is specified in the section TODO REF TO OPERAT
 
 Variables
 ---
-A variable is a storage container for a value. Variables are immutable (once assigned they cannot be assigned to another value, and the value it is referring to is also immutable.
+A variable is a storage container for a value. Variables are immutable (once assigned they cannot be assigned to another value, and the value it is referring to is also immutable. Variables are also used define parameters of defines, classes, lambdas (and functions) - the term *parameter* is used
+to denote such variables.
 
-The type of a variable is determined by what is assigned to it.
+The type of a non parameter variable is determined by what is assigned to it.
+The type of a parameter may be optionally specified in which case a given value for that parameter
+must be compliant with the given type. An untyped parameter accepts any (i.e.
+`Optional[Variant, Object, Type]]`
 
 <table>
 <tr><th>Note</th></tr>
 <tr><td>  
-  In the current implementation all parameters imply that they are of <code>Object</code> type (and 
+  In the current implementation all parameters imply that they are of <code>Optional[Variant[Object, Type]]</code> type (and 
   anything can be passed). User logic is responsible for asserting type.
-</td></tr><tr><th>Future</th></tr>
-<tr><td>
-  In the future it will be possible to specify the type of parameters to classes,
-  resource type definitions, and lambdas. Possibly also the attributes of resource types.
-  When that is added to the language the system will 
-  ensure that the given value is type compliant with the specified type.  
-</td></tr>
 </table>
+
 
 ### Variable Names
 
@@ -671,25 +822,24 @@ Variable names must conform to the following syntax:
        | /(::)?[a-z]\w*(::[a-z]\w*)*/
        ;
 
-That is, a numeric variable must be a valid decimal number (a name that starts with 0 and has additional digits is also illegal). 
-A named variable must start with a lower case letter a-z or
-'_' (underscore)
-and after that contain any word characters (a-z, A-Z, 0-9 and _). Specifically, a hyphen character
+* That is, a numeric variable must be a valid decimal number (a name that starts with 0 and has additional digits is also illegal). 
+* A named variable must start with a lower case letter a-z or '_' (underscore)
+and after that contain any word characters (a-z, A-Z, 0-9 or _). Specifically, a hyphen character
 or a period are not allowed as they were in some earlier versions of the Puppet Programming Language.
-Also note that it is not allowed to use an upper case letter in the initial position of a name 
-segment. It is also not allowed to use an underscore in the initial position of a name segment
+* Also note that it is not allowed to use an upper case letter in the initial position of a name 
+segment.
+* It is also not allowed to use an underscore in the initial position of a name segment
 in a fully qualified variable.
 
 It is illegal to reference a numeric variable with a fully qualified name (i.e. a match result in
-another scope).
+another name-space).
 
 ### Variable Reference
 
 An expression such as `$x` evaluates to the value bound (assigned) to the variable name. Numeric
 variables are assigned as a side effect of evaluating a match expression. SEE TODO REF. It is legal to reference any numeric variable, but it is illegal to reference a named variable that does not exist. A variable that has been assigned, a built in variable, or a variable that represents a parameter value that is provided by the runtime (e.g. meta-parameters) are said to exist.
 
-**TODO**: Currently strict variable lookup is controlled by a feature switch. It should
-probably always be on when released in Puppet 4.x.
+**In this version of the specification strict variable lookup is optional (controlled by a feature switch). It is not on by default in Puppet 4.x, but will be mandatory in Puppet 5.0.**
 
 ### Initial Values of Variables
 
@@ -700,9 +850,12 @@ exist have a value (even if that value may be the literal `undef` value).
 All numeric variables are said to exist. If they have not been set by the last match expression in
 the same scope, they evaluate to `undef`.
 
+Variables that have not been assigned, do not exist, and thus do not have a value. When
+strict variables feature is turned off, a reference to such a variable results in the value `undef`. 
+
 Conversions and Promotions
 ===
-The Puppet Programming Language is in general dynamically typed (everything is an Object unless declared otherwise). There are various operators that perform type coercion / transformation
+The Puppet Programming Language is in general dynamically typed (everything is an Object or Type unless declared otherwise). There are various operators that perform type coercion / transformation
 if required and when possible, there are functions that perform explicit type conversion,
 and there are typed parameters that will perform type conversion when required and possible.
 
@@ -717,47 +870,98 @@ Numeric Conversions
 * There are never any under or overflow when performing integer arithmetic. The implementation
   handles automatic conversion from 32 to 64 bit numbers to bignum.
   
-String to Numeric Conversion
+String to-from Numeric Conversion
 ---
 
 * Arithmetic operations are done on `Numeric` types - if an operand is a `String` an attempt is made
   to transform it into numeric form (rather than giving up immediately).
 
-* `String` to `Numeric` conversion also takes place for typed parameter assignment. (TODO: typed 
-  parameters is not yet implemented).
+* `String` to `Numeric` conversion also takes place for typed parameter assignment.
 
 * Numbers are not generally transformed to strings (since this requires knowledge of
   radix). They are transformed using radix 10 when interpolated into a string.
   
 * Explicit conversion from `Numeric` to `String` is performed by calling the `sprintf` function.
 
-* Interpolation of non `String` values into a string uses default conversion to String. TODO:
-  THIS SHOULD BE NOTED PER TYPE).
+* Interpolation of non `String` values into a string uses default conversion to String. **TODO:
+  THIS SHOULD BE NOTED PER TYPE)**.
+
+<table>
+<tr><th>Note</th></tr>
+<tr><td>  
+  It is questionable if String to Numeric conversion should take place when matching types. (It is
+  not implemented that way). TODO: Discuss.
+</tr></td>
+<tr><td>  
+  Automatic String to Number conversion may be deprecated and removed in a future version
+  of the specification.
+</tr></td>
+</table>
 
 Boolean Conversion
 ---
 Puppet has a sense of boolean "truth" and will convert values to `Boolean` as shown below:
 
-     ''        → false
+     ''        → true
      undef     → false
      false     → false
      any other → true
 
-**Note: It is questionable if '' should continue to be false in 4x. Some users want it to be true.**
+<table>
+<tr><th>Note</th></tr>
+<tr><td>  
+  3x treats '' as equivalent to `undef`.
+</tr></td>
+</table>
 
 String to Regexp Conversion
 ---
 If the RHS operand of a match expression evaluates to a String, the string is converted into a regular expression.
 
-Qualified Name and Qualified Reference to String
+To String Conversions
 ---
+### Qualified Name and Qualified Reference to String
+
 Qualified Names evaluate to string type unless the name appears in an expression that uses
 the name as a reference to an instance (e.g. the name of a function in a function call).
 
 The reverse is not generally true; a string value can not always be used where a Qualified Name is
-allowed (e.g. `$'x'` is not a valid reference to the variable named `'x'`).
+allowed (e.g. `$"x"` is not a valid reference to the variable named `'x'`).
 
-Qualified Reference to String
----
+### Qualified Reference to String
+
 Qualified References are only converted to String when interpolated into a String expression.
 
+### Hash to String
+
+A Hash is turned into a string when it is interpolated. The string consists of '{' '}' around
+a comma separated list of entries where each entry is K '=>' V and K and V are converted to string
+form. The resulting string is formatted with one space padding after each comma. No trailing
+comma is produced. There is no space after '{' and no space before '}'.
+
+### Array to String
+
+An Array is turned into a string when it is interpolated. The string consists of '[' ']' around
+a comma separated list of entries where each entry V is converted to string form. The resulting string is
+formatted with one padding space after each comma. No trailing comma is produced. There is no space after '[' and no space before ']'.
+
+### Type to String
+
+A Type is turned into a string when it is interpolated. The string consists of the type name in upper case, and if it is parameterized followed by the string form of the parameters enclosed in '[' ']'.
+When there are multiple parameters, they are comma separated, and padded with one space after each comma. There is no space after '[', and no space before ']'. In general the form is compliant
+with how the types are specified in Puppet Programming Language source form.
+
+### Regexp to String
+
+A Regexp is turned into a String when it is interpolated. The string consists of the source of
+the regular expression as given in the Puppet Programming Language, enclosed in '/' '/'.
+
+### Numeric to String
+
+A Numeric is turned into a String when it is interpolated. The result is in decimal radix.
+
+### Any to String
+
+Conversion of any other type to String is undefined. It will typically be the underlying
+runtime system's string representation of the object.
+ 
