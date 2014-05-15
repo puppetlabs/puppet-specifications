@@ -47,6 +47,8 @@ Index
 * [Catalog Expressions][8] - specification of all expressions related to catalog production
 * [Expression Precedence][9] - specification of the precedence of expressions / operators
 * [Deprecation][10] - specification of deprecated constructs
+* PROPOSALS
+  * [Puppet Functions][14] - functions in the puppet language 
 * API
   * [Function Ruby API][11] - the API for writing functions in Ruby
   * [Plugin Ruby API][12] - the API for plugins in Ruby
@@ -66,5 +68,6 @@ Index
 [11]:language/func-api.md
 [12]:language/plugin-api.md
 [13]:language/settings.md
+[14]:language/puppet-functions.md
 
 [1]:http://www.github.com/puppetlabs/puppet
