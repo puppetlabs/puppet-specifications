@@ -1874,6 +1874,7 @@ Syntax:
 * If no match was found (and there was no default proposition), an error is raised. 
 * An option that is a `Regexp` sets the match variables `$0`-`$n`, and makes them available in the
   Value expression. The match variables are restored when the value expression has been evaluated.
+* It is an error to have more than one option with `default` value. **(PUP-978)**
 
 Example:
 
