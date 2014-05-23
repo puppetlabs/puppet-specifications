@@ -1842,8 +1842,8 @@ for the same Proposition before matching takes place.
 Matches a LHS expression against a sequence of propositions. The value expression associated
 with the matching option expression is evaluated and produced as the result.
 
-The semantics are almost the same as for the case expression but differs in the handling
-of a default case. (This is mainly for backwards compatibility reasons).
+The semantics are the same as for the case expression with the exception that
+an error is raised if no match is found.
 
 Syntax:
 
@@ -1865,14 +1865,15 @@ Syntax:
 * The `selector_expression` is evaluated first
 * the `Proposition` expressions are processed from top to bottom
   * the `Option` expression is evaluated
-  * The proposition matches if the `Option` is the literal `default`, or if the `Option`
+  * The proposition matches if the `Option`
     matches using the same match semantics as for case expression propositions
   * The result of the `SelectorExpression` is the result of the `Value` expression if the Proposition
     was matched.
-* If no match was found, the result of the `SelectorExpression` is `undef`. 
-* Note that, not placing a default option last means options after it will not be considered.
+  * If a proposition is the literal `default` it is set aside and its value expression
+    is used if no other proposition matched.
+* If no match was found (and there was no default proposition), an error is raised. 
 * An option that is a `Regexp` sets the match variables `$0`-`$n`, and makes them available in the
-  Value expression. The match variables are restored when the Value expression has been evaluated.
+  Value expression. The match variables are restored when the value expression has been evaluated.
 
 Example:
 
