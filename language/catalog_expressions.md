@@ -55,7 +55,7 @@ Syntax:
        ;
        
      HostMatches
-       : HostMatch (',' HostMatch)*
+       : HostMatch (',' HostMatch)* ','?
        ;
        
      HostMatch
