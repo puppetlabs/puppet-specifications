@@ -123,7 +123,7 @@ without any parameters, in which case type specific rules apply. Also note that 
 may appear more than once in the hierarchy, typically with different narrower type parameters.
 
      Object
-       |- Literal
+       |- Scalar
        |  |- Numeric
        |  |  |- Integer[from, to]
        |  |     |- (Integer with range inside another Integer)
@@ -152,9 +152,9 @@ may appear more than once in the hierarchy, typically with different narrower ty
        |
        |- Undef
        |- Data
-       |  |- Literal
+       |  |- Scalar
        |  |- Array[Data]
-       |  |- Hash[Literal, Data]
+       |  |- Hash[Scalar, Data]
        |  |- Undef
        |
        |- Callable[signature...]
@@ -218,7 +218,7 @@ hash element key may not be `Undef`.
     Data ∪ Data                 → Data
     Data ∪ Scalar               → Data
     Data ∪ Array[Data]          → Data
-    Data ∪ Hash[Literal, Data]  → Data
+    Data ∪ Hash[Scalar, Data]  → Data
     Data ∪ Undef                → Data
     Data ∪ any                  → Object
  
@@ -227,7 +227,7 @@ hash element key may not be `Undef`.
 Represents the abstract notion of "value", its subtypes are `Numeric`, `String` (including subtypes
 `Pattern`, and `Enum`), `Boolean`, and `Regexp`.
 
-#### Type Algebra on Literal
+#### Type Algebra on Scalar
 
     Scalar ∪ Scalar          → Scalar
     Scalar ∪ (T ∈ Scalar)    → Scalar
@@ -385,7 +385,7 @@ only, it can not be used in the Puppet Programming Language.
     String    ∪ Enum       → String
     String<x> ∪ Enum[x]    → String<x>
     String    ∪ Pattern    → String
-    String ∪ (T ∈ Scalar)  → Literal
+    String ∪ (T ∈ Scalar)  → Scalar
     String ∪ (T ∉ Scalar)  → Object
 
 ### Enum[*strings]
