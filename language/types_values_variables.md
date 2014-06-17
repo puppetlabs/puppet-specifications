@@ -78,7 +78,7 @@ All types (Platform and Puppet) are organized into one *Type System*.
 
 Optional Typing
 ---
-Typing is optional. When something is not typed, it has the type `Optional[Variant[Object, Type]]`, i.e. undef, any instance, or any type (which is every possible type).
+Typing is optional. When something is not typed, it has the type `Object`, i.e. undef, any instance, or any type (which is every possible type).
 
 The Type System
 ===============
@@ -157,12 +157,12 @@ may appear more than once in the hierarchy, typically with different narrower ty
        |  |- Hash[Literal, Data]
        |  |- Undef
        |
-       |-Callable[signature...]
+       |- Callable[signature...]
        |- Type[T]
        |- Ruby[class_name]
 
 In addition to these types, a Qualified Reference that does not represent any of the other types is interpreted as `Resource[the_qualified_reference]` (e.g. `File` is shorthand notation for `Resource[File]` / `Resource[file]`).
-          
+
 Runtime Types
 ---
 
@@ -187,22 +187,11 @@ An non parameterized Ruby type represents all/any Ruby runtime type.
 
 ### Object
 
-Represents the abstract type "any instance that is not a type".
+Represents the abstract type "any instance".
 
 #### Type Algebra on Object
 
-    Object ∪ Object   → Object
     Object ∪ any      → Object
-    Object ∪ Type     → undef  # there is no common type
-
-<table><tr><th>Note PUP-??? TO BE LOGGED</th></tr>
-<tr><td>
-  Technically, there is an internal <tt>Puppet::Pops::Types::PAbstractType</tt> that is the
-  common type of Object and Type, the inference does not produce this type since there
-  is no useful representation. We should either add add and infer the Puppet representation   
-  <tt>AbstractType</tt>, or infer <tt>Variant[Object, Type]</tt>.
-</td></tr>
-</table>
 
 ### Undef
 
@@ -220,7 +209,7 @@ must be used.
 
 ### Data
 
-Represents the abstract notion of "data", its subtypes are `Sclar`, and `Array[Data]` or
+Represents the abstract notion of "data", its subtypes are `Scalar`, and `Array[Data]` or
 `Hash[Scalar, Data]`. Further, arrays and hashes may be empty and contain `Undef`. A
 hash element key may not be `Undef`.
 
@@ -733,21 +722,12 @@ side effects as it is not a pure load operation).
 `Type` is the type of types. It is parameterized by the type e.g the type of `String` is `Type[String]`. Consequently, the type of `Type[String]` is `Type[Type[String]]`, and so on
 until infinity.
 
-<table><tr><th>Note</th></tr>
-<tr><td>
-  The common super type of Object, and Type does not have a representation in
-  the Puppet Language. <b>It probably should</b>
-</td></tr>
-</table>
-
-
 #### Type Algebra on Type
 
     Type        ∪  Type                → Type
     Type        ∪  Type[T]             → Type
     Type[T]     ∪  Type[T]             → Type[T]
-    Type[?]     ∪  (T ∉ Type)          → undef   (see note above)
-
+    Type[?]     ∪  (T ∉ Type)          → Object
 
 ### Callable[signature]
 
@@ -794,16 +774,7 @@ to denote such variables.
 
 The type of a non parameter variable is determined by what is assigned to it.
 The type of a parameter may be optionally specified in which case a given value for that parameter
-must be compliant with the given type. An untyped parameter accepts any (i.e.
-`Optional[Variant, Object, Type]]`
-
-<table>
-<tr><th>Note</th></tr>
-<tr><td>  
-  In the current implementation all parameters imply that they are of <code>Optional[Variant[Object, Type]]</code> type (and 
-  anything can be passed). User logic is responsible for asserting type.
-</table>
-
+must be compliant with the given type. An untyped parameter accepts any (i.e. `Object`)
 
 ### Variable Names
 
@@ -855,7 +826,7 @@ strict variables feature is turned off, a reference to such a variable results i
 
 Conversions and Promotions
 ===
-The Puppet Programming Language is in general dynamically typed (everything is an Object or Type unless declared otherwise). There are various operators that perform type coercion / transformation
+The Puppet Programming Language is in general dynamically typed (everything is an Object unless declared otherwise). There are various operators that perform type coercion / transformation
 if required and when possible, there are functions that perform explicit type conversion,
 and there are typed parameters that will perform type conversion when required and possible.
 
@@ -883,8 +854,9 @@ String to-from Numeric Conversion
   
 * Explicit conversion from `Numeric` to `String` is performed by calling the `sprintf` function.
 
-* Interpolation of non `String` values into a string uses default conversion to String. **TODO:
-  THIS SHOULD BE NOTED PER TYPE)**.
+* Interpolation of non `String` values into a string uses default conversion to
+  String. See the following table for the string conversions for specific
+  types.
 
 <table>
 <tr><th>Note</th></tr>
