@@ -78,14 +78,14 @@ All types (Platform and Puppet) are organized into one *Type System*.
 
 Optional Typing
 ---
-Typing is optional. When something is not typed, it has the type `Object`, i.e. undef, any instance, or any type (which is every possible type).
+Typing is optional. When something is not typed, it has the type `Any`.
 
 The Type System
 ===============
 
 The type system contains both concrete types; `Integer`, `Float`, `Boolean`, `String`, `Regexp` (regular expression),
 `Array`, `Hash`, `Callable`, and `Ruby` (represents a type in the Ruby type system - i.e. a Class), as well as abstract
-types `Scalar`, `Data`, `Collection`, `Pattern`, `Enum`, `Variant`, `Optional`, `Object`, and `Type`. 
+types `Scalar`, `Data`, `Collection`, `Pattern`, `Enum`, `Variant`, `Optional`, `Any`, and `Type`. 
 
 The `String` type is optionally parameterized (`String[<from>, <to>]`) with a size constraint.
 By default the size is from 0 to +Infinity.
@@ -112,7 +112,7 @@ The abstract types are:
 - `Variant` - a parameterized type describing a disjoint set of other types
 - `Optional` - a convenience type where `Optional[T]` is the same as `Variant[Undef, T]`
 - `CatalogEntry` - one of the types Resource (and subtypes), and Class (and subtypes).
-- `Object` - any type except `Type`.
+- `Any` - any type
 - `Type` - the type of types, parameterized with the type it is the meta-type of, e.g. `Type[String]`
   is the type of `String`.
 
@@ -122,8 +122,8 @@ in section specific to each type). Note that parameterized type may be reference
 without any parameters, in which case type specific rules apply. Also note that the same type
 may appear more than once in the hierarchy, typically with different narrower type parameters.
 
-     Object
-       |- Scalar
+     Any
+       |- Literal
        |  |- Numeric
        |  |  |- Integer[from, to]
        |  |     |- (Integer with range inside another Integer)
@@ -185,13 +185,14 @@ must be of `String` type and contain a valid string representation of the Ruby t
 
 An non parameterized Ruby type represents all/any Ruby runtime type.
 
-### Object
+### Any
 
 Represents the abstract type "any instance".
 
-#### Type Algebra on Object
+#### Type Algebra on Any
 
-    Object ∪ any      → Object
+    Any ∪ Any        → Any
+    Any ∪ (T != Any) → Any
 
 ### Undef
 
@@ -205,7 +206,7 @@ must be used.
 #### Type Algebra on Undef
 
     Undef ∪ Undef          → Undef
-    Undef ∪ any            → Object
+    Undef ∪ (T ∉ Undef)    → Any
 
 ### Data
 
@@ -213,14 +214,14 @@ Represents the abstract notion of "data", its subtypes are `Scalar`, and `Array[
 `Hash[Scalar, Data]`. Further, arrays and hashes may be empty and contain `Undef`. A
 hash element key may not be `Undef`.
 
-#### Type Algebra on Object
+#### Type Algebra on Data
 
     Data ∪ Data                 → Data
     Data ∪ Scalar               → Data
     Data ∪ Array[Data]          → Data
-    Data ∪ Hash[Scalar, Data]  → Data
+    Data ∪ Hash[Scalar, Data]   → Data
     Data ∪ Undef                → Data
-    Data ∪ any                  → Object
+    Data ∪ (T ∉ Data)           → Any
  
 ### Scalar
 
@@ -231,7 +232,7 @@ Represents the abstract notion of "value", its subtypes are `Numeric`, `String` 
 
     Scalar ∪ Scalar          → Scalar
     Scalar ∪ (T ∈ Scalar)    → Scalar
-    Scalar ∪ (T ∉ Scalar)    → Object
+    Scalar ∪ (T ∉ Scalar)    → Any
 
 ### Numeric
 
@@ -242,7 +243,7 @@ Represents the abstract notion of "number", its subtypes are `Integer`, and `Flo
     Numeric ∪ Numeric          → Numeric
     Numeric ∪ (T ∈ Numeric)    → Numeric
     Numeric ∪ (T ∈ Scalar)     → Scalar
-    Numeric ∪ (T ∉ Scalar)     → Object
+    Numeric ∪ (T ∉ Scalar)     → Any
 
 ### Integer ([from, to])
 
@@ -307,7 +308,7 @@ Iterating over an integer range:
     Integer ∪ Float                 → Numeric
     Integer ∪ Numeric               → Numeric
     Integer ∪ (T ∈ Scalar)          → Scalar
-    Integer ∪ (T ∉ Scalar)          → Object
+    Integer ∪ (T ∉ Scalar)          → Any
     Integer[a, b] ∪ Integer[c, d]   → Integer[min(a, c), max(b,d)]
 
 ### Float ([from, to])
@@ -332,7 +333,7 @@ You can learn more about floating point than you ever want to know from these ar
     Float ∪ Integer             → Numeric
     Float ∪ Numeric             → Numeric
     Float ∪ (T ∈ Scalar)        → Scalar
-    Float ∪ (T ∉ Scalar)        → Object
+    Float ∪ (T ∉ Scalar)        → Any
     Float[a, b] ∪ Float[c, d]   → Float[min(a, c), max(b,d)]
 
 ### String([from, to])
@@ -385,8 +386,8 @@ only, it can not be used in the Puppet Programming Language.
     String    ∪ Enum       → String
     String<x> ∪ Enum[x]    → String<x>
     String    ∪ Pattern    → String
-    String ∪ (T ∈ Scalar)  → Scalar
-    String ∪ (T ∉ Scalar)  → Object
+    String ∪ (T ∈ Scalar)  → Literal
+    String ∪ (T ∉ Scalar)  → Any
 
 ### Enum[*strings]
 
@@ -473,7 +474,7 @@ can be used instead of a literal regular expression.
     Regexp[R]    ∪  Regexp[R]      → Regexp[R]
     Regexp[R]    ∪  Regexp[Q]      → Regexp
     Regexp[?]    ∪  (T ∈ Scalar)   → Scalar
-    Regexp[?]    ∪  (T ∉ Scalar)   → Object
+    Regexp[?]    ∪  (T ∉ Scalar)   → Any
 
 
 ### Array[V, from, to]
@@ -513,7 +514,7 @@ as a key (this is the default, and default for hashes that conforms to the `Data
     Hash[K,V]     ∪  Hash[Q,W]          → Hash[K ∪ Q, V ∪ W]
     Hash[K,V,a,b] ∪  Hash[Q,W,c,d]      → Hash[K ∪ Q, V ∪ W, min(a,c), max(b,d)]
     Hash[?]       ∪  (T ∈ Collection)   → Collection
-    Hash[?]       ∪  (T ∉ Collection)   → Object
+    Hash[?]       ∪  (T ∉ Collection)   → Any
 
 
 ### Struct Type
@@ -537,7 +538,7 @@ An unparameterized `Struct` matches all structs and all hashes.
     Struct[T]            ∪  Struct[S (S ∉ T)]  → Struct
     Struct[{s => T}]     ∪  Hash[K,V]          → Hash[String ∪ K, T ∪ V]
     Struct[?]            ∪  (T ∈ Collection)   → Collection
-    Struct[?]            ∪  (T ∉ Collection)   → Object
+    Struct[?]            ∪  (T ∉ Collection)   → Any
 
 ### Tuple Type
 
@@ -671,7 +672,7 @@ array of two references - `File['a']` and `File['b']`.
     Resource[RT,T]  ∪  Resource[RT, T]     → Resource[RT, T]
     Resource[RT,T1] ∪  Resource[RT, T2]    → Resource[RT]
     Resource[?]     ∪  (T ∈ CatalogEntry)  → CatalogEntry
-    Resource[?]     ∪  (T ∉ CatalogEntry)  → Object
+    Resource[?]     ∪  (T ∉ CatalogEntry)  → Any
     
 ### Class[*class_name]
 
@@ -715,7 +716,7 @@ side effects as it is not a pure load operation).
     Class[c]    ∪  Class[c]            → Class[c]
     Class[c1]   ∪  Class[c2]           → Class
     Class[?]    ∪  (T ∈ CatalogEntry)  → CatalogEntry
-    Class[?]    ∪  (T ∉ CatalogEntry)  → Object
+    Class[?]    ∪  (T ∉ CatalogEntry)  → Any
 
 ### Type[T]
 
@@ -727,7 +728,7 @@ until infinity.
     Type        ∪  Type                → Type
     Type        ∪  Type[T]             → Type
     Type[T]     ∪  Type[T]             → Type[T]
-    Type[?]     ∪  (T ∉ Type)          → Object
+    Type[?]     ∪  (T ∉ Type)          → Any
 
 ### Callable[signature]
 
@@ -749,7 +750,7 @@ Internally the Callable is represented by a Tuple, and an optional Callable. Typ
 performed on these individually.
 
     Callable         ∪  Callable            → Callable
-    Callable[?]      ∪  T (T ∉ Callable)    → Object
+    Callable[?]      ∪  T (T ∉ Callable)    → Any
 
     B ∈ Callable
     C ∈ Callable
@@ -774,7 +775,7 @@ to denote such variables.
 
 The type of a non parameter variable is determined by what is assigned to it.
 The type of a parameter may be optionally specified in which case a given value for that parameter
-must be compliant with the given type. An untyped parameter accepts any (i.e. `Object`)
+must be compliant with the given type. An untyped parameter accepts a value of any type (i.e. `Any`)
 
 ### Variable Names
 
@@ -826,7 +827,7 @@ strict variables feature is turned off, a reference to such a variable results i
 
 Conversions and Promotions
 ===
-The Puppet Programming Language is in general dynamically typed (everything is an Object unless declared otherwise). There are various operators that perform type coercion / transformation
+The Puppet Programming Language is in general dynamically typed (everything is an Any unless declared otherwise). There are various operators that perform type coercion / transformation
 if required and when possible, there are functions that perform explicit type conversion,
 and there are typed parameters that will perform type conversion when required and possible.
 
