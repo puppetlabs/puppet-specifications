@@ -76,7 +76,8 @@ way. (If there is no method with the same name an error is raised). It is legal 
 additional helper methods but it is not possible to define classes nested inside of the function.
 
 The function definition in the example above does obviously not define the types of the
-arguments (since this cannot be done in Ruby). Instead, the introspection treats every defined parameter as being of `Object` type (the Puppet Object type).
+arguments (since this cannot be done in Ruby). Instead, the introspection
+treats every defined parameter as being of `Any` type.
 
 The default introspection supports arguments with default values (optional arguments), and
 that the last argument accepts spillover arguments (varargs). It is not allowed to follow
@@ -100,7 +101,7 @@ an error message is shown like this:
 
     function 'myfunc' called with mis-matched arguments
       expected:
-        myfunc(Object a, Object b, Object c?, Object d{0,}) - arg count {2,}
+        myfunc(Any a, Any b, Any c?, Any d{0,}) - arg count {2,}
       actual:
         myfunc(Integer) - arg count {1}
 
@@ -110,15 +111,12 @@ This is shown at the end as a short hand (`{2,}` means 2 or more). The optionali
 is also shown for each parameter (a `?` denotes this), and at the end, the parameter `d` accepts
 0 or more values as denoted by {0,}.
 
-If we want to assert other types than `Object`, a little more work is required. Note that
-the Puppet type `Object` was chosen and this type does not accept undefined values (if undefined
-values should be allowed this is handled by specifying the type `Optional[T]` when the
-type information is defined.
+If we want to assert other types than `Any`, a little more work is required.
 
 ### Defining a Typed Dispatch
 
 The act of directing a call of the function to the correct method is called dispatching. In the
-simple case, a default dispatcher was defined (all parameters are of Object type). While this is
+simple case, a default dispatcher was defined (all parameters are of Any type). While this is
 convenient we most often want automatic checking of the arguments type. We may also want
 to direct the call to different methods depending on the given argument types as this makes
 it a lot easier to implement a function cleanly (we may want a function to operate quite differently
@@ -182,7 +180,7 @@ they do not have to be exactly the same - this is legal
     dispatch :special do
       param 'Numeric', 'a'
       param 'Numeric', 'b'
-      param 'Object', 'rest'
+      param 'Any', 'rest'
       arg_count 1, :default
     end
     
@@ -191,7 +189,7 @@ they do not have to be exactly the same - this is legal
   
 Here, for implementation reasons it is wanted that all arguments are passed in one array
 to the special method but in the eyes of the user we want it to have one required `Numeric`,
-one optional `Numeric`, and then an optional amount of `Objects`.
+one optional `Numeric`, and then an optional amount of `Any`.
 
 ### Defining Type in the Dispatch call
 
