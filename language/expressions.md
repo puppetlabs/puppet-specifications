@@ -698,8 +698,8 @@ A comparison operator converts the result to a `Boolean`.
 
 Comparison involving type:
 
-* A type T is considered larger than (`>`) another type Q, if T is a wider (more general)
-  type. e.g. `Object > Integer` is true.
+* A type T is considered greater than (`>`) another type Q, if T is a wider (more general)
+  type. e.g. `Any > Integer` is true.
 * A type T is equal to another type Q if they describe the exact same type
 
 ### IN operator
@@ -1554,7 +1554,7 @@ Syntax:
 **Parameters**
 
 * Parameters may be optionally type by preceding them with a type expression
-* An untyped parameter defaults to `Optional[Variant[Object, Type]]`
+* An untyped parameter defaults to `Any`
 * The last parameter may optionally be marked as *captures rest* when prefixed with a *splat* `*`
 * A parameter with a default value expression may not appear to the left of one without
  
@@ -1715,7 +1715,7 @@ there are no more parts.
 
 ### unless (else) expression
 
-Undef is the equivalence of `if !(TestExpression)`, but does not have an `'elsif'` or (fictitous) `elsunless` part.
+Unless is the equivalent of `if !(TestExpression)`, but does not have an `'elsif'` or (fictitous) `elsunless` part.
 
 Syntax:
 

@@ -369,12 +369,13 @@ elements:
 
 | Reserved Names / Types
 | ---
-| object, Object
+| any, Any
 | hash, Hash
 | array, Array
 | integer, Integer
 | float, Float
 | collection, Collection
+| scalar, Scalar
 | resource, Resource
 | string, String
 | pattern, Pattern
@@ -392,8 +393,6 @@ elements:
 | struct, Struct
 | tuple, Tuple
 | optional, Optional
-
-**TODO** Decision on AbstractType
 
 While the lower case names are perfectly fine to use (they have no special meaning) when
 using them as names of classes, or user defined defined resource types, the name clashes
