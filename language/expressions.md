@@ -1582,6 +1582,7 @@ Functions that allow being called using statement style:
     realize
     include
     contain
+    tag
 
     # logging
     debug
