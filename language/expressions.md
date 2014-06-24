@@ -283,7 +283,7 @@ Operators
 
 * Performs a concatenate/merge if the LHS is an Array or Hash
 * Adds LHS and RHS numerically otherwise
-  * LHS and RHS are converted from String to Numeric
+  * LHS and RHS are converted from String to Numeric (see [the section on Numeric Conversions][1] in Conversions and Promotions)
   * Operation fails if LHS or RHS are not numeric or conversion failed
 * Is not cumulative for non numeric/string operands ( `[1,2,3] + 3` is not the same as `3 + [1,2,3]`,   
   and `[1,2,3] + [4,5,6]` is not the same as `[4,5,6] + [1,2,3]` )
@@ -328,7 +328,7 @@ Examples
 
 * Performs a delete if the LHS is an `Array` or `Hash`
 * Subtracts RHS from LHS otherwise
-  * LHS and RHS are converted to `Numeric`
+  * LHS and RHS are converted to `Numeric` (see [the section on Numeric Conversions][1] in Conversions and Promotions)
   * Operation fails if LHS or RHS are not numeric or conversion failed
 * Is (by definition) not cumulative
   
@@ -368,7 +368,7 @@ Examples:
      UnaryMinusExpression : '-' Expression<R> ;
 
 * Changes the sign of the operand
-  * RHS is converted to Numeric
+  * RHS is converted to `Numeric` (see [the section on Numeric Conversions][1] in Conversions and Promotions)
   * Operation fails if RHS is not numeric or if conversion failed
 
 ### * operator
@@ -376,7 +376,7 @@ Examples:
      MultiplicationExpression : Expression<R> '*' Expression<R> ;
 
 * Multiplies LHS and RHS
-  * LHS and RHS are converted to Numeric
+  * LHS and RHS are converted to `Numeric` (see [the section on Numeric Conversions][1] in Conversions and Promotions)
   * Operation fails if LHS or RHS are not numeric or if conversion failed
 
 Multiplication of integer values produces an integer result. If one of the operands is a Float the
@@ -406,7 +406,7 @@ Example:
      DivisionExpression : Expression<R> '/' Expression<R> ;
 
 * Divides LHS by RHS
-  * LHS and RHS are converted to `Numeric`
+  * LHS and RHS are converted to `Numeric` (see [the section on Numeric Conversions][1] in Conversions and Promotions)
   * Operation fails if LHS or RHS are not numeric or conversion failed
   * Division by 0 is an error
 
@@ -418,7 +418,7 @@ If one of the operands is a `Float` the result is also a `Float`.
      ModuloExpression : Expression<R> '%' Expression<R> ;
 
 * Produces the remainder (modulo) of dividing LHS by RHS
-  * LHS and RHS are converted to `Numeric`
+  * LHS and RHS are converted to `Numeric` (see [the section on Numeric Conversions][1] in Conversions and Promotions)
   * Operation fails if LHS or RHS are not `Integer` or if conversion failed
   * Modulo by 0 is an error
   
@@ -430,7 +430,7 @@ Note that `%` is not supported for `Float` (an error is raised) as this creates 
 
 * Performs an *append* if the LHS is an `Array`
 * Performs *binary left shift* of the LHS by the RHS count of shift steps otherwise
-  * LHS and RHS are converted to `Numeric`
+  * LHS and RHS are converted to `Numeric` (see [the section on Numeric Conversions][1] in Conversions and Promotions)
   * Operation fails if LHS or RHS are not `Integer` or if conversion failed
   * A left shift of a negative count reverses the shift direction
 
@@ -459,7 +459,7 @@ Examples:
      RightShiftExpression : Expression<R> '>>' Expression<R> ;
 
 * Performs right shift of the LHS by the RHS count of shift steps otherwise
-  * LHS and RHS are converted to `Numeric`
+  * LHS and RHS are converted to `Numeric` (see [the section on Numeric Conversions][1] in Conversions and Promotions)
   * Operation fails if LHS or RHS are not `Integer` or if conversion failed
   * A right shift of a negative count reverses the shift direction
 
@@ -522,7 +522,7 @@ Equality and Comparison Operators
 
 Tests if LHS is equal to RHS and produces a Boolean.
 
-* If LHS and RHS are convertable to `Numeric`, the equality checks is based on the `Numeric` value
+* If LHS and RHS are convertable to `Numeric`, the equality checks is based on the `Numeric` value (see [the section on Numeric Conversions][1] in Conversions and Promotions)
 * If one of LHS or RHS is convertable to `Numeric`, but not the other, the result is `false`
 * String comparison is done case independently.
   * **Case independence is only done for the /[A-Z]/ character range** as the rest of
@@ -665,7 +665,7 @@ A comparison operator converts the result to a `Boolean`.
 
 #### Comparison Semantics per Type
 
-* If both LHS and RHS are convertible to `Numeric` the comparison is based on the numeric values
+* If both LHS and RHS are convertible to `Numeric` the comparison is based on the numeric values (see [the section on Numeric Conversions][1] in Conversions and Promotions)
 * Comparisons of strings is case independent
   * **Case independence is only done for the /[A-Z]/ character range** as the rest of
     the characters' status depends on Locale. [PUP-1800]
@@ -1886,3 +1886,5 @@ Example:
 **Option Support for Unfold/Splat**
 
 The Selector Expression supports unfold/splat the same way as in Case Expression.
+
+[1]: types_values_variables.md#string-tofrom-numeric-conversions
