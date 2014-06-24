@@ -827,8 +827,10 @@ strict variables feature is turned off, a reference to such a variable results i
 
 Conversions and Promotions
 ===
-The Puppet Programming Language is in general dynamically typed (everything is an Any unless declared otherwise). There are various operators that perform type coercion / transformation
-if required and when possible, there are functions that perform explicit type conversion,
+The Puppet Programming Language is in general dynamically typed (everything is
+an Any unless declared otherwise). There are various operators that perform
+type conversion.
+If required and when possible, there are functions that perform explicit type conversion,
 and there are typed parameters that will perform type conversion when required and possible.
 
 The exact conversions are documented per language feature. This section describes the general
@@ -838,33 +840,45 @@ Numeric Conversions
 ---
 * When arithmetic operations are done on `Numeric` types - if one or both operands
   are of `Float` type, the result is also of `Float` type.
-  
+
 * There are never any under or overflow when performing integer arithmetic. The implementation
   handles automatic conversion from 32 to 64 bit numbers to bignum.
-  
-String to-from Numeric Conversion
+
+String to/from Numeric Conversion
 ---
+
+Automatic conversion between `String` and `Numeric` values are performed only
+for certain operations. Only arithmetic operations, comparison, and interpolations
+will cause an automatic conversion to occur.
 
 * Arithmetic operations are done on `Numeric` types - if an operand is a `String` an attempt is made
   to transform it into numeric form (rather than giving up immediately).
 
-* `String` to `Numeric` conversion also takes place for typed parameter assignment.
+* Explicit conversion from `Numeric` to `String` can be performed by calling the `sprintf` function.
 
-* Numbers are not generally transformed to strings (since this requires knowledge of
-  radix). They are transformed using radix 10 when interpolated into a string.
-  
-* Explicit conversion from `Numeric` to `String` is performed by calling the `sprintf` function.
+* `Numeric` values are transformed to their radix 10 representation when interpolated into a string.
 
-* Interpolation of non `String` values into a string uses default conversion to
-  String. See the following table for the string conversions for specific
-  types.
+* For a `String` to be converted into a `Numeric` the entire string must conform
+to the `CONVERTABLE_STRING` grammar. The `NUMBER` is interpreted in the same manner as the rest of the language with respect to radix. The resulting `Numeric` value is positive, unless a `SIGN` was specified, in which case the value has the specified sign.
+
+```
+CONVERTABLE_STRING
+  : BLANK? (SIGN BLANK?)? NUMBER BLANK?
+  ;
+
+BLANK
+  : /[[:blank:]]+/
+  ;
+
+SIGN
+  : '+'
+  : '-'
+  ;
+```
+
 
 <table>
 <tr><th>Note</th></tr>
-<tr><td>  
-  It is questionable if String to Numeric conversion should take place when matching types. (It is
-  not implemented that way). TODO: Discuss.
-</tr></td>
 <tr><td>  
   Automatic String to Number conversion may be deprecated and removed in a future version
   of the specification.
