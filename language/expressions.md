@@ -283,10 +283,8 @@ Operators
 
 * Performs a concatenate/merge if the LHS is an Array or Hash
 * Adds LHS and RHS numerically otherwise
-  * LHS and RHS are coerced from String to Numeric
-  * Operation fails if LHS or RHS are not numeric or coercion failed
-  * Coercion of String to Numeric is made with the radix of the String based on its prefix (`0x` is 
-    hex, and a `0` not followed by `.` is octal.
+  * LHS and RHS are converted from String to Numeric
+  * Operation fails if LHS or RHS are not numeric or conversion failed
 * Is not cumulative for non numeric/string operands ( `[1,2,3] + 3` is not the same as `3 + [1,2,3]`,   
   and `[1,2,3] + [4,5,6]` is not the same as `[4,5,6] + [1,2,3]` )
   
@@ -330,11 +328,8 @@ Examples
 
 * Performs a delete if the LHS is an `Array` or `Hash`
 * Subtracts RHS from LHS otherwise
-  * LHS and RHS are coerced to `Numeric`
-  * Operation fails if LHS or RHS are not numeric or coercion failed
-  * Coercion of `String` to `Numeric` is made with the radix of the String based on its
-    prefix (`0x` is hex, and `0` that is not followed by `.` is octal, otherwise decimal).
-
+  * LHS and RHS are converted to `Numeric`
+  * Operation fails if LHS or RHS are not numeric or conversion failed
 * Is (by definition) not cumulative
   
 #### Subtraction
@@ -373,21 +368,16 @@ Examples:
      UnaryMinusExpression : '-' Expression<R> ;
 
 * Changes the sign of the operand
-  * RHS is coerced to Numeric
-  * Operation fails if RHS is not numeric or if coercion failed
-  * Coercion of String to Numeric is made with the radix of the String based on its prefix (`0x` is
-    hex, and non decimal `0` is octal).
-
+  * RHS is converted to Numeric
+  * Operation fails if RHS is not numeric or if conversion failed
 
 ### * operator
 
      MultiplicationExpression : Expression<R> '*' Expression<R> ;
 
 * Multiplies LHS and RHS
-  * LHS and RHS are coerced to Numeric
-  * Operation fails if LHS or RHS are not numeric or if coercion failed
-  * Coercion of String to Numeric is made with the radix of the String based on its prefix (`0x` is
-    hex, and non decimal `0` is octal).
+  * LHS and RHS are converted to Numeric
+  * Operation fails if LHS or RHS are not numeric or if conversion failed
 
 Multiplication of integer values produces an integer result. If one of the operands is a Float the
 result is also a Float. Integrals does not overflow.
@@ -416,10 +406,8 @@ Example:
      DivisionExpression : Expression<R> '/' Expression<R> ;
 
 * Divides LHS by RHS
-  * LHS and RHS are coerced to `Numeric`
-  * Operation fails if LHS or RHS are not numeric (coercion failed)
-  * Coercion of `String` to `Numeric` is made with the radix of the String based on its prefix
-    (`0x` is hex, and `0` not followed by `.` is octal, decimal otherwise).
+  * LHS and RHS are converted to `Numeric`
+  * Operation fails if LHS or RHS are not numeric or conversion failed
   * Division by 0 is an error
 
 Division of integer values produces an integer result (without rounding).
@@ -430,8 +418,8 @@ If one of the operands is a `Float` the result is also a `Float`.
      ModuloExpression : Expression<R> '%' Expression<R> ;
 
 * Produces the remainder (modulo) of dividing LHS by RHS
-  * LHS and RHS are coerced to `Numeric`
-  * Operation fails if LHS or RHS are not `Integer` or if coercion to `Numeric` failed
+  * LHS and RHS are converted to `Numeric`
+  * Operation fails if LHS or RHS are not `Integer` or if conversion failed
   * Modulo by 0 is an error
   
 Note that `%` is not supported for `Float` (an error is raised) as this creates very confusing results.
@@ -442,10 +430,8 @@ Note that `%` is not supported for `Float` (an error is raised) as this creates 
 
 * Performs an *append* if the LHS is an `Array`
 * Performs *binary left shift* of the LHS by the RHS count of shift steps otherwise
-  * LHS and RHS are coerced to `Numeric`
-  * Operation fails if LHS or RHS are not `Integer` or if coercion to `Numeric` failed
-  * Coercion of `String` to `Numeric` is made with the radix of the String based on its prefix
-    (`0x` is hex, and `0` not followed by `.` is octal, decimal otherwise).
+  * LHS and RHS are converted to `Numeric`
+  * Operation fails if LHS or RHS are not `Integer` or if conversion failed
   * A left shift of a negative count reverses the shift direction
 
 #### Left Shift
@@ -473,10 +459,8 @@ Examples:
      RightShiftExpression : Expression<R> '>>' Expression<R> ;
 
 * Performs right shift of the LHS by the RHS count of shift steps otherwise
-  * LHS and RHS are coerced to `Numeric`
-  * Operation fails if LHS or RHS are not `Integer` or if coercion to `Numeric` failed
-  * Coercion of `String` to `Numeric` is made with the radix of the `String` based on its prefix
-    (`0x` is hex, and `0` not followed by `.` is octal, decimal otherwise).
+  * LHS and RHS are converted to `Numeric`
+  * Operation fails if LHS or RHS are not `Integer` or if conversion failed
   * A right shift of a negative count reverses the shift direction
 
 Right shift is performed on `Integer` numbers. The LHS is shifted the given amount of bits to the
@@ -538,8 +522,8 @@ Equality and Comparison Operators
 
 Tests if LHS is equal to RHS and produces a Boolean.
 
-* If LHS and RHS are coercible to `Numeric`, the equality checks is based on numeric value
-* If LHS or RHS is coercible to `Numeric`, but not the other, the result is `false`
+* If LHS and RHS are convertable to `Numeric`, the equality checks is based on the `Numeric` value
+* If one of LHS or RHS is convertable to `Numeric`, but not the other, the result is `false`
 * String comparison is done case independently.
   * **Case independence is only done for the /[A-Z]/ character range** as the rest of
     the characters' status depends on Locale. [PUP-1800]
@@ -600,7 +584,7 @@ When the RHS is not a `Type`:
 * If the RHS evaluates to a `String` a new Regular Expression is created with the string value
   as its pattern.
 * If the RHS is not a `Regexp` (after string conversion) an error is raised.
-* If the LHS is not a `String` an error is raised. (Note, `Numeric` values are **not** coerced to
+* If the LHS is not a `String` an error is raised. (Note, `Numeric` values are **not** converted to
   `String` automatically because of unknown radix).
 
 The numeric variables $0-$n are set as follows when RHS is not a type:
@@ -681,7 +665,7 @@ A comparison operator converts the result to a `Boolean`.
 
 #### Comparison Semantics per Type
 
-* If both LHS and RHS are coercible to `Numeric` the comparison is based on the numeric values
+* If both LHS and RHS are convertible to `Numeric` the comparison is based on the numeric values
 * Comparisons of strings is case independent
   * **Case independence is only done for the /[A-Z]/ character range** as the rest of
     the characters' status depends on Locale. [PUP-1800]
@@ -735,7 +719,7 @@ The following table shows the result of searching for a LHS of a particular type
 | LHS         | RHS       | Description |
 |------       |------     |------       |
 | `String`    | `String`    | searches for the LHS string as a substring in RHS (LHS and RHS downcased), `true` if a substring is found. Also see [PUP-1800] regarding case. |
-| `Number`    | `String`    | is only true if the RHS coerced to number equals the number |
+| `Number`    | `String`    | is only true if the RHS converted to number equals the number |
 | `Regexp`    | `String`    | true if the string matches the Regexp (`=~`) |
 | `Type`      | `String`    | `false` |
 | *any other* | `String`    | `false` |
