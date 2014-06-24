@@ -848,15 +848,13 @@ String to/from Numeric Conversion
 ---
 
 Automatic conversion between `String` and `Numeric` values are performed only
-for certain operations. Arithmetic operations, comparison, and interpolations
-will cause a conversion to occur. No other cases will convert between `String`
-values and `Numeric` values, such as typed parameter assignment and function
-calls.
+for certain operations. Only arithmetic operations, comparison, and interpolations
+will cause an automatic conversion to occur.
 
 * Arithmetic operations are done on `Numeric` types - if an operand is a `String` an attempt is made
   to transform it into numeric form (rather than giving up immediately).
 
-* Explicit conversion from `Numeric` to `String` is performed by calling the `sprintf` function.
+* Explicit conversion from `Numeric` to `String` can be performed by calling the `sprintf` function.
 
 * `Numeric` values are transformed to their radix 10 representation when interpolated into a string.
 
@@ -866,6 +864,7 @@ to the `CONVERTABLE_STRING` grammar. The `NUMBER` is interpreted in the same man
 ```
 CONVERTABLE_STRING
   : BLANK? (SIGN BLANK?)? NUMBER BLANK?
+  ;
 
 BLANK
   : /[[:blank:]]+/
