@@ -692,7 +692,11 @@ The `in` operator tests if the LHS operand can be found in the RHS operand. Both
 are evaluated before conducting the test. The result produces a `Boolean` indicating if the LHS
 was considered to be in the RHS.
 
-* A search using regular expression does not affect the match variables `$0`-`$n`
+When a search using the `in` operator is performed with a regular expression,
+the match variables `$0`-`$n` will contain the values from the first successful
+match. When matching against an `Array`, this will be the element of the
+`Array` with the lowest index, whose value matches the regular expression. When
+matching against a `Hash` the keys are searched in an undefined order.
 
 Syntax:
 
