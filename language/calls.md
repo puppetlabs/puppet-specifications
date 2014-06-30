@@ -89,7 +89,7 @@ In call-by-position:
 <tr><th>Note</th></tr>
 <td>
   In a future version of the specification, it will be allowed to access the values
-  of parameters to the left of a parameter's default value expression.
+  of parameters to the left of a parameter's default value expression. PUP-1985.
 </td>
 </table>
 
@@ -131,6 +131,6 @@ In call-by-name:
 </td></tr>
 <tr><td>
   In a future version of the specification, it will be allowed to access the values
-  of parameters to the left of a parameter's default value expression.
+  of parameters to the left of a parameter's default value expression. PUP-1985.
 </td></tr>
 </table>
