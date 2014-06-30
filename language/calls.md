@@ -57,6 +57,7 @@ Parameters are always specified in a Parameter List as shown in the following gr
 * The default value expression allows specification of a value to be used in case there is no 
   argument given for that parameter (missing argument).
 * A default value expression must be compliant with the parameter's type (or an error is raised).
+* A default value expression may not introduce new variables.
 
 Argument Passing
 ---
