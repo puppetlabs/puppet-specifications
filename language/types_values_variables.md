@@ -732,25 +732,52 @@ until infinity.
 
 ### Callable[signature]
 
-Callable is the type of callable elements; functions and lambdas. The Callable type
-has little practical use in the Puppet Language until there is support for functions written
-in the Puppet Language. They of importance for those that write functions in Ruby and what to type
-check lambdas that are given as arguments to functions in Ruby.
+`Callable` is the type of callable elements; functions and lambdas. The `Callable` type
+will typically not be used literally in the Puppet Language until there is support for
+functions written in the Puppet Language.
+`Callable` is of importance for those that write functions in Ruby and want to type
+check lambdas that are given as arguments to functions in Ruby. They are also important
+in error messages when communicating why a given set of arguments do not match a signature.
 
-The signature of a Callable denotes the type and multiplicity of the arguments it accepts and consists of a sequence of parameters consisting of a list of types, where the three last entries may be optionally followed by min, max count, and a `Callable` which is taken as its block_type.
+The signature of a `Callable` denotes the type and multiplicity of the arguments it accepts and consists of a sequence of parameters; a list of types, where the three last entries may optionally be min count, max count, and a `Callable` (which is taken as its block_type).
 
 * If neither min or max are specified the parameters must match exactly.
 * A min < size(params) means that the difference is optional. 
 * If max > size(params) means that the last type repeats until the given max cap number of arguments
 * if max is literal `default`, the max value is unbound (+Infinity).
+* If no types and no min/max are given, the Callable describes the a callable without parameters, it 
+  may also be entered as `Callable[0,0]`.
+* If no types are given, and the min/max count is not `[0,0]`, then the callable describes only the
+  untyped arity and it places no constraints on the parameter types, e.g. `Callable[2,2]` means
+  callable with 2 parameters.
+
 
 #### Type Algebra on Callable
 
-Internally the Callable is represented by a Tuple, and an optional Callable. Type algebra is
-performed on these individually.
+`Callable` type algebra is different from other types as it seems to work in reverse. This is because its purpose is to describe the *callability* of the instance, not its essence (even if the type
+serves dual purpose by simply reversing the comparison).
+As an example, a lambda that is `Callable[Numeric]` can be called with one
+argument being a `Numeric`, `Float`, or an `Integer`, but not with a `Scalar`, or `Any`. Thus, while it seems intuitive that a `Callable[Integer`] should be assignable to a `Callable[Any]` (since `Any` is a wider type), this is not true because it cannot be called with an `Any`. **The reason for checking the type of a callable is to detect if it can be called a certain way** - thus `assignable?(Callable[Any], Callable[Integer])` really is a declaration that there is an *intent to call* the callable with one `Any` argument (which it does not accept).
 
-    Callable         ∪  Callable            → Callable
-    Callable[?]      ∪  T (T ∉ Callable)    → Any
+This also means that generality works the opposite way; `Callable[String] ∪ Callable[Scalar]` yields `Callable[String]` - since both can be called with a `String`, but not with any `Scalar`.
+
+Internally the `Callable` is represented by a `Tuple`, and an optional `Callable` (block). Type algebra is performed on these individually.
+
+    Callable         ∪  Callable                         → Callable[0,default]
+    Callable[?]      ∪  T (T ∉ Callable)                 → Any
+    Callable[D]      ∪  Callable[E (E == D)]             → Callable[D]
+    Callable[D]      ∪  Callable[E (E > D)]              → Callable[D]
+    Callable[D]      ∪  Callable[E (E < D)]              → Callable[E]
+    Callable[D]      ∪  Callable[E (!(E >= D || E < D))] → Callable
+
+Here the parameter letter denotes the full callable specification (tuple and block):
+
+The rationale of the last expression is that two disjunct callables cannot be called
+in a common way e.g. `Callable[Array] ∪ Callable[Integer]` cannot be called with exactly
+the same argument, since no such argument exists.
+
+In general:
+
 
     B ∈ Callable
     C ∈ Callable
@@ -758,11 +785,26 @@ performed on these individually.
     T ∈ Tuple[Y]
     Callable[*S, B]  ∪  Callable[*T, C]    → Callable[*(S ∪ T), B ∪ C]
 
-Here `*S`, `*T` denotes, the syntax of the Tuple parameters expanded.
+Here `*S`, `*T` denotes, the syntax of the `Tuple` parameters expanded.
 
-As an example:
 
-    Callable[String] ∪ Callable[Numeric] → Callable[Scalar]
+Examples:
+
+    Callable[String] ∪ Callable[Scalar]  → Callable[String]
+    Callable[String] ∪ Callable[Numeric] → Callable
+    
+    A ∈ Callable[String, Callable[String]]
+    B ∈ Callable[Scalar, Callable[Scalar]]
+    A ∪ B → Callable[String, Callable[String]]
+
+<table>
+<tr><th>Note</th></tr>
+<tr><td>
+A future version of the spec may provide a better generalization of two callables such
+that it either preserves the arity, or that a <tt>Variant</tt> of the two callables is
+produced. This change will be made if the distinction has practical value.
+</td></tr>
+</table>
 
 Operations per Type
 ---
