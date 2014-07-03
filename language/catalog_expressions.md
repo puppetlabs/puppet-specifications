@@ -262,7 +262,7 @@ the derived class.
        : Expression<ResourceType>
        | Expression<Array<ResourceType>>
        ;
-       
+
 ** Attribute Operations **
 
 * **When the referenced resource is instantiated in a class inherited by the current class:**
@@ -399,16 +399,20 @@ Whereas the example below results in syntax-error, because the relationship expr
 
 Collector Expressions
 ---
-Collector Expressions are used to query for resource and invoke operations on them. The set of available operations are limited to:
 
-* Using a Collector Expressions as an operand in a relationship expression (forming relationships 
-  with the resources returned by the query) and other resources.
-* To realize virtual resources returned by the query
-* To import externally provided resources into the compiled catalog
-* It is also possible to override attributes of the resources returned by the query.
+Collector Expressions are used to query for available virtual (`<| |>`) or
+exported and virtual (`<<| |>>`) resources, modify parameters, and realize the
+resources into the catalog.
 
-There are two operators (nicknamed the spaceship operator) `<| |>` which queries for virtual
-resources, and `<<| |>>` which queries for external resources.
+Collector Expressions are Q-value producing expressions. However Collector
+Expressions can take part in Relationship Expressions, where all resources that
+the collection realizes have the Relationship Expression applied. If the query
+does not produce any matching resources and used in a relationship, then the
+relationship expression is a no-op.
+
+Overrides apply to all resources that match the Query and are applied at the
+time the resources are realized into the catalog. Overrides are only applied to
+any given resource one time.
 
     CollectorExpression
        : QualifiedRefererence QueryPart ('{' OverrideAttributeOperations '}')?
@@ -436,48 +440,13 @@ resources, and `<<| |>>` which queries for external resources.
 
 It is worth noting that:
 
-* It is not possible to include general purpose expressions as values (as shown in the EBNF above).
-* It is not possible to use arrays and hashes as query values
+* It is not possible to include general purpose expressions as values (as shown
+  in the EBNF above).
+* It is not possible to use arrays and hashes as query values.
 
-Rules:
+The semantics of the Query is implementation dependent. However any implementation must accommodate:
 
-* If the `attr_name` is `tag`, a search is given for the `query_value` if it is `==` (in), or
-  `!=` (not in) the set of tags associated with the resource. This is the only attribute that
-  supports searching for a value in an array.
-* Comparisons are strictly `==` or `!=` with a single value (except for the `attr_name` of `tag`)
-* The semantics of equality (`==`), and non-equality (`!=`) is defined by the backend
-  handling "storage  configs" (a simple file based backend, PuppetDB, or some other provider   
-  implementing the same API).   
-  **All Backends may not work the same way**
-  
-* If the query does not produce any matching resources:
-  * and used in a relationship, then the relationship expression is a no-op
-  * and used to override attribute values nothing is changed
-  * there is no way of reacting to an empty set being returned
-
-** Order of Evaluation **
-
-* The expression, when evaluated will transform the expression into 3x form and register it
-  with the compiler. (Nothing is evaluated per se, it is only transformed).
-* The compiler runs (and may re-run) the query against the configured backend
-* The collector when executing realizes all resources it finds and keeps track of what it has
-  found so far (the specified operation; relationships, or resource attribute overrides) are only
-  applied once for any given resource.
-
-** Overrides **
-
-Overrides are not restricted (the same way that the Resource Override Expression is) as it
-may both amend and override set values irrespective of where the resources were instantiated.
-
-NOTES:
-
-* LHS must be a QualifiedReference, it could just as well be a Expression<Resource>, thus
-  allowing things like $a <| |>. This can be done even if the result is transformed to 3x,
-  but requires evaluation of the LHS rather than just transformation. TODO: LOG ISSUE
-* Make note that the expression is transformed to 3x
-* Make note that query capabilities are limited due to the expressions being sent via an API to
-  an external "engine" and it is a big thing to enhance the features of these queries.
-* Make note that due to the lazy evaluation it is not possible to get the result and react to
-  query producing an empty result set. This can be solved by accepting a lambda receiving
-  the result as an array (an empty array if there were no matches). (This in turn requires closures
-  and will not be implemented in 4x.)
+* The evaluator may re-run the query against the configured backend many times.
+* The collector when executing realizes all resources it finds and keeps track
+  of what it has found so far (the specified operation; relationships, or
+  resource attribute overrides) are only applied once for any given resource.
