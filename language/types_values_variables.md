@@ -735,7 +735,7 @@ until infinity.
 `Callable` is the type of callable elements; functions and lambdas. The `Callable` type
 will typically not be used literally in the Puppet Language until there is support for
 functions written in the Puppet Language.
-`Callable` is of importance for those that write functions in Ruby and want to type
+`Callable` is of importance for those who write functions in Ruby and want to type
 check lambdas that are given as arguments to functions in Ruby. They are also important
 in error messages when communicating why a given set of arguments do not match a signature.
 
