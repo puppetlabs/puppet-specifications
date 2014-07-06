@@ -163,6 +163,10 @@ may appear more than once in the hierarchy, typically with different narrower ty
 
 In addition to these types, a Qualified Reference that does not represent any of the other types is interpreted as `Resource[the_qualified_reference]` (e.g. `File` is shorthand notation for `Resource[File]` / `Resource[file]`).
 
+The descriptions use [Set Algebra Notation][1] to describe properties / operations on types.
+
+[1]: intro.md#set-algebra-notation
+
 Runtime Types
 ---
 
