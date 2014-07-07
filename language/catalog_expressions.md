@@ -400,13 +400,13 @@ Whereas the example below results in syntax-error, because the relationship expr
 Collector Expressions
 ---
 
-Collector Expressions are used to query for *any* available resource with (`<| |>`), or
+Collector Expressions are used to query for *any* available resources (`<| |>`), or
 exported and virtual (`<<| |>>`) resources, modify parameters, and realizes any matched
 unrealized resources into the catalog.
 
 **NOTE** The `<| |>` operator collects all kinds of resources, regular and virtual
-as well as exported that are created during the compilation. The `<<| |>>` only
-matches exported resources, both those created during the compilation and those
+as well as exported that are created during the catalog production. The `<<| |>>` only
+matches exported resources, both those created during the current catalog production and those
 that are exported from other nodes.
 
 Collector Expressions are Q-value producing expressions. However Collector
@@ -416,8 +416,8 @@ does not produce any matching resources and used in a relationship, then the
 relationship expression is a no-op.
 
 Overrides apply to all resources that match the Query. Overrides are only applied to
-any given resource once by a given query, multiple queries that match the
-same resource modifies it once per query (and depends on the implementation's
+any given resource once by a given query. Multiple queries that match the
+same resource modify it once per query (and depends on the implementation's
 evaluation order).
 
     CollectorExpression
