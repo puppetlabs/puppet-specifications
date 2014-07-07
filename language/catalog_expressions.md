@@ -400,19 +400,25 @@ Whereas the example below results in syntax-error, because the relationship expr
 Collector Expressions
 ---
 
-Collector Expressions are used to query for available virtual (`<| |>`) or
-exported and virtual (`<<| |>>`) resources, modify parameters, and realize the
-resources into the catalog.
+Collector Expressions are used to query for *any* available resources (`<| |>`), or
+exported and virtual (`<<| |>>`) resources, modify parameters, and realizes any matched
+unrealized resources into the catalog.
+
+**NOTE** The `<| |>` operator collects all kinds of resources, regular and virtual
+as well as exported that are created during the catalog production. The `<<| |>>` only
+matches exported resources, both those created during the current catalog production and those
+that are exported from other nodes.
 
 Collector Expressions are Q-value producing expressions. However Collector
 Expressions can take part in Relationship Expressions, where all resources that
-the collection realizes have the Relationship Expression applied. If the query
+the collection matches have the Relationship Expression applied. If the query
 does not produce any matching resources and used in a relationship, then the
 relationship expression is a no-op.
 
-Overrides apply to all resources that match the Query and are applied at the
-time the resources are realized into the catalog. Overrides are only applied to
-any given resource one time.
+Overrides apply to all resources that match the Query. Overrides are only applied to
+any given resource once by a given query. Multiple queries that match the
+same resource modify it once per query (and depends on the implementation's
+evaluation order).
 
     CollectorExpression
        : QualifiedRefererence QueryPart ('{' OverrideAttributeOperations '}')?
