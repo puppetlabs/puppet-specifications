@@ -96,3 +96,43 @@ ASequenceOfNames
   ;
   
 ```
+### Set Algebra Notation
+
+Algebra notation is used in the specification to describe the operations on
+types as well as other logical constructs. Here is a repetition of the set theory notations
+used in this specification:
+
+`X` is *member of* (the set `Y`) (can be read as `exists in`)
+
+    X ∈ Y
+
+`X` is *not member of* (the set `Y`) (can be read as `exists in`)
+
+    X ∉ Y
+
+The *union* of `X` and `Y` (all that are in `X`, in `Y`, or in both)
+
+    X ∪ Y
+    
+The intersection of `X` and `Y` (all that are in both `X` and `Y`)
+
+    X ∩ Y
+    
+Implies, gives, produces (depending on context)
+
+    →
+    
+The empty set
+
+    ∅
+
+    
+#### Examples:
+
+The union of the type Integer and the type Float is Numeric:
+
+    Integer ∪ Float → Numeric
+
+This means that if there is a collection of objects that consist of integers and float
+(but no instances of any other type), then the collection is of
+`Collection[Numeric]` types.
