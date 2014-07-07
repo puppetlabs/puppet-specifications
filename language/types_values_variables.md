@@ -745,8 +745,8 @@ The signature of a `Callable` denotes the type and multiplicity of the arguments
 * A min < size(params) means that the difference is optional. 
 * If max > size(params) means that the last type repeats until the given max cap number of arguments
 * if max is literal `default`, the max value is unbound (+Infinity).
-* If no types and no min/max are given, the Callable describes the a callable without parameters, it 
-  may also be entered as `Callable[0,0]`.
+* If no types and no min/max are given, the Callable describes any callable i.e. `Callable[0, default]` (i.e. no type constraint, and any number of parameters).
+* `Callable[0,0]` is a callable that does not accept parameters
 * If no types are given, and the min/max count is not `[0,0]`, then the callable describes only the
   untyped arity and it places no constraints on the parameter types, e.g. `Callable[2,2]` means
   callable with 2 parameters.
