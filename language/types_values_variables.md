@@ -755,7 +755,7 @@ The signature of a `Callable` denotes the type and multiplicity of the arguments
 #### Type Algebra on Callable
 
 `Callable` type algebra is different from other types as it seems to work in reverse. This is because its purpose is to describe the *callability* of the instance, not its essence (even if the type
-serves dual purpose by simply reversing the comparison).
+serves dual purpose by simply reversing the comparison). (This is known as [Contravariance][3] in computer science).
 As an example, a lambda that is `Callable[Numeric]` can be called with one
 argument being a `Numeric`, `Float`, or an `Integer`, but not with a `Scalar`, or `Any`. Thus, while it seems intuitive that a `Callable[Integer`] should be assignable to a `Callable[Any]` (since `Any` is a wider type), this is not true because it cannot be called with an `Any`. **The reason for checking the type of a callable is to detect if it can be called a certain way** - thus `assignable?(Callable[Any], Callable[Integer])` really is a declaration that there is an *intent to call* the callable with one `Any` argument (which it does not accept).
 
@@ -805,6 +805,8 @@ that it either preserves the arity, or that a <tt>Variant</tt> of the two callab
 produced. This change will be made if the distinction has practical value.
 </td></tr>
 </table>
+
+[3]: http://en.wikipedia.org/wiki/Covariance_and_contravariance_(computer_science)#Function_types
 
 Operations per Type
 ---
