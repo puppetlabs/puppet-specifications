@@ -1541,7 +1541,7 @@ Syntax:
   
 **Parameters**
 
-* Parameters may be optionally type by preceding them with a type expression
+* Parameters may be optionally typed by preceding them with a type expression
 * An untyped parameter defaults to `Any`
 * The last parameter may optionally be marked as *captures rest* when prefixed with a *splat* `*`
 * A parameter with a default value expression may not appear to the left of one without
