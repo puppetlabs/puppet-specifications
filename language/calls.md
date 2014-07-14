@@ -38,21 +38,19 @@ Parameters are always specified in a Parameter List as shown in the following gr
       ;
       
     ParameterDeclaration
-      : private ?= 'private'? 
-        type = Expression<Type>? 
-        captures_rest = '*'?
-        VariableExpression 
-        ('=' default=Expression<R>)?
+      : type = Expression<Type>? 
+        vararg ?= '*'?
+        name = VariableExpression ('=' default_value = Expression<R>)?
       ;
 
     VariableExpression : VARIABLE ;
 
 * Parameters follow the naming rule for variables.
-* The meaning of 'private' is specific to the type of entity for which parameters are defined.
 * The type is an optional `Type` that a given argument must have to be acceptable. If no type
   is specified, the type defaults to `Any`.
-* The captures rest `'*'` indicates that the parameter accepts excess arguments. When the argument 
-  passing form (see call-by-position, and call-by-name) allows 'captures-rest', it must be placed
+* The vararg (captures-rest) `'*'` indicates that the parameter accepts excess arguments.
+  When the argument 
+  passing form (see pass-by-position, and pass-by-name) allows 'captures-rest', it must be placed
   last, and only one captures-rest parameter may be used.
 * The default value expression allows specification of a value to be used in case there is no 
   argument given for that parameter (missing argument).
@@ -61,23 +59,23 @@ Parameters are always specified in a Parameter List as shown in the following gr
 
 Argument Passing
 ---
-Argument passing is performed with one of the concepts **Call-By-Position**, or **Call-By-Name**. Function calls, and calls to lambdas are always done with Call-By-Position. Resource creation and EPP uses Call-By-Name. The resource defaults, and resource overrides use a variant of Call-By-Name that allows amending values with `+>` instead of just setting them with `=>`.
+Argument passing is performed with one of the concepts **Pass-By-Position**, or **Pass-By-Name**. Function calls, and calls to lambdas are always done with Pass-By-Position. Resource creation and EPP uses Pass-By-Name. The resource defaults, and resource overrides use a variant of Pass-By-Name that allows amending values with `+>` instead of just setting them with `=>`.
 
-### Call By Position
+### Pass By Position
 
-Call-By-Position transfers given arguments to parameters based on their position; the first (leftmost) 
+Pass-By-Position transfers given arguments to parameters based on their position; the first (leftmost) 
 given argument is given to the first (leftmost) defined parameter. The caller must know the
 order in which to present the arguments, it is not possible to direct a particular argument to
 a particular parameter based on the name of the parameter.
 
-In call-by-position:
+In pass-by-position:
 
 * All given values (including `undef`) counts as arguments with a value and these values
   are assigned to the corresponding parameters.
 * Only arguments not given at all results in a parameter having a missing argument, which leads to an 
   error (missing argument) unless the parameter has a default value expression (in which case the 
   result of evaluating that expression is used as the parameter's value).
-* A Parameter List for a Call-By-Position entity may not have a parameter with a default value
+* A Parameter List for a Pass-By-Position entity may not have a parameter with a default value
   expression to the left of one that requires a value.
 * A default value expression is evaluated in the called entity's closure (which for functions 
   is the global scope/module they are defined in, for lambdas the scope where they are defined/
@@ -93,9 +91,9 @@ In call-by-position:
 </td>
 </table>
 
-### Call By Name
+### Pass By Name
 
-Call-By-Name transfers given arguments to parameters based on their name; both arguments and
+Pass-By-Name transfers given arguments to parameters based on their name; both arguments and
 parameters are named in this style. In resource creation, resource defaults, and resource
 overrides, language syntax associates argument names with values - e.g. in a resource expression:
 
@@ -106,7 +104,7 @@ to the template are specified in a hash.
 
     epp('the_template', { x => 10, y => 20 })
     
-In call-by-name:
+In pass-by-name:
 
 * Only given values that are not `undef` counts as arguments with a value and these values
   are assigned to the corresponding parameters.
