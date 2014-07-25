@@ -545,13 +545,13 @@ When the RHS is not a `Type`:
 * If the LHS is not a `String` an error is raised. (Note, `Numeric` values are **not** converted to
   `String` automatically because of unknown radix).
 
-The numeric variables $0-$n are set as follows when RHS is not a type:
+The numeric variables `$0`-`$n` are set as follows when RHS is not a type:
 
-* $0 represents the entire matched (sub-) string
-* $1 represents the first (leftmost) capture group
-* $2-$n represents the subsequent capturing groups enumerated from left to right
+* `$0` represents the entire matched (sub-) string
+* `$1` represents the first (leftmost) capture group
+* `$2`-`$n` represents the subsequent capturing groups enumerated from left to right
 * Unmatched sections evaluate to `undef`
-* Numeric variables $0-$n are not visible from outer scopes
+* Numeric variables `$0`-`$n` are not visible from outer scopes
 * If a match is performed in an inner scope, it will obscure all numerical variables in outer scopes.
 
 The numeric match variables are in scope until the end of the block if the match is performed
@@ -797,7 +797,7 @@ The `[ ]` operator supports access to Resource instance attributes:
 
 The various forms are detailed in the following sub-sections.
 
-### Array Value []
+### Array Value [ ]
 
 Accepts two signatures:
 
@@ -845,7 +845,7 @@ Examples:
     [1,2,3,4][-5,-3] # => [1,2]
     [1,2,3,4][2,-3]  # => []
 
-### Hash Value []
+### Hash Value [ ]
 
 Signature:
 
@@ -872,7 +872,7 @@ Examples:
     
 Note that the result of using multiple keys results in a compacted array where all missing and explicit `undef` entries have been removed.
 
-### String Value []
+### String Value [ ]
 
 Access to characters in a string (a substring) has the following signature:
 
@@ -950,7 +950,7 @@ Examples:
     notice $1                        # => 'o'
     'x' =~ Regexp[/x/]               # => false 'x' is a String, not a Regexp
 
-#### Pattern Type []
+#### Pattern Type [ ]
 
 Creates a parameterized Pattern Type given one or more patterns. For more information see
 [Pattern Type]. (A Pattern type is a pattern based enumeration of acceptable string values).
@@ -1489,13 +1489,13 @@ Syntax:
 * A function may be called using any of the three styles (statement style is restricted to a given 
   list of functions, see below) - there is no difference in
   evaluation between them - only syntactical differences, and the varying support for
-  calls without no arguments, and passing an optional lambda.
-* Functions that are declared (in their 3x plugin logic) to be R-Value functions produce a value, 
-  those  that that are declared to be statements produce `undef` as their result.
+  calls without arguments, and passing an optional lambda.
+* Functions that are declared (in their 3x plugin logic) to be `:rvalue` functions produce a value,
+  those  that that are declared to be `:statement` produce `undef` as their result.
 * The 4x function API (for plugin Ruby functions) do not make a distinction between
   r-value and statement type, they all produce a value, and a function should produce
   Ruby nil (mapped to undef) if no other valid return value is suitable.
-* A function call is never an L-value (a function can not produce something that is assignable)
+* A function call is never an L-value (a function can not produce something that is assignable).
   
 **Parameters**
 
@@ -1512,10 +1512,10 @@ Syntax:
 * As shown in the grammar above, a `StatementStyleCall` requires an argument; a call without
   arguments requires use of one of the other two styles.
 * A function implementation may invoke the lambda that is given to it, but it may not use it after 
-  the function has returned (and it may not return the lambda)
+  the function has returned (and it may not return the lambda).
 * This stye cannot be used when the argument is a literal `Hash` because the expression is
   indistinguishable from a resource expression without title. **(PUP-979)**
-* A statement type call produces a Q-Value
+* A statement type call always produces `undef`.
   
 Example:
 
@@ -1548,7 +1548,6 @@ Functions that allow being called using statement style:
 * Requires parentheses around the 0-n arguments
 * Accepts an optional lambda
 * May appear anywhere where an Expression can appear
-* A Prefix style call produces an R-Value
 
 Example:
 
@@ -1563,7 +1562,6 @@ Example:
 * Any additional arguments (given within parentheses) are given to the function as argument 1-n)
 * Parentheses are required around additional arguments
 * Accepts an optional lambda after the (optional) argument list
-* A Postfix style call produces an R-Value
 
 Examples:
 
