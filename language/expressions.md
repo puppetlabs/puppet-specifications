@@ -1,29 +1,19 @@
 Expressions
 ===
-L, R, Q, and Non Value Expression
+L- and R-Value Expressions
 ---
 A Puppet Program consists of a sequence of Expressions. There are four main kinds of expressions;
 
 * R-value expressions that produce a result (of some type)
 * L-value expressions that provide an assignable "slot"
-* Q-value expressions that have such low priority that their R-value is only available in certain
-  constructs.
 * Non-Value producing expressions
-
-This division (especially the Q-Value) has historical reasons. In older versions there were
-a strict separation of statements and expressions, and even a further division into special kinds
-of expressions that only worked in a certain grammatical contexts.
 
 The letters `L`, `R` are used as type parameters e.g. `Expression<R>`in this specification
 only (there are no such types in the type system).
 
 ### L-value Expressions
 
-The L-value expressions are:
-
-* Variable Expression when being LHS in an Assignment Expression (operators `=`, `+=`, and `-=`)
-* Qualified Name when being LHS in an Attribute Operation Expression (operators `=>`, and `+>` in a
-  Resource Body Expression.
+The L-value expressions are Variable Expressions when on the LHS in an Assignment Expression (operators `=`, `+=`, and `-=`).
   
 <table><tr><th>Note</th></tr>
 <tr><td>
@@ -52,35 +42,6 @@ The result of these expressions are the side effects they have on the state of t
 Non-Value Producing Expressions always produce the special value `undef` when they are used in a context that produces an R-Value. See [Q-Value] below.
 
 [Q-Value]: #q-value-expressions
-
-### Q-Value Expressions
-
-Q-Value Expressions have very low priority and thus behave in a statement-like manner. They
-do however produce an R-Value. The R-value can be obtained when a Q-expression is the last expression
-in a statement list.
-
-The Q-Value Expressions are primarily used because they have side effects on the state of the compilation, but they also provide a value that may be useful in certain circumstances.
-
-Q-Value Expressions:
-
-* Function call without parentheses around its arguments
-* Resource Expression
-* Resource Default Expression
-* Resource Override Expression
-* [Relationship Expression]
-
-[Relationship Expression]: catalog_expressions.md#relationships
-
-A Q-Value is turned into an R-Value (and thus making it assignable) by simply enclosing it in a structure like this:
-
-    # this works
-    $a = if true { notify{ a: } }
-    
-    # this does not (syntax error)
-    $a = notify{ a: }
-
-See each Q-Value expression for information what they produce when placed in a context where their
-R-value is made available.
      
 ### R-Value Expressions
 
@@ -107,7 +68,7 @@ Literal Value Expressions
     31.415e-1
     0.31415e1
      
-Numbers are tokens produced by the Lexing of the source text. See [Numbers] in [Lexical Structure].
+Numbers are tokens produced by the Lexing of the source text. See [Numbers] in [Lexical Structure]. Literal Numbers evaluate to the value of the token interpreted in the appropriate base.
 
 [Numbers]: ./lexical_structure.md#numbers
 [Lexical Structure]: ./lexical_structure.md
@@ -153,8 +114,7 @@ String interpolation can be performed two different ways:
 
 The expression part has the following rules:
 
-* Any expression may be interpolated (except Non-Value, and Q-Value producing expressions such as
-  `define` and `class`)
+* Resource expressions; `class`, `define`, or `nodes` expressions; or function calls without parentheses are not allowed
 * Automatic conversion to a variable is performed if the expression has one of the forms:
   * `${<KEYWORD>}` - e.g. `${node}`, `${class}` becomes `${$node}`, `${$class}`
   * `${<QualifiedName>}` - e.g. `${var}` becomes `${$var}`
@@ -252,7 +212,7 @@ Examples:
 
      $a = [1, 2, 3] # $a becomes Literal Array of 3 numbers
      $x = $a[1]     # $x becomes 2 (Accessing element at index 1 in the value referenced by $a)
-     $x = $a; [1]   # $x becomes the literal array, a literal array containing '1' is the produced
+     $x = $a; [1]   # $x becomes the literal array, a literal array containing '1' is produced
      $x = abc[1]    # $x becomes 'b' (character at index 1 in string 'abc')
      abc [1]        # calls the function abc with the literal array containing '1' as an argument
      foo()[1]       # calls function foo and gets index 1 in returned enumerable
@@ -273,8 +233,6 @@ A "Literal" Hash has the following syntax.
 The hash entries are evaluated from left to right, key before value and a runtime hash
 object is produced with all of the entries.
 
-Expressions must result in an R-Value.
-
 Operators
 ---
 ### + operator
@@ -285,7 +243,7 @@ Operators
 * Adds LHS and RHS numerically otherwise
   * LHS and RHS are converted from String to Numeric (see [the section on Numeric Conversions][1] in Conversions and Promotions)
   * Operation fails if LHS or RHS are not numeric or conversion failed
-* Is not cumulative for non numeric/string operands ( `[1,2,3] + 3` is not the same as `3 + [1,2,3]`,   
+* Is not cumulative for non numeric/string operands ( `[1,2,3] + 3` is not the same as `3 + [1,2,3]`,
   and `[1,2,3] + [4,5,6]` is not the same as `[4,5,6] + [1,2,3]` )
   
 #### Addition

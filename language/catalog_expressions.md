@@ -6,7 +6,7 @@ by the compilation of a Puppet Program.
 * **Node Definition** - associates the logic producing a particular catalog with the node making 
   a request for a catalog.
 * **Class Definition** - creates a grouping of resources
-* **Resource Type Definition** - creates a new (User) Resource Type
+* **Resource Type Definition** - creates a new (User Defined) Resource Type
 * **Resource Expression** - creates resources
 * **Resource Default Expression** - sets default values for resources
 * **Resource Override Expression** - overrides attributes set in resources
