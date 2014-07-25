@@ -11,8 +11,6 @@ or - (not L or R; typically punctuation). This is further explained in [L- and R
 
 [L- and R-Value Expressions]: expressions.md#l-and-r-value-expressions
 
-[L, R, Q, and Non Value Expression]: expressions.md#l-r-q-and-non-value_expression
-
 | Operator / Expression | L/R | Association | Explanation
 | ---                   | ---   |  ---         | ---
 | `;`                   | -  |    | expression separator, resource body separator

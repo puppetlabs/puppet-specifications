@@ -2,11 +2,10 @@ Expressions
 ===
 L- and R-Value Expressions
 ---
-A Puppet Program consists of a sequence of Expressions. There are four main kinds of expressions;
+A Puppet Program consists of a sequence of Expressions. There are two kinds of expressions:
 
 * R-value expressions that produce a result (of some type)
 * L-value expressions that provide an assignable "slot"
-* Non-Value producing expressions
 
 The letters `L`, `R` are used as type parameters e.g. `Expression<R>`in this specification
 only (there are no such types in the type system).
@@ -23,25 +22,6 @@ The L-value expressions are Variable Expressions when on the LHS in an Assignmen
   and values are strictly immutable in the Puppet Programming Language.
 </td></tr>
 </table>
-
-### "Non-Value" Producing Expressions
-
-A non-value producing expression is illegal in a position where a value is required.
-The term "statement" or "procedure" may also be used to denote non-value expressions depending on their role.
-
-The following are non-value producing expressions:
-
-* Calls to functions that are marked to be of `statement` kind.
-* Collect expressions (operators `<| |>` and `<<| |>>`)
-* ClassDefinition
-* ResourceTypeDefinition
-* NodeDefinition
-
-The result of these expressions are the side effects they have on the state of the compilation.
-
-Non-Value Producing Expressions always produce the special value `undef` when they are used in a context that produces an R-Value. See [Q-Value] below.
-
-[Q-Value]: #q-value-expressions
      
 ### R-Value Expressions
 
