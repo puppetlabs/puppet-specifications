@@ -243,7 +243,7 @@ Operators
 * Adds LHS and RHS numerically otherwise
   * LHS and RHS are converted from String to Numeric (see [the section on Numeric Conversions][1] in Conversions and Promotions)
   * Operation fails if LHS or RHS are not numeric or conversion failed
-* Is not cumulative for non numeric/string operands ( `[1,2,3] + 3` is not the same as `3 + [1,2,3]`,
+* Is not commutative for non numeric/string operands ( `[1,2,3] + 3` is not the same as `3 + [1,2,3]`,
   and `[1,2,3] + [4,5,6]` is not the same as `[4,5,6] + [1,2,3]` )
   
 #### Addition
@@ -288,7 +288,7 @@ Examples
 * Subtracts RHS from LHS otherwise
   * LHS and RHS are converted to `Numeric` (see [the section on Numeric Conversions][1] in Conversions and Promotions)
   * Operation fails if LHS or RHS are not numeric or conversion failed
-* Is (by definition) not cumulative
+* Is (by definition) not commutative
   
 #### Subtraction
 
