@@ -1,7 +1,7 @@
 Catalog Expressions
 ===
-Catalog Expressions are those that  directly relate to the content of the catalog produced
-by the compilation of a Puppet Program.
+Catalog Expressions are those that directly relate to the content of the catalog produced
+by the evaluation of a Puppet Program.
 
 * **Node Definition** - associates the logic producing a particular catalog with the node making 
   a request for a catalog.
@@ -163,59 +163,58 @@ elsewhere via *exported resource collection*.
 
      ResourceExpression
        : (virtual = '@' exported = '@'?)?
-         type_name = QualifiedName | 'class'
+         type_name = Expression<Variant[String[1], CatalogEntry]> | 'class'
          '{' ResourceBody (';' ResourceBody)* ';'? '}'
        ;
        
      ResourceBody
-       : titles = TitleExpression ':' AttributeOperations?
+       : titles = TitleExpression ':' ResourceAttributes?
        ;
        
-     AttributeOperations
-       : AssignAttributeOperation (',' AssignAttributeOperation)* ','?
+     ResourceAttributes
+       : AssignAttributes
+       | AttributeSplat
        ;
 
-     AssignAttributeOperation
-       : name = SimpleName '=>' value = Expression
+     AssignAttributes
+       : AssignAttributes (',' AssignAttributes)* ','?
+       | name = SimpleName '=>' value = Expression
+       ;
+
+     AttributeSplat
+       : '*' '=>' Expression<Hash[String[1], Any]>
        ;
        
      TitleExpression
-       : Expression<Variant<String<1>, Numeric, Array<Variant<String<1>, Numeric>>>>
+       : Expression<Variant[String[1], Default, Array[String[1], Default]]>
        ;
 
-** General **
+** Semantic Constraints **
 
-* exported resources are also virtual
-* a virtual resource is created but is not realized (not included in the catalog)
-* a resource type_name must be a reference to an existing plugin provided resource type
-  TODO: REFERENCE, or a user defined resource type (TODO: REFERENCE).
-* The type and virtual/exported status applies to all resource bodies
+When a `type_name` evaluates to a `String[1]` the name must conform to `QualifiedName` or `QualifiedReference`. When `type_name` evaluates to a `CatalogEntry` it is an error for the `CatalogEntry` to have a title, since it would conflict with the titles that are in the `ResourceBody`.
 
-** Titles **
+The `type_name` of `'class'` and an `Expression` that evaluates to the `CatalogEntry` of `Class` are interpreted equivalently. A `type_name` must be a reference to an existing plugin provided custom resource type or defined resource type. When the type name is `class` or evaluates to the string "class" or the `CatalogEntry` of `Class` the titles are the names of classes, and it must conform to class naming rules.
 
-* titles can be a single expression evaluating to `String[1]` or `Numeric`, or an Array of
-  the same types.
-* one resource instance is created per given title (minimum 1)
-  * All created resources get the same set of attributes assigned (except those that represent
-    the resource's title and identity).
-* The semantics of the title string is resource type specific.
-* When the type name is `class`
-  * a title is the name of the class, and it must conform to class naming rules.
-  * this is similar to using include class, but with different order of evaluation
-    see [Modus Operandi] **TODO: Ensure that there is content about this there**
-    
-[Modus Operandi]: modus-operandi.md
+The list of all titles from all `TitleExpression`s in a single `ResourceExpression` must not contain the same title more than once.
+
+The `names` given for the `ResourceAttributes` of a single `ResourceBody` must be unique.
+
+** Realized, Virtual, and Exported Resources **
+
+All resources created by a resource expression are created with a status of either "realized", "virtual", or "exported". A "realized" resource is created and placed in the catalog. A "virtual" resource is created, but is not placed in the catalog. An "exported" resource is created, not placed in the catalog, and made available to catalog processors. All resources created by the same resource expression have the same status.
 
 ** Order of Evaluation **
 
-* The `type_name` is evaluated first
-* `Bodies` are evaluated from top to bottom
-* For each body, the `titles` expression is evaluated
-* each attribute value expression is evaluated and mapped to the attribute name
-* each body is added to the compiler which (in 3x) performs the multiplication based on the
-  given title(s)
-  * virtual and exported resources are remembered for reference, and for future operations
-  * regular resources are *realized* (placed in the catalog)
+1. The `type_name` is evaluated.
+1. Each `ResourceBody` is evaluated in the order they appear (top to bottom) in the source text.
+   1. The `TitleExpression` is evaluated.
+   1. Each `AssignAttributes` value expression is evaluated and mapped to the attribute `name`.
+   1. The `AttributeSplat` expression is evaluated. Each key of the resulting `Hash` is used as the name of an attribute and the value for that key is the attribute's value.
+1. A resource is created for each title, except a resource with a title type of `Default`.
+   * The attributes of the resource are the evaluated default attributes overridden by the attributes from the title's `ResourceBody`. Note: an attribute with a value of `undef` is not handled specially as is done when deciding whether to use the default expression of a parameter.
+   * The set of attributes given is checked against the set of declared parameters for the `type_name` (or the `title` in the case of a `class` type). It is an error if there is no available type or if one of the evaluated attributes does not exist on the type.
+   * Virtual and exported resources are remembered for reference, and for future operations.
+   * Regular resources are *realized* (placed in the catalog).
 
 ### Resource Default Expression
 
