@@ -7,8 +7,7 @@ The Puppet Programming Language has a type system as well as operations on types
 
 The Kinds of Types and Values
 ---
-There are two kinds of types in the Puppet Programming Language; *Puppet Types*, and the types of
-the underlying runtime "platform" language - the *Platform Types*. There is also a special Puppet Type called *Undef*.
+There are two kinds of types in the Puppet Programming Language; *Puppet Types*, and the types of the underlying runtime "platform" language - the *Platform Types*.
 
 ### Platform Types
 
@@ -37,6 +36,9 @@ Values of the `Undef` type can always undergo a widening reference conversion to
 
 A value of `Undef` type is assignable to any other *optional* type with the meaning *it is allowed to have no value*. This is achieved by using the type `Optional[T]` instead of just the type `T`.
 
+### The Default Type
+
+The type of the expression `default` is `Default`. The `Default` type is used to signal special behavior for various expressions in the language.
 
 ## Puppet Types
 
@@ -160,6 +162,7 @@ may appear more than once in the hierarchy, typically with different narrower ty
        |- Callable[signature...]
        |- Type[T]
        |- Ruby[class_name]
+       |- Default
 
 In addition to these types, a Qualified Reference that does not represent any of the other types is interpreted as `Resource[the_qualified_reference]` (e.g. `File` is shorthand notation for `Resource[File]` / `Resource[file]`).
 
