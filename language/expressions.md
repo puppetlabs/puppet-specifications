@@ -1,29 +1,18 @@
 Expressions
 ===
-L, R, Q, and Non Value Expression
+L- and R-Value Expressions
 ---
-A Puppet Program consists of a sequence of Expressions. There are four main kinds of expressions;
+A Puppet Program consists of a sequence of Expressions. There are two kinds of expressions:
 
 * R-value expressions that produce a result (of some type)
 * L-value expressions that provide an assignable "slot"
-* Q-value expressions that have such low priority that their R-value is only available in certain
-  constructs.
-* Non-Value producing expressions
-
-This division (especially the Q-Value) has historical reasons. In older versions there were
-a strict separation of statements and expressions, and even a further division into special kinds
-of expressions that only worked in a certain grammatical contexts.
 
 The letters `L`, `R` are used as type parameters e.g. `Expression<R>`in this specification
 only (there are no such types in the type system).
 
 ### L-value Expressions
 
-The L-value expressions are:
-
-* Variable Expression when being LHS in an Assignment Expression (operators `=`, `+=`, and `-=`)
-* Qualified Name when being LHS in an Attribute Operation Expression (operators `=>`, and `+>` in a
-  Resource Body Expression.
+The L-value expressions are Variable Expressions when on the LHS in an Assignment Expression (operators `=`, `+=`, and `-=`).
   
 <table><tr><th>Note</th></tr>
 <tr><td>
@@ -33,54 +22,6 @@ The L-value expressions are:
   and values are strictly immutable in the Puppet Programming Language.
 </td></tr>
 </table>
-
-### "Non-Value" Producing Expressions
-
-A non-value producing expression is illegal in a position where a value is required.
-The term "statement" or "procedure" may also be used to denote non-value expressions depending on their role.
-
-The following are non-value producing expressions:
-
-* Calls to functions that are marked to be of `statement` kind.
-* Collect expressions (operators `<| |>` and `<<| |>>`)
-* ClassDefinition
-* ResourceTypeDefinition
-* NodeDefinition
-
-The result of these expressions are the side effects they have on the state of the compilation.
-
-Non-Value Producing Expressions always produce the special value `undef` when they are used in a context that produces an R-Value. See [Q-Value] below.
-
-[Q-Value]: #q-value-expressions
-
-### Q-Value Expressions
-
-Q-Value Expressions have very low priority and thus behave in a statement-like manner. They
-do however produce an R-Value. The R-value can be obtained when a Q-expression is the last expression
-in a statement list.
-
-The Q-Value Expressions are primarily used because they have side effects on the state of the compilation, but they also provide a value that may be useful in certain circumstances.
-
-Q-Value Expressions:
-
-* Function call without parentheses around its arguments
-* Resource Expression
-* Resource Default Expression
-* Resource Override Expression
-* [Relationship Expression]
-
-[Relationship Expression]: catalog_expressions.md#relationships
-
-A Q-Value is turned into an R-Value (and thus making it assignable) by simply enclosing it in a structure like this:
-
-    # this works
-    $a = if true { notify{ a: } }
-    
-    # this does not (syntax error)
-    $a = notify{ a: }
-
-See each Q-Value expression for information what they produce when placed in a context where their
-R-value is made available.
      
 ### R-Value Expressions
 
@@ -107,7 +48,7 @@ Literal Value Expressions
     31.415e-1
     0.31415e1
      
-Numbers are tokens produced by the Lexing of the source text. See [Numbers] in [Lexical Structure].
+Numbers are tokens produced by the Lexing of the source text. See [Numbers] in [Lexical Structure]. Literal Numbers evaluate to the value of the token interpreted in the appropriate base.
 
 [Numbers]: ./lexical_structure.md#numbers
 [Lexical Structure]: ./lexical_structure.md
@@ -153,8 +94,7 @@ String interpolation can be performed two different ways:
 
 The expression part has the following rules:
 
-* Any expression may be interpolated (except Non-Value, and Q-Value producing expressions such as
-  `define` and `class`)
+* Resource expressions; `class`, `define`, or `nodes` expressions; or function calls without parentheses are not allowed
 * Automatic conversion to a variable is performed if the expression has one of the forms:
   * `${<KEYWORD>}` - e.g. `${node}`, `${class}` becomes `${$node}`, `${$class}`
   * `${<QualifiedName>}` - e.g. `${var}` becomes `${$var}`
@@ -252,7 +192,7 @@ Examples:
 
      $a = [1, 2, 3] # $a becomes Literal Array of 3 numbers
      $x = $a[1]     # $x becomes 2 (Accessing element at index 1 in the value referenced by $a)
-     $x = $a; [1]   # $x becomes the literal array, a literal array containing '1' is the produced
+     $x = $a; [1]   # $x becomes the literal array, a literal array containing '1' is produced
      $x = abc[1]    # $x becomes 'b' (character at index 1 in string 'abc')
      abc [1]        # calls the function abc with the literal array containing '1' as an argument
      foo()[1]       # calls function foo and gets index 1 in returned enumerable
@@ -273,8 +213,6 @@ A "Literal" Hash has the following syntax.
 The hash entries are evaluated from left to right, key before value and a runtime hash
 object is produced with all of the entries.
 
-Expressions must result in an R-Value.
-
 Operators
 ---
 ### + operator
@@ -285,7 +223,7 @@ Operators
 * Adds LHS and RHS numerically otherwise
   * LHS and RHS are converted from String to Numeric (see [the section on Numeric Conversions][1] in Conversions and Promotions)
   * Operation fails if LHS or RHS are not numeric or conversion failed
-* Is not cumulative for non numeric/string operands ( `[1,2,3] + 3` is not the same as `3 + [1,2,3]`,   
+* Is not commutative for non numeric/string operands ( `[1,2,3] + 3` is not the same as `3 + [1,2,3]`,
   and `[1,2,3] + [4,5,6]` is not the same as `[4,5,6] + [1,2,3]` )
   
 #### Addition
@@ -330,7 +268,7 @@ Examples
 * Subtracts RHS from LHS otherwise
   * LHS and RHS are converted to `Numeric` (see [the section on Numeric Conversions][1] in Conversions and Promotions)
   * Operation fails if LHS or RHS are not numeric or conversion failed
-* Is (by definition) not cumulative
+* Is (by definition) not commutative
   
 #### Subtraction
 
@@ -587,13 +525,13 @@ When the RHS is not a `Type`:
 * If the LHS is not a `String` an error is raised. (Note, `Numeric` values are **not** converted to
   `String` automatically because of unknown radix).
 
-The numeric variables $0-$n are set as follows when RHS is not a type:
+The numeric variables `$0`-`$n` are set as follows when RHS is not a type:
 
-* $0 represents the entire matched (sub-) string
-* $1 represents the first (leftmost) capture group
-* $2-$n represents the subsequent capturing groups enumerated from left to right
+* `$0` represents the entire matched (sub-) string
+* `$1` represents the first (leftmost) capture group
+* `$2`-`$n` represents the subsequent capturing groups enumerated from left to right
 * Unmatched sections evaluate to `undef`
-* Numeric variables $0-$n are not visible from outer scopes
+* Numeric variables `$0`-`$n` are not visible from outer scopes
 * If a match is performed in an inner scope, it will obscure all numerical variables in outer scopes.
 
 The numeric match variables are in scope until the end of the block if the match is performed
@@ -839,7 +777,7 @@ The `[ ]` operator supports access to Resource instance attributes:
 
 The various forms are detailed in the following sub-sections.
 
-### Array Value []
+### Array Value [ ]
 
 Accepts two signatures:
 
@@ -887,7 +825,7 @@ Examples:
     [1,2,3,4][-5,-3] # => [1,2]
     [1,2,3,4][2,-3]  # => []
 
-### Hash Value []
+### Hash Value [ ]
 
 Signature:
 
@@ -914,7 +852,7 @@ Examples:
     
 Note that the result of using multiple keys results in a compacted array where all missing and explicit `undef` entries have been removed.
 
-### String Value []
+### String Value [ ]
 
 Access to characters in a string (a substring) has the following signature:
 
@@ -992,7 +930,7 @@ Examples:
     notice $1                        # => 'o'
     'x' =~ Regexp[/x/]               # => false 'x' is a String, not a Regexp
 
-#### Pattern Type []
+#### Pattern Type [ ]
 
 Creates a parameterized Pattern Type given one or more patterns. For more information see
 [Pattern Type]. (A Pattern type is a pattern based enumeration of acceptable string values).
@@ -1531,13 +1469,13 @@ Syntax:
 * A function may be called using any of the three styles (statement style is restricted to a given 
   list of functions, see below) - there is no difference in
   evaluation between them - only syntactical differences, and the varying support for
-  calls without no arguments, and passing an optional lambda.
-* Functions that are declared (in their 3x plugin logic) to be R-Value functions produce a value, 
-  those  that that are declared to be statements produce `undef` as their result.
+  calls without arguments, and passing an optional lambda.
+* Functions that are declared (in their 3x plugin logic) to be `:rvalue` functions produce a value,
+  those  that that are declared to be `:statement` produce `undef` as their result.
 * The 4x function API (for plugin Ruby functions) do not make a distinction between
   r-value and statement type, they all produce a value, and a function should produce
   Ruby nil (mapped to undef) if no other valid return value is suitable.
-* A function call is never an L-value (a function can not produce something that is assignable)
+* A function call is never an L-value (a function can not produce something that is assignable).
   
 **Parameters**
 
@@ -1554,10 +1492,10 @@ Syntax:
 * As shown in the grammar above, a `StatementStyleCall` requires an argument; a call without
   arguments requires use of one of the other two styles.
 * A function implementation may invoke the lambda that is given to it, but it may not use it after 
-  the function has returned (and it may not return the lambda)
+  the function has returned (and it may not return the lambda).
 * This stye cannot be used when the argument is a literal `Hash` because the expression is
   indistinguishable from a resource expression without title. **(PUP-979)**
-* A statement type call produces a Q-Value
+* A statement type call always produces `undef`.
   
 Example:
 
@@ -1590,7 +1528,6 @@ Functions that allow being called using statement style:
 * Requires parentheses around the 0-n arguments
 * Accepts an optional lambda
 * May appear anywhere where an Expression can appear
-* A Prefix style call produces an R-Value
 
 Example:
 
@@ -1605,7 +1542,6 @@ Example:
 * Any additional arguments (given within parentheses) are given to the function as argument 1-n)
 * Parentheses are required around additional arguments
 * Accepts an optional lambda after the (optional) argument list
-* A Postfix style call produces an R-Value
 
 Examples:
 
