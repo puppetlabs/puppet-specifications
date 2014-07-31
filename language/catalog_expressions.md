@@ -161,6 +161,10 @@ A resource expression instantiates a resource and realizes it, or optionally doe
 realize it (*virtual*), and optionally exports (*exported*) it to a central store for inclusion
 elsewhere via *exported resource collection*.
 
+     # A tree data structure to describe the allowed title expression types.
+     # This data structure does not exist in the Puppet Types
+     Tree[T] = Variant[T, Array[Tree[T]]]
+
      ResourceExpression
        : (virtual = '@' exported = '@'?)?
          type_name = Expression<Variant[String[1], CatalogEntry]> | 'class'
@@ -186,7 +190,7 @@ elsewhere via *exported resource collection*.
        ;
        
      TitleExpression
-       : Expression<Variant[String[1], Default, Array[String[1], Default]]>
+       : Expression<Tree[Variant[String[1], Default]]>
        ;
 
 ** Semantic Constraints **
@@ -195,7 +199,7 @@ When a `type_name` evaluates to a `String[1]` the name must conform to `Qualifie
 
 The `type_name` of `'class'` and an `Expression` that evaluates to the `CatalogEntry` of `Class` are interpreted equivalently. A `type_name` must be a reference to an existing plugin provided custom resource type or defined resource type. When the type name is `class` or evaluates to the string "class" or the `CatalogEntry` of `Class` the titles are the names of classes, and it must conform to class naming rules.
 
-The list of all titles from all `TitleExpression`s in a single `ResourceExpression` must not contain the same title more than once.
+The list of all titles (the `String[1]` or `Default` values of the `Tree`) from all `TitleExpression`s in a single `ResourceExpression` must not contain the same title more than once.
 
 The `names` given for the `ResourceAttributes` of a single `ResourceBody` must be unique.
 
