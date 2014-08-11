@@ -427,7 +427,6 @@ as individual tokens. Their semantics are specified in Expressions TODO: REFEREN
 == <= >= !=
 =~ !~
 + - * / %
-+= -=
 << >>
 <| |>
 <<| |>>

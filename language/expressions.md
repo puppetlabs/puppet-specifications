@@ -12,7 +12,7 @@ only (there are no such types in the type system).
 
 ### L-value Expressions
 
-The L-value expressions are Variable Expressions when on the LHS in an Assignment Expression (operators `=`, `+=`, and `-=`).
+The L-value expressions are Variable Expressions when on the LHS in an Assignment Expression.
   
 <table><tr><th>Note</th></tr>
 <tr><td>
@@ -671,10 +671,10 @@ The following table shows the result of searching for a LHS of a particular type
 | *any*       | `Hash`      | `true` if the LHS `in` the array of hash keys is `true` |
 | *any*       | *any other* | `false` |
 
-Assignment Operators
+Assignment Operator
 ---
 
-The assignment operators assigns the result of the RHS to the L-Value produced by the LHS. An L-value is a name referring to a "slot" in the current scope (that can be referenced (typically by a 
+The assignment operator assigns the result of the RHS to the L-Value produced by the LHS. An L-value is a name referring to a "slot" in the current scope (that can be referenced (typically by a 
 variable) to obtain the value).
 
 * A `$` variable produces an L-value name
@@ -690,8 +690,6 @@ These are covered in [Catalog Expressions].
 
 [Catalog Expressions]: catalog_expressions.md
 
-### = operator
-
     AssignmentExpression
       : Expression<L> '=' Expression<R>
       ;
@@ -703,46 +701,6 @@ Examples:
 
     $a = 10
     $x = $y = 0
-
-### += operator
-
-    AppendAssignmentExpression
-      : Expression<L> '+=' Expression<R>
-      ;
-
-If the L-value name is a reference to a variable in an outer scope, the evaluated RHS
-value is concatenated/merged to the value of the outer scope variable and assigned to the L-value name. If the L-value name is not a reference to an outer scope variable the result is the same as if the `=` assignment operator had been used.
-
-* The operation fails if the outer scope value is not an Array or a Hash, or if the corresponding
-  `+` concatenation operation fails (see '+' [Concatenation / Merge]).
-* The produced result is the evaluated RHS
-
-[Concatenation / Merge]: #concatenation--merge
-
-<table>
-<tr><th>T.B.Decided</th></tr>
-<tr><td>
-  Should the append (and also the delete operator) below silently ignore if an outer scope
-  variable does not exist - i.e. when there is nothing to append to? The rationale is
-  that the logic $a = $a + [1,2,3] would fail where $a += [1,2,3] does not and this is
-  inconsistent (that is when 4x uses strict variable references).
-</td></tr>
-</table>
-
-### -= operator
-
-    DeleteAssignmentExpression
-      : Expression<L> '-=' Expression<R>
-      ;
-
-If the L-value name is a reference to a variable in an outer scope, the evaluated RHS
-value is deleted from (a copy of) the value of the outer scope variable and assigned to the L-value name. If the L-value name is not a reference to an outer scope variable the value `undef` is assigned (i.e. deleting something from nothing is undefined).
-
-* The operation fails if the outer scope value is not an array or a hash, or if the corresponding
-  `-` (deletion) operation fails (see '-' [Delete]).
-* The produced result is the evaluated RHS
-
-[Delete]: #delete
 
 [ ] Access Operator
 ---

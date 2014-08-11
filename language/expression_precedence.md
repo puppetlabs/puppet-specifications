@@ -36,7 +36,7 @@ or - (not L or R; typically punctuation). This is further explained in [L- and R
 | `>` `>=` `<` `<=`     | R |       | greater, greater-or-equal, less, less-or-equal
 | `and`                 | R |       | boolean and
 | `or`                  | R |       | boolean or
-| `+=` `-=` `=`         | R | right | append-to, delete-from, assign
+| `=`                   | R | right | assign
 | `{`                   | R |       | block / hash start
 | `{` after `?`         | - |       | block start after `?`
 | `}`                   | - |       | block / hash / selector end
