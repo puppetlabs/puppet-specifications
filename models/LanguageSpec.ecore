@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ecore:EPackage xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="languagespec"
+    nsURI="http://languagespec/1.0" nsPrefix="languagespec">
+  <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+    <details key="documentation" value="The expected line number, or 0 (the default) if there is no expectancy on line number."/>
+  </eAnnotations>
+  <eClassifiers xsi:type="ecore:EClass" name="Suite" eSuperTypes="#//Test">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+      <details key="documentation" value="A container of tests. A Suite must have an absolute specReference URI."/>
+    </eAnnotations>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="tests" upperBound="-1"
+        eType="#//Test" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Test">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="expectations" upperBound="-1"
+        eType="#//Expectation"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="comment" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="specReference" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="A URI in String form that is a reference to the Requirement/Specification text that this test covers. The String may be a relative URI if the test is contained in a Suite with an absolute URI.&#xA;A Suite must have an absolute URI."/>
+      </eAnnotations>
+    </eStructuralFeatures>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Error" eSuperTypes="#//AbstractDiagnostic"/>
+  <eClassifiers xsi:type="ecore:EClass" name="PuppetSourceTes" eSuperTypes="#//LeafTest">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+      <details key="documentation" value="Contains one or several lines of source text. Each line should be a separate string, and not terminated with CR, CR NL, or NL. (This to enable testing with different combinations).&#xA;Leading space can be used, but is not significant. Trailing space can be used but is insignificant to the language, but may trigger a lexer to not do the right thing.&#xA;&#xA;Strings are UNICODE. (Representation in serialized form of this model must be in UTF-8)."/>
+    </eAnnotations>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="sourceLines" upperBound="-1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ParseResult" eSuperTypes="#//Expectation">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+      <details key="documentation" value="Expectation on the parsed source in the form of a Lisp like tree. The tree may be described as one or many strings; they are all concatenated at the end.&#xA;The string form tree may contain additional whitespaces for formatting purposes, but the formatting whitepsace is not part of the specification.&#xA;A comparisson should be made atom by atom and list by list."/>
+    </eAnnotations>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="treeStrings" upperBound="-1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="LeafTest" abstract="true" eSuperTypes="#//Test"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Expectation" abstract="true">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="comment" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="AbstractDiagnostic" abstract="true"
+      eSuperTypes="#//Expectation">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+      <details key="documentation" value="Describes that a Diagnostic (Error or Warning) outcome is expected. &#xA;"/>
+    </eAnnotations>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="messageMatch" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="line" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"
+        defaultValueLiteral="0"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="pos" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"
+        defaultValueLiteral="0">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="Expectancy on position on line (first position is 1). A pos of 0 means there is no expectancy on the position.&#xA;"/>
+      </eAnnotations>
+    </eStructuralFeatures>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ExpectationOp" eSuperTypes="#//Expectation">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+      <details key="documentation" value="Reverses the expected outcome of the expectation it wraps."/>
+    </eAnnotations>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="expectations" lowerBound="1"
+        upperBound="-1" eType="#//Expectation" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="EClass0"/>
+  <eClassifiers xsi:type="ecore:EEnum" name="Severity">
+    <eLiterals name="error"/>
+    <eLiterals name="warning" value="1"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Or" eSuperTypes="#//ExpectationOp"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Xor" eSuperTypes="#//ExpectationOp"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Not" eSuperTypes="#//ExpectationOp"/>
+  <eClassifiers xsi:type="ecore:EClass" name="DisagnosticCount" eSuperTypes="#//Expectation">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="count" lowerBound="1" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt">
+      <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+        <details key="documentation" value="Describes the expectancy of the total number of diagnostics produced for a test."/>
+      </eAnnotations>
+    </eStructuralFeatures>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="EvaluationResult" abstract="true" eSuperTypes="#//Expectation">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+      <details key="documentation" value="TBD - as this much more difficult to expression. Either as simple assertions about catalog content &quot;Notify[hi] exists in catalog&quot;, and &quot;Notify[hi][param] == value&quot;, or&#xA;as more complex model queries. The best is if the expectations are not tied to a particular implementation model and instead reflect implementation free assertions (perhaps&#xA;in s-expr form like (before (resource notify hi) (resource notify bye)) (== (attr message (resource notify hi)) 'Hello')&#xA;&#xA;This tentative class is here as a placeholder and to show the future direction of this model..."/>
+    </eAnnotations>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Diagnostic" eSuperTypes="#//AbstractDiagnostic">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+      <details key="documentation" value="The severity describes if this is an Error or Warning.&#xA;The code, if present is a String that identifies the diagnostic.&#xA;"/>
+    </eAnnotations>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="severity" eType="#//Severity"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="code" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="SyntaxError" eSuperTypes="#//AbstractDiagnostic">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+      <details key="documentation" value="A SyntaxError captures the fact that the given source string is not parseable"/>
+    </eAnnotations>
+  </eClassifiers>
+</ecore:EPackage>
