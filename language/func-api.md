@@ -7,7 +7,7 @@ fully functional - it is not the use of the functions that is experimental.
 
 We are doing this because the 3x API for functions has several issues:
 
-* The function runs as a method on `Scope` (and has access to too much non-api)
+* The function runs as a method on `Scope` (and has access to too much non-API)
 * Undefined arguments are given to the function as empty strings
 * There is no automatic type checking
 * Functions share a flat namespace
@@ -20,6 +20,7 @@ We are doing this because the 3x API for functions has several issues:
   is no longer meaningful.
 * Specification of arity (number of arguments) is a blunt tool (can not express a variable
   number of arguments that is capped).
+* Documentation can not be retrieved without running the ruby code that defines the function.
 
 The 3x API
 ---
@@ -43,7 +44,7 @@ and sometimes spectacular failures.
 The 4x API
 ---
 In the 4x API, as you probably have already guessed, there is support for type checking, and the
-logic for one function cannot step on the turf or other functions (and certainly not on Scope).
+logic for one function cannot step on the turf or other functions (and certainly not on `Scope`).
 
 A `Function` is now simply a callable object. It is instantiated once (when loaded) and its
 closure is the global scope (i.e. what is visible to it from outer scopes).
@@ -58,14 +59,14 @@ its declared needs in terms of access to other parts of the system/services.
 ### Creating a Function
 
 A function is created with a call to `Puppet::Function.create_function`. Behind the scenes this
-creates a class derived from Function with a name derived after the function. The Ruby logic
+creates a subclass of `Function` named after the function. The Ruby logic
 can not find this class on its own - it is not bound to a constant anywhere (and it is forbidden
-for anyone to do so or reloading will not work).
+for anyone to bind it in a fashion that prevents reloading).
 
 The simplest declaration uses introspection to configure the class - a simple function
 can look like this:
 
-    Puppet::Functions.create_function('max') do
+    Puppet::Functions.create_function(:max) do
       def max(x,y)
         x >= y ? x : y
       end
@@ -75,17 +76,17 @@ This works, because we have named the created function and the method it contain
 way. (If there is no method with the same name an error is raised). It is legal to have
 additional helper methods but it is not possible to define classes nested inside of the function.
 
-The function definition in the example above does obviously not define the types of the
+The function definition in the example above does obviously not define the required types of the
 arguments (since this cannot be done in Ruby). Instead, the introspection
 treats every defined parameter as being of `Any` type.
 
 The default introspection supports arguments with default values (optional arguments), and
 that the last argument accepts spillover arguments (varargs). It is not allowed to follow
-optional arguments with a required argument (and by definition a vararg is always optional.
+optional arguments with a required argument (and by definition a vararg is always optional).
 
 Thus, this is allowed:
 
-    Puppet::Functions.create_function('myfunc') do
+    Puppet::Functions.create_function(:myfunc) do
       def myfunc(a, b, c=10, *d)
         x >= y ? x : y
       end
@@ -115,27 +116,27 @@ If we want to assert other types than `Any`, a little more work is required.
 
 ### Defining a Typed Dispatch
 
-The act of directing a call of the function to the correct method is called dispatching. In the
-simple case, a default dispatcher was defined (all parameters are of Any type). While this is
+The act of directing a call of the function to the correct method is known as *dispatching*. In the
+simple case, a default dispatcher was defined (all parameters are of `Any` type). While this is
 convenient we most often want automatic checking of the arguments type. We may also want
 to direct the call to different methods depending on the given argument types as this makes
 it a lot easier to implement a function cleanly (we may want a function to operate quite differently
-based on if it gets an Array or a String etc.)
+based on if it gets an `Array` or a `String` etc.)
 
-The `dispatch` method is used to define the dispatching of one type signature to a method. It
-takes a block in which one call to param is made with type and name for each parameter (in order
-from left to right). Here is a min function that returns the smallest of two numbers, and
+The `dispatch` method is used to define the dispatching of one *type signature* to one method. It
+takes a block in which a call to `param` is made with type and name of each wanted parameter
+(in order from left to right). Here is a `min` function that returns the smallest of two numbers, and
 the lexicographically earlier of two strings (downcased to get case independence).
 
-    Puppet::Functions.create_function('min') do
+    Puppet::Functions.create_function(:min) do
       dispatch :min do
-        param 'Numeric', 'a'
-        param 'Numeric', 'b'
+        param 'Numeric', :a
+        param 'Numeric', :b
       end
 
       dispatch :min_s do
-        param 'String', 's1'
-        param 'String', 's2'
+        param 'String', :s1
+        param 'String', :s2
       end
 
       def min(x,y)
@@ -148,9 +149,9 @@ the lexicographically earlier of two strings (downcased to get case independence
       end
     end
 
-Now we can call the function min with either two numbers, or two strings, and we get
+Now we can call the function `min` with either two numbers, or two strings, and we get
 automatic dispatching and type checking. Should we pass something that is not supported
-with get an error message that shows the alternatives - say we try to call it this way:
+we get an error message that shows the alternatives - say we try to call it this way:
 
     min(1,2,3)
 
@@ -171,8 +172,8 @@ of the function, thus, if a very generic entry is placed first it will always wi
 
 If dispatch is used, the expected argument count is derived from the number of specified
 parameters. If something else is wanted, if some parameters are optional (have defaults), or
-if the last parameter is a varargs, then this is specified with a call to arg_count, which takes
-min and max count of arguments. The max argument may be :default to indicate an infinite count.
+if the last parameter is a varargs, then this is specified with a call to `arg_count`, which takes
+min and max count of arguments. The max argument may be `:default` to indicate an infinite count.
 
 Care must be taken to specify a min/max that is compatible with the method being called, but
 they do not have to be exactly the same - this is legal
@@ -193,77 +194,91 @@ one optional `Numeric`, and then an optional amount of `Any`.
 
 ### Defining Type in the Dispatch call
 
-Types are specified in String form with the syntax of the types as they are used in the
-Puppet Programming Language:
+Types are specified in string form with the syntax of the types as they are used in the
+Puppet Programming Language. Only literal values may be used for the type parameter
+expressions (e.g. '`Integer[$min_allowed + 1, $max_allowed]`' cannot be used as a type).
 
 ### Lambda Support
 
-The signature supports passing a block of code / lambda to a function as an extra trailing argument.
-It is always possible to have explicit lambdas as parameters. The language itself passes
-a lambda as the last argument. Since a method may want to specify optional and variable number
-of arguments before the lambda (and not repeat it), there is the need to specify it differently.
+The signature supports a special block parameter that can accept a block of code / lambda given
+to a function as an extra trailing argument. If this block parameter is not defined, the function
+will not accept a call where a trailing lambda is given.
 
-Maybe like this?
+It is also possible to have explicit lambdas as parameters (albeit that there is currently no
+way to pass multiple lambdas to a function from the Puppet Language in this version of
+the specification). The language itself passes
+a lambda as the last argument. Since a method may want to specify optional and variable number
+of arguments before the lambda, there is the need to specify it separately using one
+of the methods `block_param`, or `optional_block_param` where (as the name suggests), the former makes the signature require that a lambda is given, and the latter accepts a given lambda, but also that no lambda was given.
 
     dispatch :something do
-      param 'Scalar', 'a'
-      block_param Callable[...]
+      param 'Scalar', :a'
+      block_param
     end
 
-**TODO** This changed - review implementation
+The `block_param` and `optional_block_param` can be called without arguments which means that
+a lambda with any signature is accepted, and that the name of the parameter is `:block`. If something else is wanted, it is specified with a Callable type, and the name of the block. The type may also be a `Variant` type if all of the variants are variations of `Callable` (including other `Variant` types).
 
-The type is always a lambda type, and it is always last (except if user passes a closure,
-but that is a different issue). There must be a way to define if the block is optional or
-not, suggest `required_block_param`, `block_param` as methods.
+Example, accept a callable that takes two arguments, the first an `Integer`, and the second a
+`String`:
 
+    block_param 'Callable[Integer, String]', :block    
 
-### Manual Handling
+The declaration of the `Callable` type should be read as: "The given lambda must be callable
+with arguments given of these types.", or simply "These are the types I will call the lambda with".
 
-A Function can implement `call(scope, *args)`, perform additional checks etc, and either relay
-to the super version, or rewrite arguments and call:
-
-    self.class.dispatcher.dispatch(self, scope, args)
-
-It is not intended that the Function directly implements its function-logic in the
-call method.
 
 ### Reserved method names
 
 The Function class reserves the following method names:
 
-* calling_scope
-* closure_scope
-* loader
+* `closure_scope`
+* `loader`
+* `call_function`
 
 **NOTE** The API for this is still being designed.
 
-#### Overriding the initializer
+#### closure_scope
 
-The `initialize` method takes two arguments, the calling_scope, and the loader, and if initialization
-is required of the function being created, the super version must be called.
+Returns the scope where the function was defined.
 
-**NOTE** The API for this is still being designed.
+#### loader
 
-### Strict access
+Returns the loader that loaded the function. Further loading will be done from the perspective
+of this loader.
 
-A Function is defined in a top level scope (or system scope), and does not by default have access to the scope in which it is called.
+#### call_function(function_name, *args)
 
-**The function may use things that is either given to it, or that it injects.**
-    
-Note that the scope given in the call to inject is the scope where the function
-is defined - i.e. the function's closure (works the same as a lambda, only that all
-functions are defined in a global system scope tied to the module where it is defined.
+Calls the function named `function_name` (the name is given without any prefix (3x prefixes
+names with `function_`, 4x does not), and a variable number of arguments.
 
-Accessing the calling scope is a very smelly thing and it is questionable if it should
-be supported at all. If access is needed to any other part of the system, such accessors
-should be injected (i.e. access is not via scope).
+### Function Documentation
 
-The only reason to get the calling scope is to read or write variables - i.e. bad behavior!
-A function should only communicate via its given arguments and returned value(s) and
-side effects only performed on objects that are injected (e.g. compiler, loader, etc).
+Documentation is written as yardoc comments before the call to `Functions.create_function` and
+in comments before each call to `dispatch`.
 
-However... when a call is made, the calling scope is passed and we can provide
-access to it if needed, but we must then do one of the following:
+
+### Rules for Non Internal Functions
+
+* The function may only use things that are given to it.
+* The function may not mutate the arguments given to it.
+* The function should not mutate the state of the system directly, it may call other system
+  functions that does this, but it should not mutate the system state itself.
+* The function may not implement any of the reserved methods.
+* The function may not contain nested classes or modules
+
+Specifically, this means that a (non internal) function does not have access to the calling scope.
+If there is a need to access the calling scope, or other internal runtime services, the
+function is an internal / system function and it can be implemented using the more advanced
+`InternalFunction` base class.
+
+Normal functions should not access scope. It is very bad practice to read (or even worse,
+write) variables in the scope. A Function should operate on its given arguments and
+return a result. Functions that need to mutate the state of the catalog are considered
+to be system functions, and it is far better to call these functions than to implement a new
+system function (e.g. use `call_function(:include, 'name_of_class')` instead of trying
+to manipulate the catalog being produced).
+
 
 * The anonymous Function class defines all methods on the class, an instance of the function
   represents a particular call
@@ -275,25 +290,58 @@ The choice of instantiating the function for each call is better, but will creat
 instances (slower). We could perhaps indicate if a function requires calling scope and
 only instantiate it then.
 
-The exploratory implementation does not have a mechanism yet for passing calling scope
-on to the methods. It seems best to do this via injection, or by special methods that
-behave like the injected_param method, e.g. injected_scope, injected_loader. This is much
-faster than having to construct a new injection override for each call and do real injection.
+### Manual Handling
+
+The intention is that typical functions should only require the features that Function
+supports. Internal / system functions may require support for additional features, and
+for that purpose there is an `InternalFunction` base class which is intended to have all
+features required. As the API is being defined, there may be the need to create a custom
+base class to experiment with features. If this is needed, there are two main
+extension points, the initialization, and the call method.
+
+**NOTE** The API for this is still being designed.
+
+#### call_method(scope, *args)
+
+A Function can implement `call(scope, *args)`, perform additional checks etc, and either relay
+to the super version, or rewrite the array with given arguments and call:
+
+    self.class.dispatcher.dispatch(self, scope, args)
+
+It is not intended that the `Function` directly implements its function-logic in the
+`call` method.
+
+#### initialize method
+
+The `initialize` method takes two arguments, the `closure_scope`, and the `loader`, and if 
+initialization is required of the function being created, the super version must be called.
+
+The `closure_scope` is the outer scope of the function, typically this is the top/global scope.
+The loader is the loader that loads the function - it is needed since the function may need access
+to other loaded/loadable entities that are visible to it.
 
 
-### Function Documentation
-
-Currently, documentation is a parameter to new function. Seems like this could be written
-with ruby yardoc instead, thus avoiding that the string has to be parsed and created and
-kept in memory at runtime. 
-
-A scanner would process the documentation for the class, as well as the documentation for
-the individual methods that have been wired (i.e. the various overloads).
 
 
 
 Experimental / Internal Features
 ---
+### Calling Scope Support
+
+If the function needs access to the calling scope, this can be injected into the dispatching
+by calling `scope_param`, here is an example from the function `inline_epp`:
+
+    Puppet::Functions.create_function(:inline_epp, Puppet::Functions::InternalFunction) do
+
+      dispatch :inline_epp do
+        scope_param()
+        param 'String', 'template'
+        param 'Hash[Pattern[/^\w+$/], Any]', 'parameters'
+        arg_count(1, 2)
+      end
+      # ...
+    end
+
 ### Injection
 
 It is possible to inject objects - both at the time the function is instantiated and
