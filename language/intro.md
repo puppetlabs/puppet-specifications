@@ -106,7 +106,7 @@ used in this specification:
 
     X ∈ Y
 
-`X` is *not member of* (the set `Y`) (can be read as `exists in`)
+`X` is *not member of* (the set `Y`) (can be read as `not exists in`)
 
     X ∉ Y
 
