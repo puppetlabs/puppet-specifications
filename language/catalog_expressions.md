@@ -8,25 +8,16 @@ by the evaluation of a Puppet Program.
 * **Class Definition** - creates a grouping of resources
 * **Resource Type Definition** - creates a new (User Defined) Resource Type
 * **Resource Expression** - creates resources
-* **Resource Default Expression** - sets default values for resources
+* **Resource Default Expression** - sets default values for resources per resource type
 * **Resource Override Expression** - overrides attributes set in resources
-* **Relationship Operators** - orders the resources in the catalog
-* **Collection** / **Query** - realizes virtual resources and optionally overrides them, and
-  imports external resources based on a query.
+* **Relationship Operators** - defines the application order or resources in the catalog
+* **Collection** / **Query** - realizes virtual resources and optionally overrides their parameters, and imports external resources based on a query.
 
-This chapter focuses on the syntactic aspects of these expressions. There are additional semantic rules, rules specific per type (extensible set), evaluation order semantics, as well as semantics for
-catalog application that are covered in a separate chapter. (*TODO: REF TO THIS FUTURE CHAPTER*).
+This section focuses on the syntactic aspects of these expressions. There are additional semantic rules, rules specific per type (an extensible set), evaluation order semantics, as well as semantics for catalog application that are covered in a separate chapter.
 
-*TODO: Is the description in Modus Operandi enough*
+The general loading and evaluation of Puppet logic is described in the section [Modus Operandi][1]. For the semantics for each type (e.g. `File`, `User`), please refer to the documentation available per resource type.
 
-Auto Loading
----
-* Name of definitions must be stored in a file that corresponds to its name in order for it
-  to be automatically loaded.
-* Nested constructs are only visible if parent has been loaded, there is no search for elements
-  inside of files with a name different than the file.
-* Auto Loading is performed from the perspective of the code that triggers the loading.
-* *(TODO: 4x function API has new rules, old has rule everything is visible to everything else)*
+[1]: modus-operandi.md
 
 ### Parameter List
 
@@ -37,14 +28,16 @@ The parameter list is common to several of the catalog expressions:
       ;
       
     ParameterDeclaration
-      : private ?= 'private'? type ?= Expression<Type>? VariableExpression ('=' Expression<R>)?
+      : type = Expression<Type>? name = VariableExpression ('=' defaultValue = Expression<R>)?
       ;
     
     VariableExpression : VARIABLE ;
 
 * The `VARIABLE` must contain a simple name
 * A *captures rest* (as allowed for functions) is not allowed in parameter lists for a
-  catalog entry.
+  catalog related expression.
+* The default value expression must evaluate to an instance of the specified type.
+* If a parameter type is not specified, the default is `Any`.
 
 ### Node Definition
 
@@ -68,7 +61,7 @@ Syntax:
        
      LiteralDefault: 'default' ;
 
-* Use of `inherits` raises an error as node-inheritance is discontinued.
+* Use of `inherits` raises an error as node-inheritance support is discontinued.
   * An implementation may treat this as a syntax error, or parse and validate it as an error
 * The `HostMatch` consisting of a sequence of period separated `NAME` or `NUMBER` lexical tokens
 * Note that `WHITESPACE` between period separated `NAME`/`NUMBER` tokens is not included in the
@@ -76,7 +69,8 @@ Syntax:
 * All host matches (except regular expression and literal `default`) must result in a string
   that consist of a sequence of characters `a-z A-Z 0-9 _ - .`. An error is raised if the
   resulting host match string does not comply with this rule.
-* node definitions may not be made in a module
+* Node definitions may not be made in a module.
+* Node definitions are lazily evaluated after having been selected, see [Modus Operandi][1].
 
 <table><tr><th>Note</th></tr>
 <tr><td>
@@ -90,15 +84,13 @@ Syntax:
 Syntax:
 
     ClassDefinition
-      : private ?= 'private'? 'class' ('(' ParameterList? ')')? ('inherits' QualifiedName)? 
+      : 'class' ('(' ParameterList? ')')? ('inherits' QualifiedName)? 
           '{' Statements? '}'
       ;
       
 * A class definition may only appear at the top level in a file, or inside a class definition
 * A class may inherit another class
 * A class may have parameters
-* A class may be private to the module it is defined in **(PUP-523)**
-* A class defined in the environment that is marked private is not visible to modules
 * A parameter declaration may have a default value expression
 * Parameter declarations with default value expression may appear anywhere in the list
 * Parameter default value expressions:
@@ -106,11 +98,11 @@ Syntax:
     using an implementation that does not guarantee the correct order.
   * may reference variables defined by the inherited class (it is initialized before the
     inheriting class).
-* A class defines a named scope and makes all of its non private) parameters and variables visible
-* A parameter that is private can only be set from the same module (it is not part of the API)
+* A class defines a named scope and makes all of its parameters and variables visible.
 * A class defined inside another class automatically becomes prefixed with the containing class'
-  name as its name space
+  name as its name space.
 * Circular inheritance is not allowed.
+* Class definitions are lazily evaluated, see [Modus Operandi][1].
 
 
 <table><tr><th>Note</th></tr>
@@ -134,19 +126,22 @@ Syntax:
 Syntax:
 
      ResourceTypeDefinition
-       : private ?= 'private' 'define' QualifiedName ('(' ParameterList? ')')?
+       : 'define' QualifiedName ('(' ParameterList? ')')?
            '{' Statements? '}'
        ;
 
 * A Resource Type named the same as a type provided in a plugin will never be selected
 * The default parameter value expressions may not reference variables in the calling scope, and
   should not reference any of the other parameters in the list when using a runtime where the
-  order is not guaranteed. It may reference meta parameters.
+  order is not guaranteed. It may reference meta parameters and global variables.
 * A define may occur at top level, or inside a class
 * A resource type defined inside a class automatically becomes prefixed with the containing class'
   name as its name space.
 * A resource type defined in a class only becomes visible if the class is loaded.
-* A resource type that is private may only be instantiated from with the same module
+* A resource type is evaluated lazily when an instance of the type is
+  created, see [Modus Operandi][1]. Each created instance evaluates the defined type's body
+  once.
+
 
 <table><tr><th>Note</th></tr>
 <tr><td>
@@ -161,13 +156,16 @@ A resource expression instantiates a resource and realizes it, or optionally doe
 realize it (*virtual*), and optionally exports (*exported*) it to a central store for inclusion
 elsewhere via *exported resource collection*.
 
+     # This syntax is common the different kinds of resource expressions
+     # See the semantic rules for details.
+     
      # A tree data structure to describe the allowed title expression types.
      # This data structure does not exist in the Puppet Types
      Tree[T] = Variant[T, Array[Tree[T]]]
 
      ResourceExpression
        : (virtual = '@' exported = '@'?)?
-         type_name = Expression<Variant[String[1], CatalogEntry]> | 'class'
+         type_name = (Expression<Variant[String[1], CatalogEntry]> | 'class')
          '{' ResourceBody (';' ResourceBody)* ';'? '}'
        ;
        
@@ -176,32 +174,85 @@ elsewhere via *exported resource collection*.
        ;
        
      ResourceAttributes
-       : AssignAttributes
-       | AttributeSplat
+       : AttributeOperation (',' AttributeOperation)*
+       ;
+
+     AttributeOperation
+       : AttributeSet
+       | AttributeAppend
+       | AttributeFromHash
+       ;
+
+     AttributeSet
+       : name = AttributeName '=>' value = Expression
+       ;
+
+     AttributeAppend  
+       : name = AttributeName '+>' value = Expression
+       ;
+
+     AttributesFromHash
+       : '*' '=>' Expression<Hash[String[1], Any]>
        ;
 
      AssignAttributes
        : AssignAttributes (',' AssignAttributes)* ','?
-       | name = SimpleName '=>' value = Expression
+       | 
        ;
 
-     AttributeSplat
-       : '*' '=>' Expression<Hash[String[1], Any]>
+     AttributeName
+       : KEYWORD
+       | NAME
        ;
        
      TitleExpression
        : Expression<Tree[Variant[String[1], Default]]>
        ;
 
+<table><tr><th>Note</th></tr>
+<tr><td>
+  The syntax above describes the current implementation. A Ux study is under way.
+</td></tr>
+</table>
+
 ** Semantic Constraints **
 
-When a `type_name` evaluates to a `String[1]` the name must conform to `QualifiedName` or `QualifiedReference`. When `type_name` evaluates to a `CatalogEntry` it is an error for the `CatalogEntry` to have a title, since it would conflict with the titles that are in the `ResourceBody`.
+* When a `type_name` evaluates to a `String[1]` the name must conform to `QualifiedName` or 
+ `QualifiedReference`. When `type_name` evaluates to a `CatalogEntry` it is an error for the 
+ `CatalogEntry` to have a title, since it would conflict with the titles that are in the 
+ `ResourceBody`.
 
-The `type_name` of `'class'` and an `Expression` that evaluates to the `CatalogEntry` of `Class` are interpreted equivalently. A `type_name` must be a reference to an existing plugin provided custom resource type or defined resource type. When the type name is `class` or evaluates to the string "class" or the `CatalogEntry` of `Class` the titles are the names of classes, and it must conform to class naming rules.
+* The `type_name` of `'class'` and an `Expression` that evaluates to the `CatalogEntry` of `Class` 
+  are interpreted equivalently. A `type_name` must be a reference to an existing plugin, provided
+  custom resource type, or defined resource type. When the type name is `class` or evaluates to the 
+  string "class" or the `CatalogEntry` of `Class` the titles are the names of classes, and it must 
+  conform to class naming rules.
 
-The list of all titles (the `String[1]` or `Default` values of the `Tree`) from all `TitleExpression`s in a single `ResourceExpression` must not contain the same title more than once.
+* The list of all titles (the `String[1]` or `Default` values of the `Tree`) from all
+  `TitleExpression`s in a single `ResourceExpression` must not contain the same title more than once.
 
-The `names` given for the `ResourceAttributes` of a single `ResourceBody` must be unique.
+* The name of an attribute may be any keyword (except `true` or `false`), a simple name (a name
+  not containing `::`). Names may not start with a digit.
+
+* The `names` given for the `ResourceAttributes` of a single `ResourceBody` must be unique.
+
+* The `AttributeAppend` may not be used in a Resource Expression.
+
+* When attributes are set using the `* =>` operation, the given value must be a Hash with
+  keys representing valid attribute names for the resource mapped to a value of a valid data
+  type for that attribute. The values set this way are subject to the same rules as if
+  the key => value entries in the hash had been made directly in the resource body (i.e. they
+  must be unique).
+  
+* A body with a title of `Default` type defines a *local default*, other bodies in the same resource
+  expression will use the attribute operations for this body as default values.
+  
+* It is allowed to give a mix of String titles with the default title. The default title has
+  no effect on the created resources from the same title, but defines the defaults for any
+  additional bodies in the same resource expression.
+  
+* The effect of a *local default* does not extend beyond one resource expression.
+
 
 ** Realized, Virtual, and Exported Resources **
 
@@ -219,11 +270,33 @@ All resources created by a resource expression are created with a status of eith
    * The set of attributes given is checked against the set of declared parameters for the `type_name` (or the `title` in the case of a `class` type). It is an error if there is no available type or if one of the evaluated attributes does not exist on the type.
    * Virtual and exported resources are remembered for reference, and for future operations.
    * Regular resources are *realized* (placed in the catalog).
+1. The resource instance is lazily evaluated by placing it in a queue, as described in [Modus Operandi][1].
 
 ### Resource Default Expression
 
-A Resource Default Expression sets the default values to use for resources created in the same scope.
-TODO: SCOPING RULES.
+A Resource Default Expression sets the default values to use for resources created in a scope where the expression is visible.
+
+The scooping of Resource Defaults follow the 3x rules for *dynamic scoping*. Dynamic scoping means
+that a search is made for the closest defined entity, starting in the current scope, then inherited scopes, then the scopes (transitively) where the resource was defined, then node and global scope. The search when looking up in a scope also includes everything that is visible to that scope. Thus, the *dynamic scoping* casts a very wide net that makes it difficult to reason about which
+entity that will be picked.
+
+<table><tr><th>Note</th></tr>
+<tr><td>
+  <p>
+  All usage of dynamic scoping except for defaults have been removed. In this version
+  of the specification the Resource Default Expression still follows the old rules since
+  it would have a very negative impact on compatibility to remove it. Without dynamic scoping
+  (only following lexical scoping) would remove all powers from this expression without providing
+  a replacement. A future version of the specification will address the much requested
+  feature of multiple definitions (merging them and handling conflicts) - the issues relating
+  to setting defaults will then also be addressed.
+  </p>
+  <p>
+  Until then, because of the difficulties of predicting the effect of the defaults expressions,
+  they should simply be avoided.
+  </p>
+</td></tr>
+</table>
 
     ResourceDefaultExpression
       : type = QualifiedReference '{' AttributeOperations? '}'
@@ -232,14 +305,17 @@ TODO: SCOPING RULES.
     # AttributeOperation(s) are the same as for Resource Expression
 
 
-* the type must be a reference to an existing resource type (plugin or user defined)
-* TODO: Can defaults be set for classes ? i.e. `Class { a => foo }`
+* The type must be a reference to an existing resource type (plugin or user defined)
+* Setting defaults for classes e.g. `Class { a => foo }` is not allowed.
 * A regular attribute operation using `=>` to assign the value sets the default value of the
   given attribute.
 * An append attribute operation using `+>` assigns a value by appending the result of the
   value expression to the current default value of the given attribute. If no such default value
   exists, the operation yields the same result as if `=>` had been used.
-
+* It is not allowed to redefine the default value for an attribute within the same scope.
+* It is allowed to have multiple default expressions in the same scope provided they define
+  different attributes.
+* All visible defaults are merged.
 
 ### Resource Override Expression
 
@@ -273,10 +349,9 @@ the derived class.
     * An existing value for an attribute is overwritten
   * The `+>` operator appends the given value to the value in each referenced resource instance.
     * The attribute must accept an Array (this is resource type specific)
-      * The behavior if it does accept an array is resource specific. ???
-        TODO_ WHAT HAPPENS IF IT DOES NOT ??
-    * If no value has been assigned, the given value is assigned as if the `=>` operator had
-      been used.
+      * The behavior if it does not accept an array is resource implementation specific.
+    * If no value was previously been assigned, the given value is assigned as if
+      the `=>` operator had been used.
     * If a value has been assigned, and it is not an array, the value is wrapped in an array
       before the new value is appended
     * If the resulting value is an array, it is also flattened (nested arrays are flattened out).
@@ -295,33 +370,32 @@ the derived class.
 
 Examples:
 
-    File['foo'] { mode => 0666 } 
-    File['foo', 'fee', 'bar'] { mode => 0666 }
+    File['foo'] { mode => '0666' } 
+    File['foo', 'fee', 'bar'] { mode => '0666' }
     File[]                                        # syntax error
     File { mode => 0666 }                         # a Resource Default Expression, not override
     
-    Resource['File', 'foo', 'bar'] { mode => 0666}
+    Resource['File', 'foo', 'bar'] { mode => '0666'}
     $type = File
-    $type['foo', 'bar'] { mode => 0666 }
+    $type['foo', 'bar'] { mode => '0666' }
     
     $resources = File['foo', 'bar']
-    $resources { mode => 0666 }
+    $resources { mode => '0666' }
 
 <table><tr><th>Note</th></tr>
 <tr><td>
   The 4x implementation uses the 3x logic to apply overrides, and to calculate the result
   of appending to an outer scope default. This means that the specified append logic may vary
-  between resource types ???.<br/>
-  TODO: Look at what actually happens in:
-  <code>scope.compiler.add_override(resource)</code>
+  between resource types.
 </td></tr>
 </table>
 
 ### Relationships
 
-Relationship Expressions are used to ensure that resources are processed in a
+Relationship Expressions are used to ensure that resources are applied (on an agent) in a
 specific order. There are two kind of operators `->` (that specifies the order), and
-`~>` (that specifies notification). Both kinds can be used in the reverse i.e. `<-` and `<~`
+`~>` (that specifies notification of change (which implies order)).
+Both kinds can be used in the reverse i.e. `<-` and `<~`
 
     RelationshipExpression
       : lhs = RelationshipOperand ('->' | '~>' | '<-' | '<~') rhs = RelationshipOperand
@@ -364,13 +438,11 @@ unrealized resources. Queries are lazily evaluated before Relationships are lazi
   they can be chained to form several cartesian product such as a -> b -> c is processed as
   a × b, b × c
 
-** Relationship Expressions are Q-Value producing **
+** Relationship Expressions have low precedence **
 
 * The relationship operators have very low precedence, only un-parenthesized function calls
   have lower precedence
-* Because of the low precedence it is not possible to assign the result to a variable, but a Q-value
-  is produced.
-* The Q-value is always the evaluated unique set of references in the rhs.
+* Because of the low precedence it is not possible to directly assign the result to a variable. If a relationship is formed as the last expression in a block the produced value is the unique set of references in the rightmost resource set. Such a value can be assigned.
 
 Examples:
 
@@ -380,7 +452,8 @@ is interpreted as:
 
      ($a = File[a]) -> File[b]
 
-and the -value of File[b] was not assigned, here however, the variable is set to the Q-Value
+and the -value of File[b] was not assigned, here however, the variable is set to set of 
+references
 
      $a = if true { File[a] -> File[b] }
      
@@ -393,12 +466,18 @@ possible:
 
 Which will order the two resource, and print out the rhs result of `Notify[a]`
 
-Whereas the example below results in syntax-error, because the relationship expression is of Q-value type.
+Whereas the example below results in syntax-error, because of the low precedence of the relationship expression.
 
      notify {a: message => 'a'}
      notify {b: message => 'b'}
      notice (Notify[b]-> Notify[a])  # syntax error on ->
 
+<table><tr><th>Note</th></tr>
+<tr><td>
+  These restrictions and the precedence of the relationship operators may be changed in a future
+  specification as the solution in the current implementation is undesirable.
+</td></tr>
+</table>
 
 Collector Expressions
 ---
@@ -412,7 +491,7 @@ as well as exported that are created during the catalog production. The `<<| |>>
 matches exported resources, both those created during the current catalog production and those
 that are exported from other nodes.
 
-Collector Expressions are Q-value producing expressions. However Collector
+Collector Expressions does not produce a directly assignable value. However Collector
 Expressions can take part in Relationship Expressions, where all resources that
 the collection matches have the Relationship Expression applied. If the query
 does not produce any matching resources and used in a relationship, then the
@@ -435,7 +514,7 @@ evaluation order).
      Query
        : Query 'and' Query
        | Query 'or' Query
-       | attr_name = SimpleName ('==' | '!=') query_value = QueryValue
+       | attr_name = AtributeName ('==' | '!=') query_value = QueryValue
        | '(' Query ')'
        ;
      

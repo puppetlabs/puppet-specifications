@@ -33,7 +33,7 @@ overrides of default settings that apply only to this environment.
 
 *TODO: Creation of the injector should be done (or at least be able to lazily get the injector)
 as it depends on the boot, the environment and its module path. There may be injector specific 
-settings for the environment. 3.6's injector is not directory environment ready.*
+settings for the environment. 3.7's injector is not directory environment ready.*
 
 *TODO: Loaders are configured at this point. They determine the visibility of modules from the module path, and the visibility each module has into other modules that they depend on.*
 
@@ -79,7 +79,7 @@ loaded and evaluated.
 
 *TODO: This phase defines the availability of trusted information from the node. This
 because logic loaded by the initial manifests may need this to establish what it
-wants.?*
+wants.*
 
 ### Selection of node definition
 
@@ -135,7 +135,7 @@ Evaluation Phase recurses.
 A name/type is required when:
 
 * A function is called (function/name => definition is needed in order to evaluate the function)
-* A call to `include`, `require`, `contain`, *TODO: what else?* is made (class/name => definition
+* A call to `include`, `require`, `contain`, is made (class/name => definition
   is needed in order to evaluate the class). If the definition has already been evaluated, this
   is a no-op.
 * A queued expression is evaluated, and it requires a type/name => definition association.
@@ -143,7 +143,6 @@ A name/type is required when:
 The evaluation of the following expressions are queued:
 
 * Resource Instantiation
-* Resource Defaults *TODO: ? Are they immediate*
 
 The evaluation of the following expressions are placed in a queue that is evaluated during
 the Catalog Completion Phase.
@@ -151,9 +150,9 @@ the Catalog Completion Phase.
 * Relationship Expressions
 * Queries 
 
-The evaluation of a Manifest continues until all expressions have been evaluated (top-down). Evaluation
-then continues to evaluate all queued expression. This may trigger new recursive loading, type/name => definition association, and queuing of more expressions. This evaluation continues until the
-evaluation queue is empty.
+The evaluation of a Manifest continues until all expressions have been evaluated (top-down). Evaluation then continues to evaluate all queued expression. This may trigger new recursive loading,
+type/name => definition association, and queuing of more expressions.
+This evaluation continues until the evaluation queue is empty.
 
 Catalog Completion Phase
 ---
@@ -162,27 +161,51 @@ This may in turn trigger new Evaluation Phases if anything is placed in the eval
 
 Once there is nothing more to evaluate, and there are no unevaluated queries or relationship
 expressions, the catalog is finished, validated and transformed to the requested catalog format.
+Typically, this catalog is sent to an agent for application (synchronization of actual state with
+the desired state described in the produced catalog), but catalogs may be produced for
+other reasons (testing, documentation, etc.).
   
-*TODO - the list of things:*
+*TODO - the list of things to describe:*
+
 * manifest ordering
-* what the queries result in (big picture)
-* what the relationships result in (big picture)
+* what the queries result in
+* what the relationships result in
 
-*TODO: The Below should be described in the context of each expression. It is not part off Modus Operandi - which defines the big picture.*
-
-Resource
+Application Phase
 ---
-A resource is created when the block of logic it resides in is evaluated.
+The Application Phase is the phase that occurs when a completed catalog is acted upon
+by an agent for the purpose of synchronizing its managed resources with the desired state
+described in the given catalog.
 
-*TODO: Is it ok to place resource creation in top scope? It means it is included in every
-catalog compilation loading the file*
+*TODO - the list of things to describe:*
 
-Classes
+* generated resources
+
+
+Auto Loading
 ---
+Referenced elements of the language are automatically loaded based on their name. This applies
+to:
 
-User Defined Types ('define')
----
+* classes
+* resource types (plugins in Ruby and user defined resources)
+* functions (both 3x and 4x APIs)
 
-Types (plugins)
----
+Auto loading has the following rules:
 
+* A "definition" must be stored in a file that corresponds to its name in order for it
+  to be automatically loaded.
+* Nested constructs are only visible if parent has been loaded, there is no search for elements
+  inside of files with a name different than the file.
+* Auto Loading is performed from the perspective of the code that triggers the loading.
+
+The semantics of the 3x loader is that everything is visible to everything else. These semantics apply to all types of elements except functions defined using the 4x function API.
+
+The 4x function API uses the 4x loaders which restrict the visibility by using the following rules.
+
+* Elements defined by Puppet runtime (e.g. logging functions) is visible to everything else
+* Everything in the Puppet runtime (the core) is available to everything else
+* Everything defined at the environment level is visible to all modules in that environment
+* A module without declared dependencies sees what is generally available, and all other modules
+* A module with declared dependencies has visibility into what is generally available and the modules 
+  on which it depends.
