@@ -68,9 +68,16 @@ Numbers evaluate to themselves.
     "I keep \t of things around here"
     "I can not drink more than $max_beers beers"
     
-A single quoted string is a single token produced by the Lexing of the source text [Strings] in [Lexical Structure].
+    # Heredoc
+    @(END)
+    Text until the given end marker
+    is in the resulting string.
+    END
+    
+A single quoted string is a single token produced by the Lexing of the source text [Strings] in [Lexical Structure]. Lexical processing also produces [Heredoc][lexical-heredoc] is also the result of lexical processing
 
 [Strings]: ./lexical_structure.md#strings
+[lexical-heredoc]: lexical_structure.md#Heredoc
 
 A Single Quoted string evaluates to a runtime String type.
 
@@ -145,6 +152,12 @@ The result of the expression is converted to a `String` as specified in the foll
   conversion rules to each element's key and value, producing `<key> '=>' <value>` for each element
   separated by `', '`.
 * For `Array` and `Hash`, no trailing comma is produced after the last element.
+
+### Heredoc
+
+Heredoc is covered in a separate section. See [Heredoc].
+
+[Heredoc]: heredoc.md
 
 ### Qualified Name
 

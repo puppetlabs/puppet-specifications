@@ -506,6 +506,9 @@ be performed on the last line of text.
 The lexical processing produces at least three tokens for a heredoc; a `HEREDOC` with a value corresponding
 to the Syntax expression part, followed by a token containing text positioning information, followed by a `STRING`, or `DQPRE`, `DQMID*`, `DQPOST` sequence.
 
+See [Heredoc][2] for details about the semantics.
+
+[2]: heredoc.md
 
 Template Mode
 ---
