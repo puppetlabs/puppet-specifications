@@ -78,6 +78,7 @@ MULTI_LINE_COMMENT
   : /\/\*(.*?)\*\//m
   ;
 ```
+
 A single line comment starts with a `#` and runs to the end of the line, or to the end of the input if there is no line ending and this is the last line.
 
 A multi line comment consists of at least `/**/`, allows embedded `/*`, but is terminated
@@ -218,7 +219,9 @@ Here are some examples to illustrate:
     "Hello $name1 and $name2!"
     #=> DQPRE('Hello '), VARIABLE('name1'), DQMID(' and '), VARIABLE('name2'), DQPOST('!')
 
-The String Interpolation Expression is further explained in Expression TODO: REF TO SECTION
+The String Interpolation Expression is further explained in [Expressiona][1]
+
+[1]: expressions.md
 
 Regular Expressions
 ---
@@ -246,7 +249,7 @@ second `'/'` on a new line to avoid `/<expr>/` to be recognized as a regular exp
 Identifiers
 ---
 Identifiers are *bare words* (a bare word is an unquoted sequence of letters and the underscore
-(`_`) character). The meaning of a bare word is semantic and is described in the language grammar; it may be interpreted as a string/symbol, or be a name/identifier.
+(`_`) character). The meaning of a bare word is context specific and is described in the language grammar; it may be interpreted as a string/symbol, or be a name/identifier.
 
 There are two main kinds of identifiers depending on if the sequence starts with a lower or upper case letter.
 
@@ -321,7 +324,7 @@ written in one of these forms:
     "Hello ${0}0080, how are you"
     "Hello ${$0}0080, how are you"
 
-See the following sections for more information: TODO: REFERENCES
+See the following sections in [Expressions][1] for more information:
 
 * String Interpolation
 * Types, Values, and Variables
@@ -333,66 +336,67 @@ keyword token is produced instead of a `NAME` token. Keywords are case sensitive
 
 | Literal | value
 | ---     | ---
-| false   | Boolean false
-| true    | Boolean true
-| undef   | The Puppet Language notion of nil / null / undefined
+| `false`   | Boolean false
+| `true`    | Boolean true
+| `undef`   | The Puppet Language notion of nil / null / undefined
 
 | Keywords
 | ---
-| and
-| case
-| class
-| default
-| define
-| else
-| elsif
-| if
-| in
-| inherits
-| node
-| or
-| unless
+| `and`
+| `case`
+| `class`
+| `default`
+| `define`
+| `else`
+| `elsif`
+| `if`
+| `in`
+| `inherits`
+| `node`
+| `or`
+| `unless`
 
-The semantics of these is described in TBD. REF TO GRAMMAR / SEMANTICS
+The semantics of these is described in [Expressions][1].
 
 The following keywords are considered reserved for future use and should be avoided.
 
 | Reserved Words
 | ---
-| type
-| function
-| private
-| attr
+| `type`
+| `function`
+| `private`
+| `attr`
 
 These names are reserved for types, and are unsuitable as identifiers for other kinds of
 elements:
 
 | Reserved Names / Types
 | ---
-| any, Any
-| hash, Hash
-| array, Array
-| integer, Integer
-| float, Float
-| collection, Collection
-| scalar, Scalar
-| resource, Resource
-| string, String
-| pattern, Pattern
-| boolean, Boolean
-| class, Class
-| type, Type
-| ruby, Ruby
-| java, Java
-| numeric, Numeric
-| data, Data
-| catalogentry, catalogEntry, CatalogEntry
-| enum, Enum
-| variant, Variant
-| data, Data
-| struct, Struct
-| tuple, Tuple
-| optional, Optional
+| `any, Any`
+| `hash, Hash`
+| `array, Array`
+| `integer, Integer`
+| `float, Float`
+| `collection, Collection`
+| `scalar, Scalar`
+| `resource, Resource`
+| `string, String`
+| `pattern, Pattern`
+| `boolean, Boolean`
+| `class, Class`
+| `type, Type`
+| `runtime, Runtime`
+| `numeric, Numeric`
+| `data, Data`
+| `catalogentry, catalogEntry, CatalogEntry`
+| `enum, Enum`
+| `variant, Variant`
+| `data, Data`
+| `struct, Struct`
+| `tuple, Tuple`
+| `optional, Optional`
+| `undef, Undef`
+| `default, Default`
 
 While the lower case names are perfectly fine to use (they have no special meaning) when
 using them as names of classes, or user defined defined resource types, the name clashes
@@ -420,7 +424,7 @@ Separators / Punctuation
 Operators
 ---
 These are the operators of the Puppet Programming Language. They are lexicographically delivered
-as individual tokens. Their semantics are specified in Expressions TODO: REFERENCE.
+as individual tokens. Their semantics are specified in [Expressions][1].
 
 ```
 = < > ! ?
@@ -499,10 +503,9 @@ WHITESPACE? ('|' WHITESPACE?)? ('-' WHITESPACE?)?  <<EndTag>>
 Where `<<EndTag>>` denotes the `EndTag` *text* as given in the heredoc expression. The `|` is an optional marker that indicates where the left margin is, and the `-` denotes if right trimming should
 be performed on the last line of text.
 
-The lexical processing produces two tokens for a heredoc; a `HEREDOC` with a value corresponding
-to the Syntax expression part, followed by a `STRING`, or `DQPRE`, `DQMID*`, `DQPOST` sequence.
+The lexical processing produces at least three tokens for a heredoc; a `HEREDOC` with a value corresponding
+to the Syntax expression part, followed by a token containing text positioning information, followed by a `STRING`, or `DQPRE`, `DQMID*`, `DQPOST` sequence.
 
-The semantics of heredoc is described in TBD. REF TO HEREDOC in the Grammar.
 
 Template Mode
 ---
