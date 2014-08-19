@@ -28,22 +28,22 @@ The 3x API
 A Function is created by calling `Puppet::Parser::Functions.newfunction`. This method
 takes the following arguments:
 
-* name - a symbol
-* type - if function is :rvalue or :statement
-* arity - number of arguments (or variable min args if negative)
-* doc - a doc string
+* `name` - a symbol
+* `type` - if function is :rvalue or :statement
+* `arity` - number of arguments (or variable min args if negative)
+* `doc` - a doc string
 
 The body of the function is implemented with a block given to `newfunction`. If an attempt is
 made to define additional methods inside the new function body, they share the namespace with `Scope` and all other functions.
 
-The API is both fragile, and does not help with the most common task - checking the arguments.
+The API is both fragile and does not help with the most common task - checking the arguments.
 It is not uncommon that 80% of the logic in  function consists of argument type checking. Worse
 is when there is no checking at all (because it is a chore to write) leading to mysterious
 and sometimes spectacular failures.
 
 The 4x API
 ---
-In the 4x API, as you probably have already guessed, there is support for type checking, and the
+In the 4x API there is support for type checking, and the
 logic for one function cannot step on the turf or other functions (and certainly not on `Scope`).
 
 A `Function` is now simply a callable object. It is instantiated once (when loaded) and its
@@ -279,23 +279,16 @@ to be system functions, and it is far better to call these functions than to imp
 system function (e.g. use `call_function(:include, 'name_of_class')` instead of trying
 to manipulate the catalog being produced).
 
-
-* The anonymous Function class defines all methods on the class, an instance of the function
-  represents a particular call
-* use one extra argument in every method that the evaluator dispatches to (e.g. max(scope, a, b)) -
-  which is bad because polymorphic dispatch works best on first arg, and becomes cumbersome
-  when using varargs (compare `max(a,b,scope)`, `vararg(a,b, scope, *var)`)
+* The anonymous Function class defines all methods on the class, an instance of this function class
+  represents the functions closure.
   
-The choice of instantiating the function for each call is better, but will create garbage
-instances (slower). We could perhaps indicate if a function requires calling scope and
-only instantiate it then.
-
 ### Manual Handling
 
 The intention is that typical functions should only require the features that Function
 supports. Internal / system functions may require support for additional features, and
-for that purpose there is an `InternalFunction` base class which is intended to have all
-features required. As the API is being defined, there may be the need to create a custom
+for that purpose there is an `InternalFunction` base class. 
+
+As the API is being defined, there may be the need to create a custom
 base class to experiment with features. If this is needed, there are two main
 extension points, the initialization, and the call method.
 
@@ -318,11 +311,8 @@ initialization is required of the function being created, the super version must
 
 The `closure_scope` is the outer scope of the function, typically this is the top/global scope.
 The loader is the loader that loads the function - it is needed since the function may need access
-to other loaded/loadable entities that are visible to it.
-
-
-
-
+to other loaded/loadable entities that are visible to it and the loader given to it provides
+this interface.
 
 Experimental / Internal Features
 ---
@@ -390,9 +380,9 @@ is useful when the methods being called needs access to context or service and t
 do not (and cannot) come from the puppet logic, and b) it may be different depending on environment
 and/or calling context. 
 
-This is specified via the methods injected_param, and injected_provider_param with the
+This is specified via the methods `injected_param`, and `injected_provider_param` with the
 same arguments as for the class attributes, but where the first name is the name of the
-Parameter instead of the attribute.
+`Parameter` instead of the attribute.
 
 Using the same example as earlier, but now instead using argument injection.
 
