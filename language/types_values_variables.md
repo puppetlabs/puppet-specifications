@@ -54,8 +54,9 @@ the conceptual categories **Data Types** e.g.:
 
 **Abstract Types** e.g.:
 
-* `Collection`; the parent type of `Array` and `Hash`
-* `Scalar`; the parent type of all literal data types (`Integer`, `Float`, `String`, `Boolean`)
+* `Collection`; a parent type of `Array` and `Hash`
+* `Scalar`; a parent type of all single valued data types (`Integer`, `Float`, `String`, `Boolean`, `Regexp`)
+* `Numeric`; the parent type of all numeric data types (Integer, Float)
 * `CatalogEntry`; the parent type of all types that are included in a *Puppet Catalog*
 * `Data`; a parent type of all kinds of general purpose "data" (`Scalar` and `Array` of `Data`,
   and `Hash` with `Scalar` key and `Data` values).
@@ -370,7 +371,7 @@ only, it can not be used in the Puppet Programming Language.
     String    ∪ Enum       → String
     String<x> ∪ Enum[x]    → String<x>
     String    ∪ Pattern    → String
-    String ∪ (T ∈ Scalar)  → Literal
+    String ∪ (T ∈ Scalar)  → Scalar
     String ∪ (T ∉ Scalar)  → Any
 
 ### Enum[*strings]
