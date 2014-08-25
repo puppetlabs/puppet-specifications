@@ -9,25 +9,19 @@ The Kinds of Types and Values
 ---
 There are two kinds of types in the Puppet Programming Language; *Puppet Types*, and the types of the underlying runtime "platform" language - the *Platform Types*.
 
+Many of the types in the type system are *Parameterized Types* which means that a *Base Type* can be further specialized. 
+
 ### Platform Types
 
 At present, the only existing implementation of the
 Puppet Language is written in Ruby, but there may be other implementations in the future. In general,
-the ability to refer to platform types is to allow configuration of a runtime, handle
+the ability to refer to platform types is to allow configuration of a runtime, and handle
 references to concepts such as plugins. **Regular Programs in the Puppet Programming Language
 do not make use of the platform types**.
 
-A Platform type is named after the runtime; currently only `Ruby`. It is a *Parameterized Type* where
-the type parameter is a reference to the *type name in the platforms type system* encoded as a Puppet String.
+A Platform type is a *Parameterized Type* taking two parameters; the name of the type (currently only `Ruby`), and a reference to the *type name in the platforms type system* encoded as a Puppet String.
 
-<table><tr><th>Note</th></tr>
-<tr><td>
-  The platform type names <code>Jvm</code>, <code>C</code>, and <code>Go</code> are reserved
-  for potential future use.
-</td></tr>
-</table>
-
-As an example, if there is a puppet extension written in Ruby with the name `Puppetx::MyModule::MyClass`, the platform type is `Ruby['Puppetx::MyModule::MyClass']`.
+As an example, if there is a puppet extension written in Ruby with the name `Puppetx::MyModule::MyClass`, the platform type is `Platform['Ruby', 'Puppetx::MyModule::MyClass']`.
 
 ### The Undef Type
 
@@ -40,10 +34,10 @@ A value of `Undef` type is assignable to any other *optional* type with the mean
 
 The type of the expression `default` is `Default`. The `Default` type is used to signal special behavior for various expressions in the language.
 
-## Puppet Types
+### Puppet Types
 
 Puppet Types include the types that are meaningful in a Puppet Program - these are divided into
-*Data Types* e.g.:
+the conceptual categories **Data Types** e.g.:
 
 *  `Integer`
 *  `Float`
@@ -53,30 +47,42 @@ Puppet Types include the types that are meaningful in a Puppet Program - these a
 *  `Array`
 *  `Hash`
 
-*Catalog Types* e.g.:
+**Catalog Types** e.g.:
 
 * `Resource`
 * `Class`
 
-*Abstract Types* e.g.:
+**Abstract Types** e.g.:
 
 * `Collection`; the parent type of `Array` and `Hash`
 * `Scalar`; the parent type of all literal data types (`Integer`, `Float`, `String`, `Boolean`)
 * `CatalogEntry`; the parent type of all types that are included in a *Puppet Catalog*
 * `Data`; a parent type of all kinds of general purpose "data" (`Scalar` and `Array` of `Data`,
   and `Hash` with `Scalar` key and `Data` values).
-* `Optional`, either `Undef` or a specific type
+* `Tuple`; an `Array` where each slot is typed individually
+* `Struct`; a Hash where each entry is individually named and typed
+* `Optional`; either `Undef` or a specific type
 * `Variant`; one of a selection of types
 * `Enum`; an enumeration of strings
 * `Pattern`; an enumeration of regular expression patterns
+* `Any`; the parent type of all types
 
-and *Platform Types*:
+(The term *abstract* denotes that instances of such a type are always an instance of some other
+*concrete* type).
+
+and **Platform Types**:
 
 * `Callable`; something that can be called (function, lambda)
 * `Type`; the type of types
-* `Ruby`; the type of runtime (non puppet) types
+* `Runtime`; the type of runtime (non Puppet) types
+* `Undef`; the "no value" type
+* `Default`; the "default value" type
 
 All types (Platform and Puppet) are organized into one *Type System*.
+
+The conceptual categories shown above are for documentation purposes (e.g. there is no type
+in the type system called "DataType"), and to establish names for these categories that can be used
+when talking about types.
 
 Optional Typing
 ---
@@ -85,47 +91,18 @@ Typing is optional. When something is not typed, it has the type `Any`.
 The Type System
 ===============
 
-The type system contains both concrete types; `Integer`, `Float`, `Boolean`, `String`, `Regexp` (regular expression),
-`Array`, `Hash`, `Callable`, and `Ruby` (represents a type in the Ruby type system - i.e. a Class), as well as abstract
-types `Scalar`, `Data`, `Collection`, `Pattern`, `Enum`, `Variant`, `Optional`, `Any`, and `Type`. 
-
-The `String` type is optionally parameterized (`String[<from>, <to>]`) with a size constraint.
-By default the size is from 0 to +Infinity.
-
-The `Array` and `Hash` types are parameterized, `Array[V]`, and `Hash[K,V]`, where if `K` is omitted, it defaults to `Scalar`, and if `V` is omitted, it defaults to `Data`. `Array` and `Hash` can be further parameterized to constrain their size, the default is from 0 (empty) to +Infinity. The `Tuple` type is a subtype of `Array` that fully specifies the type per index in the `Array`. A `Tuple` can describe optional and required types/size, as well as a repetition of the last specified type. A `Struct` similarly fully specifies the content of a `Hash` as it provides the capability to
-individually type the content per key.
-
-The `Integer` type is also parameterized to enable integer range as a type. By default, an `Integer`
-represents all integral number +/- Infinity. (See Integer for more information).
-
-The `Enum` and `Pattern` types are subtypes of `String` that describe subsets of all strings; those
-that match a concrete enumeration of strings, and those that match regular expression patterns.
-
-Objects in the catalog are of one of the types `Resource`, or `Class`.
-
-The `Ruby` type (i.e. representing a Ruby class not represented by any of the other types) does not have much value in puppet manifests but is valuable when describing bindings of puppet extensions / 
-runtime configurations. The Ruby type is parameterized with a string denoting the class name - i.e. `Ruby['Puppet::Bindings']` is a valid type.
-
-The abstract types are:
-
-- `Scalar` - `Integer`, `Float`, `Boolean`, `String`, `Pattern`, `Enum`
-- `Data` - any `Scalar`, `Array[Data]`, or `Hash[Scalar, Data]`
-- `Collection` - any `Array` or `Hash`
-- `Variant` - a parameterized type describing a disjoint set of other types
-- `Optional` - a convenience type where `Optional[T]` is the same as `Variant[Undef, T]`
-- `CatalogEntry` - one of the types Resource (and subtypes), and Class (and subtypes).
-- `Any` - any type
-- `Type` - the type of types, parameterized with the type it is the meta-type of, e.g. `Type[String]`
-  is the type of `String`.
+A type is denoted by an upper cased bare word; e.g. `Integer` (an integer value) optionally followed
+by one or more type parameters enclosed in square brackets `[]`, e.g. `Integer[1,10]` (integer values
+1 to 10 inclusive), or `Array[String[1]]` (an array of non empty strings). See the description of each type for the available type parameters.
 
 The type hierarchy is shown in the figure below. (A single capital letter denotes a 
 reference to a type, lower case type parameters have special processing rules as shown
-in section specific to each type). Note that parameterized type may be referenced
+in section specific to each type). Note that a type supporting parameters also may be referenced
 without any parameters, in which case type specific rules apply. Also note that the same type
-may appear more than once in the hierarchy, typically with different narrower type parameters.
+may appear more than once in the hierarchy (e.g. a `Scalar` is both `Any` and `Data`).
 
      Any
-       |- Literal
+       |- Scalar
        |  |- Numeric
        |  |  |- Integer[from, to]
        |  |     |- (Integer with range inside another Integer)
@@ -161,10 +138,10 @@ may appear more than once in the hierarchy, typically with different narrower ty
        |
        |- Callable[signature...]
        |- Type[T]
-       |- Ruby[class_name]
+       |- Runtime[runtime_name, class_name]
        |- Default
 
-In addition to these types, a Qualified Reference that does not represent any of the other types is interpreted as `Resource[the_qualified_reference]` (e.g. `File` is shorthand notation for `Resource[File]` / `Resource[file]`).
+In addition to these types, a Qualified Reference that does not represent any of the other types is an alias for `Resource[the_qualified_reference]` (e.g. `File` is shorthand notation for `Resource[File]` / `Resource[file]`).
 
 The descriptions use [Set Algebra Notation][1] to describe properties / operations on types.
 
@@ -185,12 +162,12 @@ The Ruby implementation of the Puppet Programming Language uses the Ruby classes
 
 The catalog types are mapped to their corresponding runtime implementation in Ruby.
 
-### Ruby[T]
+### Runtime['Ruby', T]
 
-Represents a type in the platform's type system. The type parameter T
-must be of `String` type and contain a valid string representation of the Ruby type. The referenced type does not have to exist; it is still a reference to a type (albeit a currently not existing type). The type must exist when operations are performed on the type (i.e. must be loadable).
+Represents a type in the platform's type system (currently only 'Ruby'). The type parameter T
+must be of `String` type and contain a valid string representation of the Ruby type. The referenced type does not have to exist; it is still a reference to a type (albeit a currently not existing type). The type must exist when operations are performed on the type (i.e. it must be loadable).
 
-An non parameterized Ruby type represents all/any Ruby runtime type.
+An Runtime['Ruby'] type without a type name represents all/any Ruby runtime types.
 
 ### Any
 
