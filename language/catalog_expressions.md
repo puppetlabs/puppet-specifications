@@ -161,20 +161,27 @@ elsewhere via *exported resource collection*.
      
      # A tree data structure to describe the allowed title expression types.
      # This data structure does not exist in the Puppet Types
+     #
      Tree[T] = Variant[T, Array[Tree[T]]]
 
      ResourceExpression
        : (virtual = '@' exported = '@'?)?
-         type_name = (Expression<Variant[String[1], CatalogEntry]> | 'class')
+         type_name = (ResourceTypeReference | 'class')
          '{' ResourceBody (';' ResourceBody)* ';'? '}'
        ;
        
+     ResourceTypeReference<CatalogEntry>
+       :  QualifiedName
+       |  QualifiedReference
+       |  QualifiedReference '[' type_name = Expression ']'
+       ;
+       
      ResourceBody
-       : titles = TitleExpression ':' ResourceAttributes?
+       : titles = TitleExpression ':' ResourceAttributes? 
        ;
        
      ResourceAttributes
-       : AttributeOperation (',' AttributeOperation)*
+       : AttributeOperation (',' AttributeOperation)* ','?
        ;
 
      AttributeOperation
@@ -195,11 +202,6 @@ elsewhere via *exported resource collection*.
        : '*' '=>' Expression<Hash[String[1], Any]>
        ;
 
-     AssignAttributes
-       : AssignAttributes (',' AssignAttributes)* ','?
-       | 
-       ;
-
      AttributeName
        : KEYWORD
        | NAME
@@ -217,57 +219,64 @@ elsewhere via *exported resource collection*.
 
 ** Semantic Constraints **
 
-* When a `type_name` evaluates to a `String[1]` the name must conform to `QualifiedName` or 
- `QualifiedReference`. When `type_name` evaluates to a `CatalogEntry` it is an error for the 
- `CatalogEntry` to have a title, since it would conflict with the titles that are in the 
- `ResourceBody`.
+* A `type_name` is restricted to the keyword `'class'`, `QualifiedName`, `QualifiedReference`, and 
+  `AccessExpression`  with a left expression being a `QualifiedReference`.
+  At runtime, the expression must evaluate to a `CatalogEntry` without a title.
+  (Since it would conflict with the titles that are in the `ResourceBody`).
 
 * The `type_name` of `'class'` and an `Expression` that evaluates to the `CatalogEntry` of `Class` 
   are interpreted equivalently. A `type_name` must be a reference to an existing plugin, provided
-  custom resource type, or defined resource type. When the type name is `class` or evaluates to the 
-  string "class" or the `CatalogEntry` of `Class` the titles are the names of classes, and it must 
+  custom resource type, or defined resource type. When the type name is `class` or evaluates to the   
+  `CatalogEntry` of `Class` the titles are the names of classes, and they must 
   conform to class naming rules.
 
 * The list of all titles (the `String[1]` or `Default` values of the `Tree`) from all
   `TitleExpression`s in a single `ResourceExpression` must not contain the same title more than once.
 
 * The name of an attribute may be any keyword (except `true` or `false`), a simple name (a name
-  not containing `::`). Names may not start with a digit.
+  not containing `::`). Names may not start with a digit. (Note that a future version of this 
+  specification may specify use of '::' to address attributes that are specific to a provider on
+  the format `providertype::attribute` - PUP-3146).
 
 * The `names` given for the `ResourceAttributes` of a single `ResourceBody` must be unique.
 
 * The `AttributeAppend` may not be used in a Resource Expression.
 
-* When attributes are set using the `* =>` operation, the given value must be a Hash with
+* When attributes are set using the `* =>` syntax, the given value must be a `Hash` with
   keys representing valid attribute names for the resource mapped to a value of a valid data
   type for that attribute. The values set this way are subject to the same rules as if
-  the key => value entries in the hash had been made directly in the resource body (i.e. they
+  the `key => value` entries in the hash had been made directly in the resource body (i.e. they
   must be unique).
   
 * A body with a title of `Default` type defines a *local default*, other bodies in the same resource
   expression will use the attribute operations for this body as default values.
   
-* It is allowed to give a mix of String titles with the default title. The default title has
-  no effect on the created resources from the same title, but defines the defaults for any
-  additional bodies in the same resource expression.
+* It is allowed to give a mix of `String` titles with the `default` title. The default title has
+  no effect on the created resources from the same title (it cannot, since the key/values are exactly 
+  the same), but defines the defaults for any additional bodies in the same resource expression.
   
 * The effect of a *local default* does not extend beyond one resource expression.
 
 
 ** Realized, Virtual, and Exported Resources **
 
-All resources created by a resource expression are created with a status of either "realized", "virtual", or "exported". A "realized" resource is created and placed in the catalog. A "virtual" resource is created, but is not placed in the catalog. An "exported" resource is created, not placed in the catalog, and made available to catalog processors. All resources created by the same resource expression have the same status.
+All resources created by a resource expression are created with a status of either *realized*, *virtual*, or *exported*. A "realized" resource is created and placed in the catalog. A "virtual" resource is created, but is not placed in the catalog. An "exported" resource is created, not placed in the catalog, and made available to catalog processors. All resources created by the same resource expression have the same status.
 
 ** Order of Evaluation **
 
 1. The `type_name` is evaluated.
 1. Each `ResourceBody` is evaluated in the order they appear (top to bottom) in the source text.
    1. The `TitleExpression` is evaluated.
-   1. Each `AssignAttributes` value expression is evaluated and mapped to the attribute `name`.
-   1. The `AttributeSplat` expression is evaluated. Each key of the resulting `Hash` is used as the name of an attribute and the value for that key is the attribute's value.
+   1. Each `AttributeOperation` value expression is evaluated and mapped to the attribute `name`.
+   1. The `AttributesFromHash` expression is evaluated. Each key of the resulting `Hash` is used as 
+      the name of an attribute and the value for that key is the attribute's value.
 1. A resource is created for each title, except a resource with a title type of `Default`.
-   * The attributes of the resource are the evaluated default attributes overridden by the attributes from the title's `ResourceBody`. Note: an attribute with a value of `undef` is not handled specially as is done when deciding whether to use the default expression of a parameter.
-   * The set of attributes given is checked against the set of declared parameters for the `type_name` (or the `title` in the case of a `class` type). It is an error if there is no available type or if one of the evaluated attributes does not exist on the type.
+   * The attributes of the resource are the evaluated default attributes overridden by the attributes 
+      from the title's `ResourceBody`. Note: an attribute with a value of `undef` is not handled 
+      specially as is done when deciding whether to use the default expression of a parameter.
+   * The set of attributes given is checked against the set of declared parameters for the 
+     `type_name` (or the `title` in the case of a `class` type). It is an error if there is no 
+     available type or if one of the evaluated attributes does not exist on the type.
    * Virtual and exported resources are remembered for reference, and for future operations.
    * Regular resources are *realized* (placed in the catalog).
 1. The resource instance is lazily evaluated by placing it in a queue, as described in [Modus Operandi][1].
@@ -283,9 +292,9 @@ entity that will be picked.
 <table><tr><th>Note</th></tr>
 <tr><td>
   <p>
-  All usage of dynamic scoping except for defaults have been removed. In this version
+  All other usage of dynamic scoping except for defaults have been removed. In this version
   of the specification the Resource Default Expression still follows the old rules since
-  it would have a very negative impact on compatibility to remove it. Without dynamic scoping
+  it would have a very negative impact on compatibility to remove it. Removing dynamic scoping
   (only following lexical scoping) would remove all powers from this expression without providing
   a replacement. A future version of the specification will address the much requested
   feature of multiple definitions (merging them and handling conflicts) - the issues relating
@@ -299,13 +308,22 @@ entity that will be picked.
 </table>
 
     ResourceDefaultExpression
-      : type = QualifiedReference '{' AttributeOperations? '}'
+      : type = QualifiedReference '{' DefaultAttributeOperations? '}'
       ;
 
-    # AttributeOperation(s) are the same as for Resource Expression
+    DefaultAttributeOperations
+       : OverrideAttributeOperation (',' OverrideAttributeOperation)* ','?
+       ;
+       
+    DefaultAttributeOperation 
+       : name = SimpleName '=>' value = Expression
+       | name = SimpleName '+>' value = Expression
+       ;
+     
 
-
-* The type must be a reference to an existing resource type (plugin or user defined)
+* The type must be a reference to an existing resource type (plugin or user defined). Only a 
+  `QualifiedReference` is accepted (as in 3x), or an AccessExpression with a left expression
+  being a `QualifiedReference`.
 * Setting defaults for classes e.g. `Class { a => foo }` is not allowed.
 * A regular attribute operation using `=>` to assign the value sets the default value of the
   given attribute.
