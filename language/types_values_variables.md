@@ -21,7 +21,7 @@ do not make use of the platform types**.
 
 A Platform type is a *Parameterized Type* taking two parameters; the name of the type (currently only `Ruby`), and a reference to the *type name in the platforms type system* encoded as a Puppet String.
 
-As an example, if there is a puppet extension written in Ruby with the name `Puppetx::MyModule::MyClass`, the platform type is `Platform['Ruby', 'Puppetx::MyModule::MyClass']`.
+As an example, if there is a puppet extension written in Ruby with the name `Puppetx::MyModule::MyClass`, the platform type is `Runtime['Ruby', 'Puppetx::MyModule::MyClass']`.
 
 ### The Undef Type
 
