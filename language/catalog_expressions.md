@@ -247,7 +247,10 @@ elsewhere via *exported resource collection*.
   type for that attribute. The values set this way are subject to the same rules as if
   the `key => value` entries in the hash had been made directly in the resource body (i.e. they
   must be unique).
-  
+
+* A `* =>` may appear anywhere in the list of attribute operations, but may only be used once per
+  resource body.
+
 * A body with a title of `Default` type defines a *local default*, other bodies in the same resource
   expression will use the attribute operations for this body as default values.
   
