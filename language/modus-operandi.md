@@ -28,7 +28,7 @@ initial manifests are, and where modules are located. From Puppet 4.0 environmen
 always directory based, an environment is represented by a directory having the name of
 that environment and with a defined structure. The setting `environmentpath` defines where these directories are.
 
-An Environment may have its own `envrionment.conf` file in its root directory with
+An Environment may have its own `environment.conf` file in its root directory with
 overrides of default settings that apply only to this environment.
 
 *TODO: Creation of the injector should be done (or at least be able to lazily get the injector)
@@ -207,5 +207,5 @@ The 4x function API uses the 4x loaders which restrict the visibility by using t
 * Everything in the Puppet runtime (the core) is available to everything else
 * Everything defined at the environment level is visible to all modules in that environment
 * A module without declared dependencies sees what is generally available, and all other modules
-* A module with declared dependencies has visibility into what is generally available and the modules 
+* A module with declared dependencies has visibility into what is generally available and the modules
   on which it depends.
