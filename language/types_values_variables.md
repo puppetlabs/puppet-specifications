@@ -916,7 +916,8 @@ SIGN
 
 Boolean Conversion
 ---
-Puppet has a sense of boolean "truth" and will convert values to `Boolean` as shown below:
+Puppet has a sense of boolean "truth" and will convert values to `Boolean` as shown below in
+the Boolean logic expressions `if`, `unless`, `and`, `or` and `!` (not):
 
      ''        → true
      undef     → false
