@@ -438,7 +438,7 @@ See also Match Expression (`=~` and `!~`) for more usage of the `Regexp` type.
 
 The syntax of the Regular Expression is defined by Ruby's implementation. Puppet's regular
 expressions does not support `\A` and `\Z` and does not support options. If `\A` or `\Z` are used
-in the regular expression string, these are removed. If an attempt is used to specify options,
+in the regular expression string, these are removed. If an attempt is made to specify options,
 this will result in an error (e.g. `/.*/m`).
 
 The result of `Regexp[pattern]` is a parameterized `Regexp` type that in certain operations
