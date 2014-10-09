@@ -384,6 +384,9 @@ Example:
 
 When matched against a `String` with a size constraint, all enumerated strings must comply with
 the size constraint.
+
+An `Enum` without any given parameters matches all other Enum, and thus matches all possible Strings.
+
      
 #### Type Algebra
 
