@@ -400,8 +400,8 @@ Represents all strings that match any of the given patterns (typically one patte
 The type parameters can be a string expression, literal regular expressions, `Pattern` type,
 or `Regexp` type (or a mix).
 
-Nothing matches an unparameterized `Pattern` (it would represent strings that are not strings which
-is a paradox)
+A `Pattern` without regular expressions matches all other Patterns, and thus matches all Strings
+and all Enums.
 
 Example:
 
