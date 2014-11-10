@@ -28,7 +28,8 @@ As an example, if there is a puppet extension written in Ruby with the name `Pup
 There is a special undefined/null/nil type - called `Undef`; the type of the expression `undef`.
 Values of the `Undef` type can always undergo a widening reference conversion to any other type. The reverse is however not true; only the value `undef` has the type `Undef`.
 
-A value of `Undef` type is assignable to any other *optional* type with the meaning *it is allowed to have no value*. This is achieved by using the type `Optional[T]` instead of just the type `T`.
+A value of `Undef` type is assignable to any other *optional* type with the meaning *it is allowed to have no value*. This is achieved by using the type `Optional[T]` instead of just the type `T`, by using `Any` to accept anything, or using `Data` to accept a pre-defined set of data types (including `Undef`).
+
 
 ### The Default Type
 
@@ -185,7 +186,7 @@ Represents the notion of "missing value". `Undef` is the type of the expression 
 
 Values of the `Undef` type can always undergo a widening reference conversion to any other type. The reverse is however not true; only the value `undef` has the type `Undef`.
 
-In practice, to accept a value that may be `Undef`, an `Optional[T]`, or `Variant[Undef, T]`
+In practice, to accept a typed value that may be `Undef`, an `Optional[T]`, or `Variant[Undef, T]`
 must be used.
 
 #### Type Algebra on Undef
