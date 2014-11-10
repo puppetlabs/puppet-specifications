@@ -861,7 +861,7 @@ strict variables feature is turned off, a reference to such a variable results i
 Conversions and Promotions
 ===
 The Puppet Programming Language is in general dynamically typed (everything is
-an Any unless declared otherwise). There are various operators that perform
+an `Any` unless declared or specified otherwise). There are various operators that perform
 type conversion.
 If required and when possible, there are functions that perform explicit type conversion,
 and there are typed parameters that will perform type conversion when required and possible.
@@ -876,47 +876,31 @@ Numeric Conversions
 
 * There are never any under or overflow when performing integer arithmetic. The implementation
   handles automatic conversion from 32 to 64 bit numbers to bignum.
+  
+* `Numeric` types are only converted to `String` when they are interpolated into a double quoted
+  string, or when explicitly converted using a function such as `sprintf`. Interpolation converts
+  the numeric value using a decimal (base 10) format.
 
-String to/from Numeric Conversion
+String to Numeric Conversion
 ---
 
-Automatic conversion between `String` and `Numeric` values are performed only
-for certain operations. Only arithmetic operations, comparison, and interpolations
-will cause an automatic conversion to occur.
+Automatic conversion between `String` and `Numeric` values is not performed.
 
-* Arithmetic operations are done on `Numeric` types - if an operand is a `String` an attempt is made
-  to transform it into numeric form (rather than giving up immediately).
-
-* Explicit conversion from `Numeric` to `String` can be performed by calling the `sprintf` function.
-
-* `Numeric` values are transformed to their radix 10 representation when interpolated into a string.
-
-* For a `String` to be converted into a `Numeric` the entire string must conform
-to the `CONVERTABLE_STRING` grammar. The `NUMBER` is interpreted in the same manner as the rest of the language with respect to radix. The resulting `Numeric` value is positive, unless a `SIGN` was specified, in which case the value has the specified sign.
-
-```
-CONVERTABLE_STRING
-  : BLANK? (SIGN BLANK?)? NUMBER BLANK?
-  ;
-
-BLANK
-  : /[[:blank:]]+/
-  ;
-
-SIGN
-  : '+'
-  : '-'
-  ;
-```
-
+* Arithmetic operations are done on `Numeric` types - if an operand is not `Numeric` the operation
+  will fail.
+  
+* Explicit `String` to `Numeric` conversion can be performed with the function `scanf`.
 
 <table>
 <tr><th>Note</th></tr>
 <tr><td>  
-  Automatic String to Number conversion may be deprecated and removed in a future version
-  of the specification.
+  Versions of Puppet before 4.0 performed automatic conversion of String to Numeric if the LHS was
+  Numeric, and the RHS a String (but not consistently for all operators). Versions of "future
+  parser" before 3.4.7 performed String to Numeric conversion if Strings could successfully be
+  converted.
 </tr></td>
 </table>
+
 
 Boolean Conversion
 ---
@@ -937,7 +921,7 @@ the Boolean logic expressions `if`, `unless`, `and`, `or` and `!` (not):
 
 String to Regexp Conversion
 ---
-If the RHS operand of a match expression evaluates to a String, the string is converted into a regular expression.
+If the RHS operand of a match expression evaluates to a `String`, the string is converted into a regular expression.
 
 To String Conversions
 ---
@@ -951,38 +935,38 @@ allowed (e.g. `$"x"` is not a valid reference to the variable named `'x'`).
 
 ### Qualified Reference to String
 
-Qualified References are only converted to String when interpolated into a String expression.
+Qualified References are only converted to `String` when interpolated into a `String` expression.
 
 ### Hash to String
 
-A Hash is turned into a string when it is interpolated. The string consists of '{' '}' around
-a comma separated list of entries where each entry is K '=>' V and K and V are converted to string
+A `Hash[K,V]` is turned into a string when it is interpolated. The string consists of `'{'` `'}'` around
+a comma separated list of entries where each entry is `K '=>' V` and `K` and `V` are converted to string
 form. The resulting string is formatted with one space padding after each comma. No trailing
-comma is produced. There is no space after '{' and no space before '}'.
+comma is produced. There is no space after `'{'` and no space before `'}'`.
 
 ### Array to String
 
-An Array is turned into a string when it is interpolated. The string consists of '[' ']' around
-a comma separated list of entries where each entry V is converted to string form. The resulting string is
-formatted with one padding space after each comma. No trailing comma is produced. There is no space after '[' and no space before ']'.
+An `Array[T]` is turned into a string when it is interpolated. The string consists of `'['` `']'` around
+a comma separated list of entries where each entry `T` is converted to string form. The resulting string is
+formatted with one padding space after each comma. No trailing comma is produced. There is no space after `'['` and no space before `']'`.
 
 ### Type to String
 
-A Type is turned into a string when it is interpolated. The string consists of the type name in upper case, and if it is parameterized followed by the string form of the parameters enclosed in '[' ']'.
-When there are multiple parameters, they are comma separated, and padded with one space after each comma. There is no space after '[', and no space before ']'. In general the form is compliant
+A `Type` is turned into a string when it is interpolated. The string consists of the type name in upper case, and if it is parameterized followed by the string form of the parameters enclosed in `'['` `']'`.
+When there are multiple parameters, they are comma separated, and padded with one space after each comma. There is no space after `'['`, and no space before `']'`. In general the form is compliant
 with how the types are specified in Puppet Programming Language source form.
 
 ### Regexp to String
 
-A Regexp is turned into a String when it is interpolated. The string consists of the source of
-the regular expression as given in the Puppet Programming Language, enclosed in '/' '/'.
+A `Regexp` is turned into a `String` when it is interpolated. The string consists of the source of
+the regular expression as given in the Puppet Programming Language, enclosed in `'/'` `'/'`.
 
 ### Numeric to String
 
-A Numeric is turned into a String when it is interpolated. The result is in decimal radix.
+A `Numeric` is turned into a `String` when it is interpolated. The result is in decimal radix (i.e. base 10).
 
 ### Any to String
 
-Conversion of any other type to String is undefined. It will typically be the underlying
+Conversion of any other type to `String` is undefined. It will typically be the underlying
 runtime system's string representation of the object.
  
