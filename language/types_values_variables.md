@@ -495,7 +495,7 @@ a value (of `V` type), optionally constrained in size by the integer range param
 The types of `K` and `V` are unrestricted.
 
 While the key is generally not restricted, it is recommended that `Undef` is not accepted
-as a key (this is the default, and default for hashes that conforms to the `Data` type).
+as a key (not accepting `Undef` is the default, and default for hashes that conforms to the `Data` type).
 
 #### Type Algebra on Hash
 
@@ -884,12 +884,13 @@ Numeric Conversions
 String to Numeric Conversion
 ---
 
-Automatic conversion between `String` and `Numeric` values is not performed.
+* Automatic conversion between `String` and `Numeric` is performed for arithmetic operations, but
+  not for comparisons.
 
-* Arithmetic operations are done on `Numeric` types - if an operand is not `Numeric` the operation
-  will fail.
+* Arithmetic operations are done on `Numeric` or `String` types - if an operand is not `Numeric` or a
+  `String` that can be converted to `Numeric`, the operation will fail.
   
-* Explicit `String` to `Numeric` conversion can be performed with the function `scanf`.
+* Explicit `String` to `Numeric` conversion can be performed with the function `scanf()`.
 
 <table>
 <tr><th>Note</th></tr>
@@ -897,7 +898,8 @@ Automatic conversion between `String` and `Numeric` values is not performed.
   Versions of Puppet before 4.0 performed automatic conversion of String to Numeric if the LHS was
   Numeric, and the RHS a String (but not consistently for all operators). Versions of "future
   parser" before 3.4.7 performed String to Numeric conversion if Strings could successfully be
-  converted.
+  converted. Since 3.7.4, only arithmetic operations cause automatic conversion and fails if
+  values are not convertible to numeric.
 </tr></td>
 </table>
 
@@ -915,7 +917,7 @@ the Boolean logic expressions `if`, `unless`, `and`, `or` and `!` (not):
 <table>
 <tr><th>Note</th></tr>
 <tr><td>  
-  3x treats '' as equivalent to `undef`.
+  3x treats '' (empty string) as equivalent to <tt>undef</tt>.
 </tr></td>
 </table>
 

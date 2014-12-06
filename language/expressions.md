@@ -957,13 +957,13 @@ Examples:
     
 #### Hash Type [ ]
 
-Specialized a Hash Type by producing a new type with parameterized types for key and value.
+Specializes a Hash Type by producing a new type with parameterized types for key and value.
 
 Signature:
 
     HashTypeAccess
       : Expression<Type<Hash>> ('[' 
-            (value_t = Expression<Type> | (key_t = Expression<Type> ','  value_t = Expression<Type>))
+            key_t = Expression<Type> ','  value_t = Expression<Type>
             (',' size_t = SizeConstraint)?
         ']')?
       ;
@@ -973,23 +973,21 @@ Signature:
       ;
 
 * The `value_t` and `key_t` must evaluate to types
-* Fewer than one or more than four parameters raises an error
-* If one type is given the key type is set to `Scalar`, and the value type to the given type
-* If two types are given, the key type is the first, and the value type the second
-* The size of the hash may constrained by giving a min (from) and a max (to) integer value,
+* Fewer than two or more than four parameters raises an error
+* When two types are given, the key type is the first, and the value type the second
+* The size of the hash may be constrained by giving a min (from) and a max (to) integer value,
   and a literal `default` may be used to denote +Infinity.
 * A min/from value < 0 raises an error
 * Note that an unparameterized `Hash` defaults to `Hash[Scalar, Data, 0, default]`
 
 Examples:
 
-    Hash[String]                     # => Hash[Scalar, String] (type)
     Hash[String, Integer]            # => Hash[String, Integer] (type)
-    $h = Hash[String]                # => Hash[Scalar, String] (type)
+    $h = Hash[Scalar, String]        # => Hash[Scalar, String] (type)
     $h[]                             # => syntax error
-    $h[Integer]                      # => Hash[Scalar, Integer] (type)
+    $h[Scalar, Integer]              # => Hash[Scalar, Integer] (type)
     
-    Hash[String, 1, 10]              # => Hash type with min 1, max 10, Scalar => String entries
+    Hash[Scalar, String, 1, 10]      # => Hash type with min 1, max 10, Scalar => String entries
 
 #### Array Type [ ]
 
