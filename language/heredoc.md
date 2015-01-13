@@ -203,7 +203,7 @@ new line character.
 
 
     0.........1.........2.........3.........4.........5.........6
-    $a = @(END:L)     
+    $a = @(END/L)     
       I am a very long line of text that is difficult to work \
       with. The escaped end of line joins the long line into one.
      | - END
