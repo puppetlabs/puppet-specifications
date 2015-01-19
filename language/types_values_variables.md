@@ -803,10 +803,11 @@ The operations available per type is specified in the section TODO REF TO OPERAT
 
 Variables
 ---
-A variable is a storage container for a value. Variables are immutable (once assigned they cannot be assigned to another value, and the value it is referring to is also immutable. Variables are also used define parameters of defines, classes, lambdas (and functions) - the term *parameter* is used
-to denote such variables.
+A variable is a storage container for a value. Variables are immutable (once assigned they cannot be assigned to another value, and the value it is referring to is also immutable. Variables are also used to define parameters of defines, classes, lambdas (and functions) - the term *parameter* is 
+used to denote such variables.
 
 The type of a non parameter variable is determined by what is assigned to it.
+
 The type of a parameter may be optionally specified in which case a given value for that parameter
 must be compliant with the given type. An untyped parameter accepts a value of any type (i.e. `Any`)
 
@@ -827,17 +828,27 @@ Variable names must conform to the following syntax:
        | /(::)?[a-z]\w*(::[a-z]\w*)*/
        ;
 
-* That is, a numeric variable must be a valid decimal number (a name that starts with 0 and has additional digits is also illegal). 
+* That is, a numeric variable must be a valid decimal number (a name that starts with 0 and has 
+  additional digits is also illegal).
+  
 * A named variable must start with a lower case letter a-z or '_' (underscore)
-and after that contain any word characters (a-z, A-Z, 0-9 or _). Specifically, a hyphen character
-or a period are not allowed as they were in some earlier versions of the Puppet Programming Language.
-* Also note that it is not allowed to use an upper case letter in the initial position of a name 
-segment.
-* It is also not allowed to use an underscore in the initial position of a name segment
-in a fully qualified variable.
+  and after that contain any word characters (a-z, A-Z, 0-9 or _). Specifically, a hyphen character
+  or a period are not allowed as they were in some earlier versions of the Puppet Programming 
+  Language.
 
-It is illegal to reference a numeric variable with a fully qualified name (i.e. a match result in
-another name-space).
+* Also note that it is not allowed to use an upper case letter in the initial position of a name 
+  segment.
+* It is also not allowed to use an underscore in the initial position of a name segment
+  in a fully qualified variable.
+
+* The last segment of a qualified variable name is case sensitive - e.g. the variable `$varA` is not
+  the same variable as `$vara`. All other segments are case insensitive.
+
+* It is illegal to reference a numeric variable with a fully qualified name (i.e. a match result in
+  another name-space).
+
+**In this version of the specification variables last segment is specified to be case sensitive.
+This may change in a future version as it is inconsistent with how class/type names are handled.**
 
 ### Variable Reference
 
