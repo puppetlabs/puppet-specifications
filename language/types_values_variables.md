@@ -233,19 +233,20 @@ Represents the abstract notion of "number", its subtypes are `Integer`, and `Flo
 
 ### Integer ([from, to])
 
-Represents a range of integral numeric value. The default is the range +/- Infinity.
+Represents a range of integral numeric value. The default is the range MIN INTEGER to MAX INTEGER.
 
-There is no theoretical limit to the smallest or largest number that can be represented
-as an implementation should transparently represent the value as either a 32 or 64 bit
-machine word, or as a *bignum*. There is a practical limit; while a bignum can grow to
-infinite size, computer scientist has yet to invent a computer with infinite amounts of
-memory.
+An Integer value is a signed 64 bit integral value in the range MIN INTEGER=-2^63
+and MAX INTEGER=2^63-1.
+
+**Note: while the Puppet runtime implemented in Ruby may make use of BigInt to represent
+values outside of this range, such values cannot correctly be represented in catalogs and
+Puppet db.**
 
 The Integer type can optionally be parameterized with `from`, `to` values to provide a range.
 The range can be *ascending* or *descending*. (The direction is only important when iterating
 over the set of instances as the range of values is the same if `from > to` as when `from < to`).
 
-If `from` is unassigned, the default is -Infinity, and if `to` is unassigned, the default is +Infinity.
+If `from` is unassigned, the default is MIN INTEGER, and if `to` is unassigned, the default is MAX INTEGER.
 
 From the Puppet Language, the default values are set by using a literal `default`. If only one
 parameter is given, it is taken as both `from` and `to`, (thus producing a range of one value).
@@ -299,7 +300,7 @@ Iterating over an integer range:
 
 ### Float ([from, to])
 
-Represents a range of *inexact* real number values. The default is the range +/- infinity.
+Represents a range of *inexact* real number values. The default is the range +/- Infinity.
 
 A float is an *inexact* real number using the native architecture's double precision floating
 point representation. In contrast to `Integer`, operations on `Float` can cause the result to be negative or positive *Infinity* (i.e. it loses precision to the point where there is no value digits left). This is treated as an error in the Puppet Programming Language (it can be observed by dividing a floating point value with 0).
