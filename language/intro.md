@@ -1,38 +1,39 @@
 Puppet Language Specification
 ===
-This specification is a technical description of the Puppet Programming Language.
+This specification is a technical description of the Puppet Language.
 
 Terminology
 ---
 <dl>
   <dt>Puppet Program</dt>
-  <dd>A Program written in the Puppet Programming Language, also known as the "Puppet DSL"</dd>
+  <dd>A Program written in the Puppet Language, also known as the "Puppet 
+  DSL"</dd>
 
   <dt>Program</dt>
   <dd>A Program written in the Puppet Language unless text refers to some other language
       like Ruby Program, Java Program etc.
   </dd>
-  
+
   <dt>LHS</dt>
   <dd>Left Hand Side, the left operand in a binary expression.</dd>
-  
+
   <dt>RHS</dt>
   <dd>Right Hand Side, the right operand in a binary expression.</dd>
-  
+
   <dt>Lexing</dt>
   <dd>The act of turning source text into tokens that are recognized by a parser.</dd>
 
   <dt>Parsing</dt>
   <dd>The act of turning source text into a abstract syntax model.</dd>
-  
+
   <dt>Loading</dt>
   <dd>The act of locating source text, parsing, and evaluating logic to the point where
       definitions are available (but not necessarily evaluated in full).
   </dd>
-  
+
   <dt>Evaluation</dt>
   <dd>The act of carrying out the instructions in the Puppet Program being executed.</dd>
-  
+
   <dt>Compilation</dt>
   <dd>The act of producing a Catalog by executing a Puppet Program.
       Also known as Catalog Building.
@@ -43,10 +44,9 @@ Terminology
 
   <dt>Definition</dt>
   <dd>The act of assigning/setting the content/value of an element in the Program</dd>
-  
+
   <dt>Manifest</dt>
-  <dd>A file with source code in the Puppet Programming Language.
-      The extension .pp is used for such files.
+  <dd> A file with source code in the Puppet Language. The extension .pp is used for such files.
   </dd>
 <dl>
 
@@ -99,7 +99,7 @@ ASequenceOfNames
 ### Set Algebra Notation
 
 Algebra notation is used in the specification to describe the operations on
-types as well as other logical constructs. Here is a repetition of the set theory notations
+types as well as other logical constructs. Here is a summary of the set theory notations
 used in this specification:
 
 `X` is *member of* (the set `Y`) (can be read as `exists in`)
@@ -113,20 +113,20 @@ used in this specification:
 The *union* of `X` and `Y` (all that are in `X`, in `Y`, or in both)
 
     X ∪ Y
-    
+
 The intersection of `X` and `Y` (all that are in both `X` and `Y`)
 
     X ∩ Y
-    
+
 Implies, gives, produces (depending on context)
 
     →
-    
+
 The empty set
 
     ∅
 
-    
+
 #### Examples:
 
 The union of the type Integer and the type Float is Numeric:
