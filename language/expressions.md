@@ -234,15 +234,15 @@ Operators
 
 * Performs a concatenate/merge if the LHS is an Array or Hash
 * Adds LHS and RHS numerically otherwise
-  * LHS and RHS are converted from String to Numeric (see [the section on Numeric Conversions][1] in Conversions and Promotions)
-  * Operation fails if LHS or RHS are not numeric or conversion failed
+  * Operation fails if LHS or RHS are not numeric
 * Is not commutative for non numeric/string operands ( `[1,2,3] + 3` is not the same as `3 + [1,2,3]`,
   and `[1,2,3] + [4,5,6]` is not the same as `[4,5,6] + [1,2,3]` )
   
 #### Addition
 
 Addition of integer values produces an integer result. If one of the operands is a `Float` the
-result is also a `Float`. Integral values does not overflow.
+result is also a `Float`. An implementation may raise an error if integral values overflow, but
+may never silently produce an incorrect value.
 
     1 + 1      # produces 2
     1.0 + 1.0  # produces 2.0
@@ -286,7 +286,8 @@ Examples
 #### Subtraction
 
 Subtraction of integer values produces an integer result. If one of the operands is a `Float` the
-result is also a `Float`. Integral values does not underflow.
+result is also a `Float`. An implementation may raise an error if integral values underflow, but
+may never silently produce an incorrect value.
 
     10 - 1     # produces 9
     10.0 - 0.1 # produces 9.9
@@ -331,7 +332,8 @@ Examples:
   * Operation fails if LHS or RHS are not numeric or if conversion failed
 
 Multiplication of integer values produces an integer result. If one of the operands is a Float the
-result is also a Float. Integrals does not overflow.
+result is also a Float. An implementation may raise an error if integral values overflow, but
+may never silently produce an incorrect value.
 
 ### unary * operator (splat)
 
@@ -473,12 +475,10 @@ Equality and Comparison Operators
 
 Tests if LHS is equal to RHS and produces a Boolean.
 
-* If LHS and RHS are convertable to `Numeric`, the equality checks is based on the `Numeric` value (see [the section on Numeric Conversions][1] in Conversions and Promotions)
-* If one of LHS or RHS is convertable to `Numeric`, but not the other, the result is `false`
-* String comparison is done case independently.
-  * **Case independence is only done for the /[A-Z]/ character range** as the rest of
-    the characters' status depends on Locale. [PUP-1800]
 * If the base type of LHS and RHS is different the result is `false`
+* String comparison is done case independently.
+  * **Case independence is only done for the /[a-zA-Z]/ character range** as the rest of
+    the characters' status depends on Locale. [PUP-1800]
 * Arrays are equal if they have the same size and each element is equal (with the semantics of
   the `==` operator)
 * Hashes are equal if they have the same size and each element is equal (with the semantics of
@@ -616,15 +616,13 @@ A comparison operator converts the result to a `Boolean`.
 
 #### Comparison Semantics per Type
 
-* If both LHS and RHS are convertible to `Numeric` the comparison is based on the numeric values (see [the section on Numeric Conversions][1] in Conversions and Promotions)
+* Both LHS and RHS must have the same type of an error is raised
 * Comparisons of strings is case independent
-  * **Case independence is only done for the /[A-Z]/ character range** as the rest of
+  * **Case independence is only done for the /[a-zA-Z]/ character range** as the rest of
     the characters' status depends on Locale. [PUP-1800]
-* All `Numeric` values are less than all `String` values
 * It is possible to compare:
   * `String` with `String`
   * `Numeric` with `Numeric` (or with strings in numeric form)
-  * `Numeric` with `String` (or vice versa), **here all numbers are less than all strings**
   * `Type` with `Type`
     * Here the smaller type is the more specific. See [The Type System], and example below.
 * It is not possible to compare other types (except for equality)
@@ -674,7 +672,6 @@ The following table shows the result of searching for a LHS of a particular type
 | LHS         | RHS       | Description |
 |------       |------     |------       |
 | `String`    | `String`    | searches for the LHS string as a substring in RHS (LHS and RHS downcased), `true` if a substring is found. Also see [PUP-1800] regarding case. |
-| `Number`    | `String`    | is only true if the RHS converted to number equals the number |
 | `Regexp`    | `String`    | true if the string matches the Regexp (`=~`) |
 | `Type`      | `String`    | `false` |
 | *any other* | `String`    | `false` |
