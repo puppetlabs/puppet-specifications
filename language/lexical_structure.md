@@ -100,7 +100,7 @@ in octal and hexadecimal form. All numbers start with a digit.
 
 ```
 NUMBER
-  : HEX | OCTAL | DECIMAL
+  : HEX | OCTAL | DECIMAL | FLOAT
   ;
 
 HEX
@@ -112,6 +112,10 @@ OCTAL
   ;
 
 DECIMAL
+  : /[1-9][0-9]*/
+  ;
+
+FLOAT
   : /0?\d+(\.\d+)?([eE]-?\d+)?
   ;
 ```

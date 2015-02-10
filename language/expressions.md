@@ -105,7 +105,7 @@ The expression part has the following rules:
 * Automatic conversion to a variable is performed if the expression has one of the forms:
   * `${<KEYWORD>}` - e.g. `${node}`, `${class}` becomes `${$node}`, `${$class}`
   * `${<QualifiedName>}` - e.g. `${var}` becomes `${$var}`
-  * `${<NUMBER>}` - e.g. `${0}` becomes `${$0}`
+  * `${<DECIMAL>}` - e.g. `${0}` becomes `${$0}`
 * Automatic conversion is also performed in the following cases but variables having the same name as 
   a keyword must be written with a preceding `$`:  
   * `${<AccessExpression>}` - e.g. `${var[key]}`, `${var[key][key]}` becomes `${$var[key]}`,
