@@ -1,9 +1,7 @@
-Puppet 4x Function API
+Function API
 ===
 In Puppet 4x there is a new API for writing Ruby functions that extend the functionality
-of the Puppet language. This API is *experimental* in 4x in that functions written against
-this API may need to be changed in minor releases. Functions that comply with the API will be
-fully functional - it is not the use of the functions that is experimental.
+of the Puppet language. This API is *experimental* in 3x (with future parser) in that functions written against this API may need to be changed in minor releases. Functions that comply with the API will be fully functional - it is not the use of the functions that is experimental.
 
 We are doing this because the 3x API for functions has several issues:
 
@@ -28,15 +26,15 @@ The 3x API
 A Function is created by calling `Puppet::Parser::Functions.newfunction`. This method
 takes the following arguments:
 
-* `name` - a symbol
-* `type` - if function is :rvalue or :statement
+* `name` - a symbol (required)
+* `type` - if function is `:rvalue` or `:statement`
 * `arity` - number of arguments (or variable min args if negative)
 * `doc` - a doc string
 
 The body of the function is implemented with a block given to `newfunction`. If an attempt is
 made to define additional methods inside the new function body, they share the namespace with `Scope` and all other functions.
 
-The API is both fragile and does not help with the most common task - checking the arguments.
+The API is both fragile and does not help with the most common task - checking the argument types.
 It is not uncommon that 80% of the logic in  function consists of argument type checking. Worse
 is when there is no checking at all (because it is a chore to write) leading to mysterious
 and sometimes spectacular failures.
@@ -172,11 +170,11 @@ of the function, thus, if a very generic entry is placed first it will always wi
 
 If dispatch is used, the expected argument count is derived from the number of specified
 parameters. If something else is wanted, if some parameters are optional (have defaults), or
-if the last parameter is a varargs, then this is specified with a call to `arg_count`, which takes
+if the last parameter is a *varargs*, then this is specified with a call to `arg_count`, which takes
 min and max count of arguments. The max argument may be `:default` to indicate an infinite count.
 
 Care must be taken to specify a min/max that is compatible with the method being called, but
-they do not have to be exactly the same - this is legal
+they do not have to be exactly the same - this is legal:
 
     dispatch :special do
       param 'Numeric', 'a'
@@ -201,15 +199,11 @@ expressions (e.g. '`Integer[$min_allowed + 1, $max_allowed]`' cannot be used as 
 ### Lambda Support
 
 The signature supports a special block parameter that can accept a block of code / lambda given
-to a function as an extra trailing argument. If this block parameter is not defined, the function
-will not accept a call where a trailing lambda is given.
+to a function. If this block parameter is not defined, the function
+will not accept a call where a lambda is given. To make it possible to pass a block to the method
+this must be declared in the dispatcher with either `block_param`, or `optional_block_param`.
 
-It is also possible to have explicit lambdas as parameters (albeit that there is currently no
-way to pass multiple lambdas to a function from the Puppet Language in this version of
-the specification). The language itself passes
-a lambda as the last argument. Since a method may want to specify optional and variable number
-of arguments before the lambda, there is the need to specify it separately using one
-of the methods `block_param`, or `optional_block_param` where (as the name suggests), the former makes the signature require that a lambda is given, and the latter accepts a given lambda, but also that no lambda was given.
+As the names of the methods suggests, the former makes the signature require that a lambda is given, and the latter accepts a given lambda, but also that no lambda was given.
 
     dispatch :something do
       param 'Scalar', :a'
@@ -217,7 +211,7 @@ of the methods `block_param`, or `optional_block_param` where (as the name sugge
     end
 
 The `block_param` and `optional_block_param` can be called without arguments which means that
-a lambda with any signature is accepted, and that the name of the parameter is `:block`. If something else is wanted, it is specified with a Callable type, and the name of the block. The type may also be a `Variant` type if all of the variants are variations of `Callable` (including other `Variant` types).
+a lambda with any signature is accepted, and that the name of the parameter is `:block`. If something else is wanted, it is specified with a `Callable` type, and the name of the block. The type may also be a `Variant` type if all of the variants are variations of `Callable` (including other `Variant` types).
 
 Example, accept a callable that takes two arguments, the first an `Integer`, and the second a
 `String`:
@@ -227,6 +221,41 @@ Example, accept a callable that takes two arguments, the first an `Integer`, and
 The declaration of the `Callable` type should be read as: "The given lambda must be callable
 with arguments given of these types.", or simply "These are the types I will call the lambda with".
 
+#### Calling the given block
+
+When a lambda is given in the puppet language it is given as a Ruby block to the method
+the call is dispatched to - just as if the method is called directly from ruby with a trailing
+do block. It is possible to check if a block is given with `block_given?`, and the block can be called with `yield`, or an explicit `block.call`.
+
+The recommended way is to not declare a `&block` parameter, and call it with `yield` after having checked if it was given or not (if `optional_block_param` was used in the dispatcher).
+
+Here is an example where the min function accepts an optional block that is called with the result - e.g. it can be called as `min(1,100) |$x| { "min is $x" }` - which would return the string "min is 1". The definition of the function looks like this:
+
+    Puppet::Functions.create_function(:min) do
+      dispatch :min do
+        param 'Numeric', :a
+        param 'Numeric', :b
+        optional_block_param Callable['Integer'], :block
+      end
+
+      def min(x,y)
+        result = x <= y ? x : y
+        # call (i.e. yield) to the block if it was given, else the result
+        block_given? ? yield(result) : result
+      end
+
+    end
+
+#### Introspecting the given block
+
+The given block is a specialized Ruby Proc object from which it is possible to get arity, and
+information about the parameters (names, if they have default value, etc.). The special Proc used by the Puppet runtime also supports getting the Puppet Closure which holds additional information
+about the types of the parameters.
+
+It is recommended to use the Ruby Proc API since this enables more convenient testing (just pass
+a regular Ruby Proc). Also note that when using Ruby 1.8.7 the Proc API is limited in the information it can return. In Ruby 1.8.7 it is also not possible to obtain the Puppet Closure.
+
+Use the `closure` method on the proc to get the Puppet closure (an instance of `Puppet::Pops::Evaluator::Closure`).
 
 ### Reserved method names
 
@@ -252,6 +281,17 @@ of this loader.
 Calls the function named `function_name` (the name is given without any prefix (3x prefixes
 names with `function_`, 4x does not), and a variable number of arguments.
 
+If you want to pass a block, you can either give a regular Ruby block, or pass on the Proc that
+was given to the function.
+
+    def my_function1(a, &block)
+      call_function('my_other_function', &block)
+    end
+
+    def my_function2(a, &block)
+      call_function('my_other_function') { |x| ... }
+    end
+
 ### Function Documentation
 
 Documentation is written as yardoc comments before the call to `Functions.create_function` and
@@ -259,6 +299,10 @@ in comments before each call to `dispatch`.
 
 
 ### Rules for Non Internal Functions
+
+There are two implementations that build up a function; regular and internal. The builder
+of internal functions have more access to the runtime and has an API that is considered private
+(it may change in minor releases). For regular, not internal functions the rules are:
 
 * The function may only use things that are given to it.
 * The function may not mutate the arguments given to it.
@@ -290,7 +334,7 @@ for that purpose there is an `InternalFunction` base class.
 
 As the API is being defined, there may be the need to create a custom
 base class to experiment with features. If this is needed, there are two main
-extension points, the initialization, and the call method.
+extension points, the *initialization*, and the *call method*.
 
 **NOTE** The API for this is still being designed.
 
@@ -357,10 +401,12 @@ As an example, a function that performs syntax checking gets syntax checker exte
 via the binder.
 
     Puppet::Functions.create_function('assert_syntax') do
+      # define constants
       syntax_checkers_type = hash_of(type_of(::Puppetx::SYNTAX_CHECKERS_TYPE))
       syntax_checkers_extension = ::Puppetx::SYNTAX_CHECKERS
      
-      attr_injected syntax_checkers_type, :syntax_checkers, syntax_checkers_extension
+      # and in the dispatcher
+      injected_param syntax_checkers_type, :syntax_checkers, syntax_checkers_extension
      
 This creates a method called `assert_syntax()` that the method implementing the function's
 logic can call to obtain the hash of syntax checkers registered with the injector as in the following
