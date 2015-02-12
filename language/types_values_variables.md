@@ -517,7 +517,7 @@ Here is an example, where the hash must contain the keys mode and path, and mode
     
 A `Struct` type is compatible with a `Hash` type both ways, given that the constraints they express are met. A `Struct` is a `Collection`, but its size is controlled by the specified named entries.
 
-`Struct` supports `Optional` values - this means that a matching hash may either have `undef` bound to a key, or that the key is missing. A hash that has keys not specified in the `Struct` will not match.
+A `Struct` key that accepts an `Undef` value also accepts that the key missing is the hash. A hash that has keys not specified in the `Struct` will not match.
 
 An unparameterized `Struct` matches all structs and all hashes.
 
