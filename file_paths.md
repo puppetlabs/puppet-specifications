@@ -121,7 +121,7 @@ puppet-server
             puppetserver.conf
 
     /opt/puppetlabs/bin                   # symlinks of puppet server binaries
-        puppetmaster@                     -> /opt/puppetlabs/server/apps/puppetserver/bin/puppetmaster
+        puppetserver@                     -> /opt/puppetlabs/server/apps/puppetserver/bin/puppetserver
 
     /opt/puppetlabs/server                # serverside apps live underneath
         apps
@@ -133,12 +133,12 @@ puppet-server
 
             puppetserver                  # puppetserver app dir
                 bin
-                    puppetmaster
+                    puppetserver
                 etc
                 lib
         bin                               # symlinks of server binaries
             httpd@                        -> /opt/puppetlabs/server/apps/httpd/bin/httpd
-            puppetmaster@                 -> /opt/puppetlabs/server/apps/puppetserver/bin/puppetmaster
+            puppetserver@                 -> /opt/puppetlabs/server/apps/puppetserver/bin/puppetserver
 
         data
             puppetserver                  # :vardir (and $HOME for services that use it)
