@@ -39,6 +39,9 @@ puppet-agent
         mco@                              -> /opt/puppetlabs/puppet/bin/mco
         puppet@                           -> /opt/puppetlabs/puppet/bin/puppet
 
+    /opt/puppetlabs/facter
+        facts.d                           # external facts directory (not pluginsync'ed)
+
     /opt/puppetlabs/mcollective/
         plugins
 
@@ -60,7 +63,7 @@ puppet-agent
             client_data                   # :client_datadir
             clientbucket                  # :clientbucketdir
             devicedir                     # :devices
-            facts.d                       # :pluginfactdest
+            facts.d                       # :pluginfactdest (pluginsync'ed)
             lib                           # :libdir
             facts                         # used to generate :factpath
             puppet-module                 # :module_working_dir
