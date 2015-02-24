@@ -99,11 +99,9 @@ puppet-agent
     /var/log/puppetlabs                   # :logdir                      /var/lib/puppet/log
         puppet.log                        # not enabled by default
         mcollective.log
-        mcollectived.log
 
     /var/run/puppetlabs                   # :rundir                      /var/lib/puppet/run
         agent.pid                         # :pidfile
-        mcollective.pid
         mcollectived.pid
 
 These sections describe other Puppet packages that rely on puppet-agent to create the initial directory layout. It does not attempt to specify the full set of file paths for these packages, just cases where the other package has a dependency on puppet-agent.
