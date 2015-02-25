@@ -122,8 +122,25 @@ it a lot easier to implement a function cleanly (we may want a function to opera
 based on if it gets an `Array` or a `String` etc.)
 
 The `dispatch` method is used to define the dispatching of one *type signature* to one method. It
-takes a block in which a call to `param` is made with type and name of each wanted parameter
-(in order from left to right). Here is a `min` function that returns the smallest of two numbers, and
+takes a block in which a series of calls are made to define the parameters using one of the methods:
+
+* `param` - alias for `required_param`
+* `required_param`
+* `optional_param`
+* `repeated_param`
+
+These take type (in string form) and name (a symbol) as arguments.
+
+Block (lambda) parameters can also be defined with:
+
+* `block_param` - alias for `required_block_param`
+* `required_block_param`
+* `optional_block_param`
+
+Each wanted parameter is defined with a call to on of the **param methods** (in order from
+left to right as seen when calling the function).
+
+Here is a `min` function that returns the smallest of two numbers, and
 the lexicographically earlier of two strings (downcased to get case independence).
 
     Puppet::Functions.create_function(:min) do
@@ -166,31 +183,36 @@ then we get:
 When a call is made, the signatures are tested in the order they appear in the definition
 of the function, thus, if a very generic entry is placed first it will always win.
 
-### Dispatch with variable argument count
+#### Dispatch with variable number of arguments
 
-If dispatch is used, the expected argument count is derived from the number of specified
-parameters. If something else is wanted, if some parameters are optional (have defaults), or
-if the last parameter is a *varargs*, then this is specified with a call to `arg_count`, which takes
-min and max count of arguments. The max argument may be `:default` to indicate an infinite count.
+If dispatch is used, the expected number of arguments is derived from the number of specified
+parameters. By default all parameters are *required*, but this can be modified in the parameter
+definition with one of the directives following the name:
 
-Care must be taken to specify a min/max that is compatible with the method being called, but
-they do not have to be exactly the same - this is legal:
+* `:required` - the default, an argument of the given type must be present
+* `:optional` - an argument of the given type may be present
+* `:repeated` - none to many arguments of the given type may be present
+
+An `optional` parameter may not be followed by a `required`. A `repeated` parameter may
+only be used last.
+
+Care must be taken to specify parameters that are compatible with the method being called by
+the dispatch, but they do not have to be exactly the same - this is legal:
 
     dispatch :special do
-      param 'Numeric', 'a'
-      param 'Numeric', 'b'
-      param 'Any', 'rest'
-      arg_count 1, :default
+      param 'Numeric', :a
+      param 'Numeric', :b, :optional
+      param 'Any', 'rest', :repeated
     end
     
     def special(*args)
     end
   
 Here, for implementation reasons it is wanted that all arguments are passed in one array
-to the special method but in the eyes of the user we want it to have one required `Numeric`,
+to the `special` method but in the eyes of the user we want it to have one required `Numeric`,
 one optional `Numeric`, and then an optional amount of `Any`.
 
-### Defining Type in the Dispatch call
+#### Defining Type in the Dispatch call
 
 Types are specified in string form with the syntax of the types as they are used in the
 Puppet Programming Language. Only literal values may be used for the type parameter
@@ -201,7 +223,7 @@ expressions (e.g. '`Integer[$min_allowed + 1, $max_allowed]`' cannot be used as 
 The signature supports a special block parameter that can accept a block of code / lambda given
 to a function. If this block parameter is not defined, the function
 will not accept a call where a lambda is given. To make it possible to pass a block to the method
-this must be declared in the dispatcher with either `block_param`, or `optional_block_param`.
+this must be declared in the dispatcher with either `block_param` (or `required_block_param`), or `optional_block_param`.
 
 As the names of the methods suggests, the former makes the signature require that a lambda is given, and the latter accepts a given lambda, but also that no lambda was given.
 
@@ -281,7 +303,7 @@ of this loader.
 Calls the function named `function_name` (the name is given without any prefix (3x prefixes
 names with `function_`, 4x does not), and a variable number of arguments.
 
-If you want to pass a block, you can either give a regular Ruby block, or pass on the Proc that
+If you want to pass a block, you can either give a regular Ruby block, or pass on the `Proc` that
 was given to the function.
 
     def my_function1(a, &block)
@@ -369,9 +391,8 @@ by calling `scope_param`, here is an example from the function `inline_epp`:
 
       dispatch :inline_epp do
         scope_param()
-        param 'String', 'template'
-        param 'Hash[Pattern[/^\w+$/], Any]', 'parameters'
-        arg_count(1, 2)
+        param          'String',                      :template
+        optional_param 'Hash[Pattern[/^\w+$/], Any]', :parameters
       end
       # ...
     end
@@ -422,8 +443,7 @@ example).
 #### Injecting Arguments
 
 The second use case for injections is to inject arguments when dispatching the calls. This
-is useful when the methods being called needs access to context or service and these a)
-do not (and cannot) come from the puppet logic, and b) it may be different depending on environment
+is useful when the methods being called needs access to context or service and these a) do not (and cannot) come from the puppet logic, and b) it may be different depending on environment
 and/or calling context. 
 
 This is specified via the methods `injected_param`, and `injected_provider_param` with the
@@ -433,13 +453,13 @@ same arguments as for the class attributes, but where the first name is the name
 Using the same example as earlier, but now instead using argument injection.
 
     Puppet::Functions.create_function('assert_syntax') do
-      syntax_checkers_type = hash_of(type_of(::Puppetx::SYNTAX_CHECKERS_TYPE))
-      syntax_checkers_extension = ::Puppetx::SYNTAX_CHECKERS
+      syntax_checkers_type = hash_of(type_of(::PuppetX::SYNTAX_CHECKERS_TYPE))
+      syntax_checkers_extension = ::PuppetX::SYNTAX_CHECKERS
      
      dispatch :check do
-       param String, 'text'
-       param String, 'syntax'
-       injected_param syntax_checkers_type, 'checkers', syntax_checkers_extension
+       param 'String', :text
+       param 'String', :syntax
+       injected_param syntax_checkers_type, :checkers, syntax_checkers_extension
      end
      
      def check(text, syntax, checkers)
