@@ -54,6 +54,7 @@ Index
   * [Plugin Ruby API][12] - the API for plugins in Ruby
 * General
   * [Settings and Options][13] - specification of settings and options 
+  * [Puppet Installation Layout][15] - specification of Puppet related files on disk
 
 [2]:language/intro.md
 [3]:language/modus-operandi.md
@@ -69,5 +70,6 @@ Index
 [12]:language/plugin-api.md
 [13]:language/settings.md
 [14]:language/puppet-functions.md
+[15]:file_paths.md
 
 [1]:http://www.github.com/puppetlabs/puppet
