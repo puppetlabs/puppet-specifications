@@ -284,5 +284,5 @@ These sections describe other Puppet packages that rely on puppet-agent to creat
 # Notes
 
 ## ssldir
-The current specification calls for the puppet-agent and puppet-master to continue sharing an `ssldir`. The main reason being the master needs to use the agent's private key when acting as an SSL client. There are issues with this approach, but it's not something
+The current specification calls for the puppet-agent and puppetserver to continue sharing an `ssldir`. The main reason being the node running the puppetserver needs to use the agent's private key when acting as an SSL client. There are issues with this approach, but it's not something
 we are trying to solve now.
