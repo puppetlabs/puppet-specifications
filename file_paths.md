@@ -13,6 +13,9 @@ This table specifies the file paths in a Puppet installation and the correspondi
 
 # puppet-agent (*nix)
 
+The package will create two services `puppet` and `mcollective`, both
+running as `root` by default. It will not create a `puppet` user or group.
+
     Path                                  Setting                        3.x
     /etc/puppetlabs                                                      n/a
 
@@ -120,6 +123,10 @@ under `C:\Documents and Settings\All Users\Application Data`. Also
 when installing puppet-agent 32-bit on 64-bit windows, the
 installation path defaults to `C:\Program Files (x86)\Puppet
 Labs`. The examples below assume 2008/2012 and puppet-agent (64-bit).
+
+The package will create two services `puppet` and `mcollective`
+running as `LocalSystem` by default. It will not create a `puppet`
+user or group.
 
     Path                                      Setting                        3.x
     C:\ProgramData                                                           n/a
@@ -247,6 +254,9 @@ These sections describe other Puppet packages that rely on puppet-agent to creat
 
 
 # puppetserver
+
+The package will install a service named `puppetserver`, create a
+`puppet` user and group, and run the service as the `puppet` user.
 
     /etc/puppetlabs/puppetserver
         logback.xml
