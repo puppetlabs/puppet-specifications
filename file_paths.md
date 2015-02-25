@@ -280,6 +280,13 @@ These sections describe other Puppet packages that rely on puppet-agent to creat
                 server_datadir            # :server_data
                 yaml                      # :yamldir
 
+    /var/log/puppetlabs                   # :logdir                      /var/lib/puppet/log
+        puppetserver/                     # writeable by puppetserver
+            puppetserver.log
+
+    /var/run/puppetlabs                   # :rundir                      /var/lib/puppet/run
+        puppetserver/                     # writeable by puppetserver
+            puppetserver.pid
 
 # Notes
 
