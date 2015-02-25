@@ -8,7 +8,7 @@ This table specifies the file paths in a Puppet installation and the correspondi
 * [puppet-agent (*nix)](#puppet-agent-nix)
 * [puppet-agent (Windows)](#puppet-agent-windows)
 * [puppet-db](#puppet-db)
-* [puppet-server](#puppet-server)
+* [puppetserver](#puppetserver)
 * [Notes](#notes)
 
 # puppet-agent (*nix)
@@ -246,7 +246,7 @@ These sections describe other Puppet packages that rely on puppet-agent to creat
         puppetdb.conf
 
 
-# puppet-server
+# puppetserver
 
     /etc/puppetlabs/puppetserver
         logback.xml
