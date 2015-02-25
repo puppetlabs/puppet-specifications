@@ -8,7 +8,7 @@ This table specifies the file paths in a Puppet installation and the correspondi
 * [puppet-agent (*nix)](#puppet-agent-nix)
 * [puppet-agent (Windows)](#puppet-agent-windows)
 * [puppet-db](#puppet-db)
-* [puppet-server](#puppet-server)
+* [puppetserver](#puppetserver)
 * [Notes](#notes)
 
 # puppet-agent (*nix)
@@ -246,7 +246,7 @@ These sections describe other Puppet packages that rely on puppet-agent to creat
         puppetdb.conf
 
 
-# puppet-server
+# puppetserver
 
     /etc/puppetlabs/puppetserver
         logback.xml
@@ -284,5 +284,5 @@ These sections describe other Puppet packages that rely on puppet-agent to creat
 # Notes
 
 ## ssldir
-The current specification calls for the puppet-agent and puppet-master to continue sharing an `ssldir`. The main reason being the master needs to use the agent's private key when acting as an SSL client. There are issues with this approach, but it's not something
+The current specification calls for the puppet-agent and puppetserver to continue sharing an `ssldir`. The main reason being the node running the puppetserver needs to use the agent's private key when acting as an SSL client. There are issues with this approach, but it's not something
 we are trying to solve now.
