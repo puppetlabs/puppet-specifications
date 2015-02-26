@@ -290,6 +290,13 @@ The package will install a service named `puppetserver`, create a
                 server_data               # :server_datadir
                 yaml                      # :yamldir
 
+    /var/log/puppetlabs                   # :logdir                      /var/lib/puppet/log
+        puppetserver/                     # writeable by puppetserver
+            puppetserver.log
+
+    /var/run/puppetlabs                   # :rundir                      /var/lib/puppet/run
+        puppetserver/                     # writeable by puppetserver
+            puppetserver.pid
 
 # Notes
 
