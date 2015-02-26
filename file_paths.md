@@ -15,39 +15,40 @@ This table specifies the file paths in a Puppet installation and the correspondi
 
 The package will create two services `puppet` and `mcollective`, both
 running as `root` by default. It will not create a `puppet` user or group.
+The files annotated by an '*' indicate that they are created by package installation.
 
     Path                                  Setting                        3.x
-    /etc/puppetlabs                                                      n/a
+    /etc/puppetlabs *                                                    n/a
 
-    /etc/puppetlabs/code                  # :codedir                     contents moved from :confdir
+    /etc/puppetlabs/code *                # :codedir                     contents moved from :confdir
         environments                      # :environmentpath
-        hiera.yaml                        # :hiera_config
+        hiera.yaml *                      # :hiera_config
         hieradata                         # n/a
-        modules                           # user modulepath
+        modules *                         # user modulepath
 
-    /etc/puppetlabs/mcollective
-        client.cfg
-        facts.yaml
-        server.cfg
+    /etc/puppetlabs/mcollective *
+        client.cfg *
+        facts.yaml *
+        server.cfg *
 
-    /etc/puppetlabs/puppet                # :confdir                     /etc/puppet
-        auth.conf                         # :rest_authconfig
+    /etc/puppetlabs/puppet *              # :confdir                     /etc/puppet
+        auth.conf *                       # :rest_authconfig
         autosign.conf                     # :autosign
         binder_config.yaml                # :binder_config
         csr_attributes.yaml               # :csr_attributes
         custom_trusted_oid_mapping.yaml   # :trusted_oid_mapping_file
         device.conf                       # :deviceconfig
         fileserver.conf                   # :fileserverconfig
-        puppet.conf                       # :config
+        puppet.conf *                     # :config
         routes.yaml                       # :route_file
         ssl                               # :ssldir                      /etc/puppet/ssl
 
-    /opt/puppetlabs/bin                   # symlink targets of puppet related binaries
-        cfacter@                          -> /opt/puppetlabs/puppet/bin/cfacter
-        facter@                           -> /opt/puppetlabs/puppet/bin/facter
-        hiera@                            -> /opt/puppetlabs/puppet/bin/hiera
-        mco@                              -> /opt/puppetlabs/puppet/bin/mco
-        puppet@                           -> /opt/puppetlabs/puppet/bin/puppet
+    /opt/puppetlabs/bin *                 # symlink targets of puppet related binaries
+        cfacter@ *                        -> /opt/puppetlabs/puppet/bin/cfacter
+        facter@ *                         -> /opt/puppetlabs/puppet/bin/facter
+        hiera@ *                          -> /opt/puppetlabs/puppet/bin/hiera
+        mco@ *                            -> /opt/puppetlabs/puppet/bin/mco
+        puppet@ *                         -> /opt/puppetlabs/puppet/bin/puppet
 
     /opt/puppetlabs/facter
         facts.d                           # external facts directory (not pluginsync'ed)
@@ -55,19 +56,19 @@ running as `root` by default. It will not create a `puppet` user or group.
     /opt/puppetlabs/mcollective/
         plugins                           # user installed plugins
 
-    /opt/puppetlabs/puppet                # ruby-puppet root
-        bin
-            cfacter
-            facter
-            gem
-            hiera
-            mco
-            mcollectived
-            openssl
-            puppet
-            ruby
-            virt-what
-        cache                             # :vardir                      /var/lib/puppet
+    /opt/puppetlabs/puppet *              # ruby-puppet root
+        bin *
+            cfacter *
+            facter *
+            gem *
+            hiera *
+            mco *
+            mcollectived *
+            openssl *
+            puppet *
+            ruby *
+            virt-what *
+        cache *                           # :vardir                      /var/lib/puppet
             bucket                        # :bucketdir
             client_yaml                   # :clientyamldir
             client_data                   # :client_datadir
@@ -81,36 +82,36 @@ running as `root` by default. It will not create a `puppet` user or group.
             server_data                   # :server_datadir
             state                         # :statedir
             yaml                          # :yamldir
-        include
-            facter
-            openssl
-        lib
-            libaugeas.so
-            libcrypto.so
-            libfacter.so
-            libruby.so
-            libssl.so
-            ruby
-                vendor_ruby               # ruby code
-                    cfacter.rb
-                    facter.rb
-                    hiera.rb
-                    mcollective.rb
-                    puppet.rb
-            virt-what
-                virt-what-cpuid-helper
-        modules                           # system modulepath            /usr/share/puppet/modules
-        share
-            augeas
-            man
-            vim
-        ssl
+        include *
+            facter *
+            openssl *
+        lib *
+            libaugeas.so *
+            libcrypto.so *
+            libfacter.so *
+            libruby.so *
+            libssl.so *
+            ruby *
+                vendor_ruby *             # ruby code
+                    cfacter.rb *
+                    facter.rb *
+                    hiera.rb *
+                    mcollective.rb *
+                    puppet.rb *
+            virt-what *
+                virt-what-cpuid-helper *
+        modules *                         # system modulepath            /usr/share/puppet/modules
+        share *
+            augeas *
+            man *
+            vim *
+        ssl *
 
-    /var/log/puppetlabs                   # :logdir                      /var/lib/puppet/log
+    /var/log/puppetlabs *                 # :logdir                      /var/lib/puppet/log
         puppet.log                        # not enabled by default
         mcollective.log
 
-    /var/run/puppetlabs                   # :rundir                      /var/lib/puppet/run
+    /var/run/puppetlabs *                 # :rundir                      /var/lib/puppet/run
         agent.pid                         # :pidfile
         mcollectived.pid
 
