@@ -72,7 +72,7 @@ running as `root` by default. It will not create a `puppet` user or group.
             client_yaml                   # :clientyamldir
             client_data                   # :client_datadir
             clientbucket                  # :clientbucketdir
-            devicedir                     # :devices
+            devices                       # :devicedir
             facts.d                       # :pluginfactdest (pluginsync'ed)
             lib                           # :libdir
             facts                         # used to generate :factpath
@@ -157,7 +157,7 @@ user or group.
         client_yaml                           # :clientyamldir
         client_data                           # :client_datadir
         clientbucket                          # :clientbucketdir
-        devicedir                             # :devices
+        devices                               # :devicedir
         facts.d                               # :pluginfactdest (pluginsync'ed)
         lib                                   # :libdir
         facts                                 # used to generate :factpath
