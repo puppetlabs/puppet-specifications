@@ -78,7 +78,7 @@ running as `root` by default. It will not create a `puppet` user or group.
             facts                         # used to generate :factpath
             puppet-module                 # :module_working_dir
             reports                       # :reportdir
-            server_datadir                # :server_data
+            server_data                   # :server_datadir
             state                         # :statedir
             yaml                          # :yamldir
         include
@@ -163,7 +163,7 @@ user or group.
         facts                                 # used to generate :factpath
         puppet-module                         # :module_working_dir
         reports                               # :reportdir
-        server_datadir                        # :server_data
+        server_data                           # :server_datadir
         state                                 # :statedir
         yaml                                  # :yamldir
 
@@ -287,7 +287,7 @@ The package will install a service named `puppetserver`, create a
             puppetserver                  # :vardir (and $HOME for services that use it)
                 bucket                    # :bucketdir
                 reports                   # :reportdir
-                server_datadir            # :server_data
+                server_data               # :server_datadir
                 yaml                      # :yamldir
 
 
