@@ -8,10 +8,13 @@ This table specifies the file paths in a Puppet installation and the correspondi
 * [puppet-agent (*nix)](#puppet-agent-nix)
 * [puppet-agent (Windows)](#puppet-agent-windows)
 * [puppet-db](#puppet-db)
-* [puppet-server](#puppet-server)
+* [puppetserver](#puppetserver)
 * [Notes](#notes)
 
 # puppet-agent (*nix)
+
+The package will create two services `puppet` and `mcollective`, both
+running as `root` by default. It will not create a `puppet` user or group.
 
     Path                                  Setting                        3.x
     /etc/puppetlabs                                                      n/a
@@ -69,13 +72,13 @@ This table specifies the file paths in a Puppet installation and the correspondi
             client_yaml                   # :clientyamldir
             client_data                   # :client_datadir
             clientbucket                  # :clientbucketdir
-            devicedir                     # :devices
+            devices                       # :devicedir
             facts.d                       # :pluginfactdest (pluginsync'ed)
             lib                           # :libdir
             facts                         # used to generate :factpath
             puppet-module                 # :module_working_dir
             reports                       # :reportdir
-            server_datadir                # :server_data
+            server_data                   # :server_datadir
             state                         # :statedir
             yaml                          # :yamldir
         include
@@ -121,6 +124,10 @@ when installing puppet-agent 32-bit on 64-bit windows, the
 installation path defaults to `C:\Program Files (x86)\Puppet
 Labs`. The examples below assume 2008/2012 and puppet-agent (64-bit).
 
+The package will create two services `puppet` and `mcollective`
+running as `LocalSystem` by default. It will not create a `puppet`
+user or group.
+
     Path                                      Setting                        3.x
     C:\ProgramData                                                           n/a
 
@@ -140,9 +147,15 @@ Labs`. The examples below assume 2008/2012 and puppet-agent (64-bit).
             mcollective.log
 
     C:\ProgramData\PuppetLabs\puppet\etc      # :confdir                     same
+        auth.conf                             # :rest_authconfig
+        autosign.conf                         # :autosign
+        binder_config.yaml                    # :binder_config
         csr_attributes.yaml                   # :csr_attributes
         custom_trusted_oid_mapping.yaml       # :trusted_oid_mapping_file
+        device.conf                           # :deviceconfig
+        fileserver.conf                       # :fileserverconfig
         puppet.conf                           # :config
+        routes.yaml                           # :route_file
         ssl                                   # :ssldir
 
     C:\ProgramData\PuppetLabs\puppet\cache    # :vardir                      C:\ProgramData\PuppetLabs\puppet\var
@@ -150,13 +163,13 @@ Labs`. The examples below assume 2008/2012 and puppet-agent (64-bit).
         client_yaml                           # :clientyamldir
         client_data                           # :client_datadir
         clientbucket                          # :clientbucketdir
-        devicedir                             # :devices
+        devices                               # :devicedir
         facts.d                               # :pluginfactdest (pluginsync'ed)
         lib                                   # :libdir
         facts                                 # used to generate :factpath
         puppet-module                         # :module_working_dir
         reports                               # :reportdir
-        server_datadir                        # :server_data
+        server_data                           # :server_datadir
         state                                 # :statedir
         yaml                                  # :yamldir
 
@@ -246,7 +259,10 @@ These sections describe other Puppet packages that rely on puppet-agent to creat
         puppetdb.conf
 
 
-# puppet-server
+# puppetserver
+
+The package will install a service named `puppetserver`, create a
+`puppet` user and group, and run the service as the `puppet` user.
 
     /etc/puppetlabs/puppetserver
         logback.xml
@@ -277,12 +293,19 @@ These sections describe other Puppet packages that rely on puppet-agent to creat
             puppetserver                  # :vardir (and $HOME for services that use it)
                 bucket                    # :bucketdir
                 reports                   # :reportdir
-                server_datadir            # :server_data
+                server_data               # :server_datadir
                 yaml                      # :yamldir
 
+    /var/log/puppetlabs                   # :logdir                      /var/lib/puppet/log
+        puppetserver/                     # writeable by puppetserver
+            puppetserver.log
+
+    /var/run/puppetlabs                   # :rundir                      /var/lib/puppet/run
+        puppetserver/                     # writeable by puppetserver
+            puppetserver.pid
 
 # Notes
 
 ## ssldir
-The current specification calls for the puppet-agent and puppet-master to continue sharing an `ssldir`. The main reason being the master needs to use the agent's private key when acting as an SSL client. There are issues with this approach, but it's not something
+The current specification calls for the puppet-agent and puppetserver to continue sharing an `ssldir`. The main reason being the node running the puppetserver needs to use the agent's private key when acting as an SSL client. There are issues with this approach, but it's not something
 we are trying to solve now.
