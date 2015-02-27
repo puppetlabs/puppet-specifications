@@ -147,9 +147,15 @@ user or group.
             mcollective.log
 
     C:\ProgramData\PuppetLabs\puppet\etc      # :confdir                     same
+        auth.conf                             # :rest_authconfig
+        autosign.conf                         # :autosign
+        binder_config.yaml                    # :binder_config
         csr_attributes.yaml                   # :csr_attributes
         custom_trusted_oid_mapping.yaml       # :trusted_oid_mapping_file
+        device.conf                           # :deviceconfig
+        fileserver.conf                       # :fileserverconfig
         puppet.conf                           # :config
+        routes.yaml                           # :route_file
         ssl                                   # :ssldir
 
     C:\ProgramData\PuppetLabs\puppet\cache    # :vardir                      C:\ProgramData\PuppetLabs\puppet\var
