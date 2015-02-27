@@ -16,8 +16,6 @@ We are doing this because the 3x API for functions has several issues:
 * There are problems with reloading complex functions
 * There is a distinction between function of expression and statement kind and this distinction
   is no longer meaningful.
-* Specification of arity (number of arguments) is a blunt tool (can not express a variable
-  number of arguments that is capped).
 * Documentation can not be retrieved without running the ruby code that defines the function.
 
 The 3x API
@@ -121,23 +119,7 @@ to direct the call to different methods depending on the given argument types as
 it a lot easier to implement a function cleanly (we may want a function to operate quite differently
 based on if it gets an `Array` or a `String` etc.)
 
-The `dispatch` method is used to define the dispatching of one *type signature* to one method. It
-takes a block in which a series of calls are made to define the parameters using one of the methods:
-
-* `param` - alias for `required_param`
-* `required_param`
-* `optional_param`
-* `repeated_param`
-
-These take type (in string form) and name (a symbol) as arguments.
-
-Block (lambda) parameters can also be defined with:
-
-* `block_param` - alias for `required_block_param`
-* `required_block_param`
-* `optional_block_param`
-
-Each wanted parameter is defined with a call to on of the **param methods** (in order from
+Each wanted parameter is defined with a call to one of the **param methods** (in order from
 left to right as seen when calling the function).
 
 Here is a `min` function that returns the smallest of two numbers, and
@@ -183,26 +165,43 @@ then we get:
 When a call is made, the signatures are tested in the order they appear in the definition
 of the function, thus, if a very generic entry is placed first it will always win.
 
+#### Required, Optional, and Repeated Parameters
+
+The `dispatch` method is used to define the dispatching of one *type signature* to one method. It
+takes a block in which a series of calls are made to define the parameters using one of the methods:
+
+* `param` - same as `required_param`
+* `required_param` - a parameter that must be given as an argument
+* `optional_param` - a parameter that may be omitted as an argument (may not be
+  followed by a required parameter.
+* `repeated_param`- a parameter that accepts none or many given argument values (must be placed
+  last, or just before a block parameter).
+
+These take type (in string form) and name (a symbol) as arguments.
+
+#### Block Parameters
+
+Block (lambda) parameters can be defined with:
+
+* `block_param` - same as `required_block_param`
+* `required_block_param` - specifies that a block must be given
+* `optional_block_param` - specifies that a block may be given
+
+If neither of the block parameter methods are called, then it is an error to call the
+function with a block.
+
+
 #### Dispatch with variable number of arguments
 
-If dispatch is used, the expected number of arguments is derived from the number of specified
-parameters. By default all parameters are *required*, but this can be modified in the parameter
-definition with one of the directives following the name:
-
-* `:required` - the default, an argument of the given type must be present
-* `:optional` - an argument of the given type may be present
-* `:repeated` - none to many arguments of the given type may be present
-
-An `optional` parameter may not be followed by a `required`. A `repeated` parameter may
-only be used last.
-
-Care must be taken to specify parameters that are compatible with the method being called by
+The methods optional_param, and repeated_param makes the function accept a variable number
+of arguments. When using variable number of arguments
+care must be taken to specify parameters that are compatible with the method being *called* by
 the dispatch, but they do not have to be exactly the same - this is legal:
 
     dispatch :special do
       param 'Numeric', :a
-      param 'Numeric', :b, :optional
-      param 'Any', 'rest', :repeated
+      optional_param 'Numeric', :b
+      repeated_param 'Any', :additional
     end
     
     def special(*args)
@@ -218,12 +217,13 @@ Types are specified in string form with the syntax of the types as they are used
 Puppet Programming Language. Only literal values may be used for the type parameter
 expressions (e.g. '`Integer[$min_allowed + 1, $max_allowed]`' cannot be used as a type).
 
-### Lambda Support
+### Block/Lambda Support
 
+#### Defining the Block Parameter
 The signature supports a special block parameter that can accept a block of code / lambda given
 to a function. If this block parameter is not defined, the function
 will not accept a call where a lambda is given. To make it possible to pass a block to the method
-this must be declared in the dispatcher with either `block_param` (or `required_block_param`), or `optional_block_param`.
+this must be declared in the dispatcher with either `block_param` (same as `required_block_param`), or `optional_block_param`.
 
 As the names of the methods suggests, the former makes the signature require that a lambda is given, and the latter accepts a given lambda, but also that no lambda was given.
 
@@ -243,13 +243,13 @@ Example, accept a callable that takes two arguments, the first an `Integer`, and
 The declaration of the `Callable` type should be read as: "The given lambda must be callable
 with arguments given of these types.", or simply "These are the types I will call the lambda with".
 
-#### Calling the given block
+#### Calling the Given Block
 
-When a lambda is given in the puppet language it is given as a Ruby block to the method
+When a lambda is given in the Puppet Language it is given as a Ruby block to the method
 the call is dispatched to - just as if the method is called directly from ruby with a trailing
 do block. It is possible to check if a block is given with `block_given?`, and the block can be called with `yield`, or an explicit `block.call`.
 
-The recommended way is to not declare a `&block` parameter, and call it with `yield` after having checked if it was given or not (if `optional_block_param` was used in the dispatcher).
+The recommended way is to not declare a `&block` parameter, and instead call it with `yield` (after having checked if an optional block was given or not).
 
 Here is an example where the min function accepts an optional block that is called with the result - e.g. it can be called as `min(1,100) |$x| { "min is $x" }` - which would return the string "min is 1". The definition of the function looks like this:
 
@@ -268,14 +268,14 @@ Here is an example where the min function accepts an optional block that is call
 
     end
 
-#### Introspecting the given block
+#### Introspecting the Given Block
 
-The given block is a specialized Ruby Proc object from which it is possible to get arity, and
-information about the parameters (names, if they have default value, etc.). The special Proc used by the Puppet runtime also supports getting the Puppet Closure which holds additional information
+The given block is a specialized Ruby `Proc` object from which it is possible to get arity, and
+information about the parameters (names, if they have default value, etc.). The special `Proc` used by the Puppet runtime also supports getting the Puppet Closure which holds additional information
 about the types of the parameters.
 
 It is recommended to use the Ruby Proc API since this enables more convenient testing (just pass
-a regular Ruby Proc). Also note that when using Ruby 1.8.7 the Proc API is limited in the information it can return. In Ruby 1.8.7 it is also not possible to obtain the Puppet Closure.
+a regular Ruby Proc). Also note that when using Ruby 1.8.7 the Proc API is limited in the information it can return. **In Ruby 1.8.7 it is also not possible to obtain the Puppet Closure**.
 
 Use the `closure` method on the proc to get the Puppet closure (an instance of `Puppet::Pops::Evaluator::Closure`).
 
@@ -360,14 +360,13 @@ extension points, the *initialization*, and the *call method*.
 
 **NOTE** The API for this is still being designed.
 
-#### call_method(scope, *args)
+#### call_method(scope, *args, &block)
 
-A Function can implement `call(scope, *args)`, perform additional checks etc, and either relay
-to the super version, or rewrite the array with given arguments and call:
+A Function can implement `call(scope, *args, &block)`, perform additional checks etc, and either relay to the super version, or rewrite the array with given arguments and call:
 
-    self.class.dispatcher.dispatch(self, scope, args)
+    self.class.dispatcher.dispatch(self, scope, args, &block)
 
-It is not intended that the `Function` directly implements its function-logic in the
+It is not intended that a `Function` directly implements its function-logic in the
 `call` method.
 
 #### initialize method
