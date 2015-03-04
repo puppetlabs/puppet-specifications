@@ -344,7 +344,7 @@ may never silently produce an incorrect value.
   *nothing* when unfolded where a comma separated list of values is accepted.
 * Unfolds the content of the RHS array (or just converted value) when applied in a context where a 
   comma separated list of values is accepted:
-  * arguments to a call  
+  * arguments to a call
   * options in a Case Expression Proposition
   * options in a Select Expression Proposition
 
