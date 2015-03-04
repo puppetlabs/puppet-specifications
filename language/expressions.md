@@ -340,9 +340,11 @@ may never silently produce an incorrect value.
     UnarySplatExpression : '*' Expression<R> ;
     
 * Transforms the RHS Expression to an `Array` if not already an `Array`
+* If the RHS evaluates to `undef` the result is an empty array in general and interpreted as
+  *nothing* when unfolded where a comma separated list of values is accepted.
 * Unfolds the content of the RHS array (or just converted value) when applied in a context where a 
   comma separated list of values is accepted:
-  * arguments to a call
+  * arguments to a call  
   * options in a Case Expression Proposition
   * options in a Select Expression Proposition
 
@@ -353,6 +355,8 @@ Example:
     
     # same result as
     foo(1,2,3)
+
+Note that unfold of `*undef` in a case or select does not match anything, not even undef.
 
 ### / operator
 
