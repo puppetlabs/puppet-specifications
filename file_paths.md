@@ -21,7 +21,11 @@ The files annotated by an '*' indicate that they are created by package installa
     /etc/puppetlabs *                                                    n/a
 
     /etc/puppetlabs/code *                # :codedir                     contents moved from :confdir
-        environments                      # :environmentpath
+        environments *                    # :environmentpath
+          production *
+            environment.conf *
+            manifests *
+            modules *
         hiera.yaml *                      # :hiera_config
         hieradata                         # n/a
         modules *                         # user modulepath
@@ -133,7 +137,11 @@ user or group.
     C:\ProgramData                                                           n/a
 
     C:\ProgramData\PuppetLabs\code *          # :codedir                     contents moved from C:\ProgramData\PuppetLabs\puppet\etc (:confdir)
-        environments                          # :environmentpath
+        environments *                        # :environmentpath
+          production *
+            environment.conf *
+            manifests *
+            modules *
         hiera.yaml *                          # :hiera_config
         hieradata                             # n/a
         modules                               # user modulepath
