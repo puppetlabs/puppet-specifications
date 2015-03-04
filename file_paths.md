@@ -27,7 +27,7 @@ The files annotated by an '*' indicate that they are created by package installa
             manifests *
             modules *
         hiera.yaml *                      # :hiera_config
-        hieradata                         # n/a
+        hieradata *                       # n/a
         modules *                         # user modulepath
 
     /etc/puppetlabs/mcollective *
@@ -143,7 +143,7 @@ user or group.
             manifests *
             modules *
         hiera.yaml *                          # :hiera_config
-        hieradata                             # n/a
+        hieradata *                           # n/a
         modules                               # user modulepath
 
     C:\ProgramData\PuppetLabs\mcollective\etc *                              same
