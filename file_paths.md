@@ -9,6 +9,7 @@ This table specifies the file paths in a Puppet installation and the correspondi
 * [puppet-agent (Windows)](#puppet-agent-windows)
 * [puppet-db](#puppet-db)
 * [puppetserver](#puppetserver)
+* [puppetmaster](#puppetmaster)
 * [Notes](#notes)
 
 # puppet-agent (*nix)
@@ -304,6 +305,29 @@ The package will install a service named `puppetserver`, create a
     /var/run/puppetlabs                   # :rundir                      /var/lib/puppet/run
         puppetserver/                     # writeable by puppetserver
             puppetserver.pid
+
+# puppetmaster
+
+This is a compatibility package using passenger to serve a ruby based puppetmaster.
+
+The package will install a service named `puppetmaster`, create a
+`puppet` user and group, and run the service as the `puppet` user.
+
+    /opt/puppetlabs/server *              # serverside apps live underneath
+        data *
+            puppetmaster *                # :vardir (and $HOME for services that use it)
+                bucket                    # :bucketdir
+                reports                   # :reportdir
+                server_data               # :server_datadir
+                yaml                      # :yamldir
+
+    /var/log/puppetlabs                   # :logdir                      /var/lib/puppet/log
+        puppetmaster *                    # writeable by puppetmaster
+            puppetmaster.log
+
+    /var/run/puppetlabs                   # :rundir                      /var/lib/puppet/run
+        puppetmaster *                    # writeable by puppetmaster
+            puppetmaster.pid
 
 # Notes
 
