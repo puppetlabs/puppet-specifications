@@ -146,6 +146,12 @@ user or group.
         hieradata *                           # n/a
         modules                               # user modulepath
 
+    C:\ProgramData\PuppetLabs\facter *                                       same
+        facts.d *                             # external facts directory (not pluginsync'ed)
+
+    C:\ProgramData\PuppetLabs\mcollective
+        plugins *                             # user installed plugins
+
     C:\ProgramData\PuppetLabs\mcollective\etc *                              same
         client.cfg
         facts.yaml
@@ -181,12 +187,6 @@ user or group.
         server_data                           # :server_datadir
         state                                 # :statedir
         yaml                                  # :yamldir
-
-    C:\ProgramData\PuppetLabs\facter *                                       same
-        facts.d *                             # external facts directory (not pluginsync'ed)
-
-    C:\ProgramData\PuppetLabs\mcollective *
-        plugins                               # user installed plugins
 
     C:\ProgramData\PuppetLabs\puppet\var\log  # :logdir                      same
         puppet.log                            # not enabled by default
