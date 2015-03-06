@@ -151,48 +151,45 @@ user or group.
 
     C:\ProgramData\PuppetLabs\mcollective
         plugins *                             # user installed plugins
+        etc *                                                                same
+            client.cfg
+            facts.yaml
+            server.cfg
+        var *                                                                same
+            log *
+                mcollective.log
 
-    C:\ProgramData\PuppetLabs\mcollective\etc *                              same
-        client.cfg
-        facts.yaml
-        server.cfg
-
-    C:\ProgramData\PuppetLabs\mcollective\var *                              same
-        log *
-            mcollective.log
-
-    C:\ProgramData\PuppetLabs\puppet\etc *    # :confdir                     same
-        auth.conf                             # :rest_authconfig
-        autosign.conf                         # :autosign
-        binder_config.yaml                    # :binder_config
-        csr_attributes.yaml                   # :csr_attributes
-        custom_trusted_oid_mapping.yaml       # :trusted_oid_mapping_file
-        device.conf                           # :deviceconfig
-        fileserver.conf                       # :fileserverconfig
-        puppet.conf *                         # :config
-        routes.yaml                           # :route_file
-        ssl                                   # :ssldir
-
-    C:\ProgramData\PuppetLabs\puppet\cache    # :vardir                      C:\ProgramData\PuppetLabs\puppet\var
-        bucket                                # :bucketdir
-        client_yaml                           # :clientyamldir
-        client_data                           # :client_datadir
-        clientbucket                          # :clientbucketdir
-        devices                               # :devicedir
-        facts.d                               # :pluginfactdest (pluginsync'ed)
-        lib                                   # :libdir
-        facts                                 # used to generate :factpath
-        puppet-module                         # :module_working_dir
-        reports                               # :reportdir
-        server_data                           # :server_datadir
-        state                                 # :statedir
-        yaml                                  # :yamldir
-
-    C:\ProgramData\PuppetLabs\puppet\var\log  # :logdir                      same
-        puppet.log                            # not enabled by default
-
-    C:\ProgramData\PuppetLabs\puppet\var\run  # :rundir                      same
-        agent.pid                             # :pidfile
+    C:\ProgramData\PuppetLabs\puppet
+        cache                                 # :vardir                      C:\ProgramData\PuppetLabs\puppet\var
+            bucket                            # :bucketdir
+            client_yaml                       # :clientyamldir
+            client_data                       # :client_datadir
+            clientbucket                      # :clientbucketdir
+            devices                           # :devicedir
+            facts.d                           # :pluginfactdest (pluginsync'ed)
+            lib                               # :libdir
+            facts                             # used to generate :factpath
+            puppet-module                     # :module_working_dir
+            reports                           # :reportdir
+            server_data                       # :server_datadir
+            state                             # :statedir
+            yaml                              # :yamldir
+        etc *                                 # :confdir                     same
+            auth.conf                         # :rest_authconfig
+            autosign.conf                     # :autosign
+            binder_config.yaml                # :binder_config
+            csr_attributes.yaml               # :csr_attributes
+            custom_trusted_oid_mapping.yaml   # :trusted_oid_mapping_file
+            device.conf                       # :deviceconfig
+            fileserver.conf                   # :fileserverconfig
+            puppet.conf *                     # :config
+            routes.yaml                       # :route_file
+            ssl                               # :ssldir
+        var *
+            log                               # :logdir                      same
+                puppet.log                    # not enabled by default
+            run                               # :rundir                      same
+                agent.pid                     # :pidfile
 
     C:\Program Files\Puppet Labs\Puppet\bin *
         cfacter.bat *                         # bat file wrappers
