@@ -319,8 +319,8 @@ The package will install a service named `puppetserver`, create a
 
 This is a compatibility package using passenger to serve a ruby based puppetmaster.
 
-The package will install a service named `puppetmaster`, create a
-`puppet` user and group, and run the service as the `puppet` user.
+The package will install passenger in conjunction with Apache, create a
+`puppet` user and group, and run the instance as the `puppet` user.
 
     /opt/puppetlabs/server *              # serverside apps live underneath
         data *
