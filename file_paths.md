@@ -145,7 +145,7 @@ user or group.
             modules *
         hiera.yaml *                          # :hiera_config
         hieradata *                           # n/a
-        modules                               # user modulepath
+        modules *                             # user modulepath
 
     C:\ProgramData\PuppetLabs\facter *                                       same
         facts.d *                             # external facts directory (not pluginsync'ed)
