@@ -112,9 +112,10 @@ The files annotated by an '*' indicate that they are created by package installa
             vim *
         ssl *
 
-    /var/log/puppetlabs *                 # :logdir                      /var/lib/puppet/log
-        puppet.log                        # not enabled by default
+    /var/log/puppetlabs *
         mcollective.log
+        puppet *                          # :logdir                      /var/lib/puppet/log
+            puppet.log                    # not enabled by default
 
     /var/run/puppetlabs *                 # :rundir                      /var/lib/puppet/run
         agent.pid                         # :pidfile
@@ -307,12 +308,12 @@ The package will install a service named `puppetserver`, create a
                 server_data               # :server_datadir
                 yaml                      # :yamldir
 
-    /var/log/puppetlabs                   # :logdir                      /var/lib/puppet/log
-        puppetserver/                     # writeable by puppetserver
+    /var/log/puppetlabs
+        puppetserver *                    # writeable by puppetserver
             puppetserver.log
 
     /var/run/puppetlabs                   # :rundir                      /var/lib/puppet/run
-        puppetserver/                     # writeable by puppetserver
+        puppetserver                      # writeable by puppetserver
             puppetserver.pid
 
 # puppetmaster
@@ -330,7 +331,7 @@ The package will install a service named `puppetmaster`, create a
                 server_data               # :server_datadir
                 yaml                      # :yamldir
 
-    /var/log/puppetlabs                   # :logdir                      /var/lib/puppet/log
+    /var/log/puppetlabs
         puppetmaster *                    # writeable by puppetmaster
             puppetmaster.log
 
