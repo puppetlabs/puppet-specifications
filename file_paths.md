@@ -9,6 +9,7 @@ This table specifies the file paths in a Puppet installation and the correspondi
 * [puppet-agent (Windows)](#puppet-agent-windows)
 * [puppet-db](#puppet-db)
 * [puppetserver](#puppetserver)
+* [puppetmaster](#puppetmaster)
 * [Notes](#notes)
 
 # puppet-agent (*nix)
@@ -21,9 +22,13 @@ The files annotated by an '*' indicate that they are created by package installa
     /etc/puppetlabs *                                                    n/a
 
     /etc/puppetlabs/code *                # :codedir                     contents moved from :confdir
-        environments                      # :environmentpath
+        environments *                    # :environmentpath
+          production *
+            environment.conf *
+            manifests *
+            modules *
         hiera.yaml *                      # :hiera_config
-        hieradata                         # n/a
+        hieradata *                       # n/a
         modules *                         # user modulepath
 
     /etc/puppetlabs/mcollective *
@@ -107,9 +112,10 @@ The files annotated by an '*' indicate that they are created by package installa
             vim *
         ssl *
 
-    /var/log/puppetlabs *                 # :logdir                      /var/lib/puppet/log
-        puppet.log                        # not enabled by default
+    /var/log/puppetlabs *
         mcollective.log
+        puppet *                          # :logdir                      /var/lib/puppet/log
+            puppet.log                    # not enabled by default
 
     /var/run/puppetlabs *                 # :rundir                      /var/lib/puppet/run
         agent.pid                         # :pidfile
@@ -132,124 +138,129 @@ user or group.
     Path                                      Setting                        3.x
     C:\ProgramData                                                           n/a
 
-    C:\ProgramData\PuppetLabs\code            # :codedir                     contents moved from C:\ProgramData\PuppetLabs\puppet\etc (:confdir)
-        environments                          # :environmentpath
-        hiera.yaml                            # :hiera_config
-        hieradata                             # n/a
-        modules                               # user modulepath
+    C:\ProgramData\PuppetLabs\code *          # :codedir                     contents moved from C:\ProgramData\PuppetLabs\puppet\etc (:confdir)
+        environments *                        # :environmentpath
+          production *
+            environment.conf *
+            manifests *
+            modules *
+        hiera.yaml *                          # :hiera_config
+        hieradata *                           # n/a
+        modules *                             # user modulepath
 
-    C:\ProgramData\PuppetLabs\mcollective\etc                                same
-        client.cfg
-        facts.yaml
-        server.cfg
-
-    C:\ProgramData\PuppetLabs\mcollective\var                                same
-        log
-            mcollective.log
-
-    C:\ProgramData\PuppetLabs\puppet\etc      # :confdir                     same
-        auth.conf                             # :rest_authconfig
-        autosign.conf                         # :autosign
-        binder_config.yaml                    # :binder_config
-        csr_attributes.yaml                   # :csr_attributes
-        custom_trusted_oid_mapping.yaml       # :trusted_oid_mapping_file
-        device.conf                           # :deviceconfig
-        fileserver.conf                       # :fileserverconfig
-        puppet.conf                           # :config
-        routes.yaml                           # :route_file
-        ssl                                   # :ssldir
-
-    C:\ProgramData\PuppetLabs\puppet\cache    # :vardir                      C:\ProgramData\PuppetLabs\puppet\var
-        bucket                                # :bucketdir
-        client_yaml                           # :clientyamldir
-        client_data                           # :client_datadir
-        clientbucket                          # :clientbucketdir
-        devices                               # :devicedir
-        facts.d                               # :pluginfactdest (pluginsync'ed)
-        lib                                   # :libdir
-        facts                                 # used to generate :factpath
-        puppet-module                         # :module_working_dir
-        reports                               # :reportdir
-        server_data                           # :server_datadir
-        state                                 # :statedir
-        yaml                                  # :yamldir
-
-    C:\ProgramData\PuppetLabs\facter                                         same
-        facts.d                               # external facts directory (not pluginsync'ed)
+    C:\ProgramData\PuppetLabs\facter *                                       same
+        facts.d *                             # external facts directory (not pluginsync'ed)
 
     C:\ProgramData\PuppetLabs\mcollective
-        plugins                               # user installed plugins
+        plugins *                             # user installed plugins
+        etc *                                                                same
+            client.cfg
+            facts.yaml
+            server.cfg
+        var *                                                                same
+            log *
+                mcollective.log
 
-    C:\ProgramData\PuppetLabs\puppet\var\log  # :logdir                      same
-        puppet.log                            # not enabled by default
+    C:\ProgramData\PuppetLabs\puppet
+        cache                                 # :vardir                      C:\ProgramData\PuppetLabs\puppet\var
+            bucket                            # :bucketdir
+            client_yaml                       # :clientyamldir
+            client_data                       # :client_datadir
+            clientbucket                      # :clientbucketdir
+            devices                           # :devicedir
+            facts.d                           # :pluginfactdest (pluginsync'ed)
+            lib                               # :libdir
+            facts                             # used to generate :factpath
+            puppet-module                     # :module_working_dir
+            reports                           # :reportdir
+            server_data                       # :server_datadir
+            state                             # :statedir
+            yaml                              # :yamldir
+        etc *                                 # :confdir                     same
+            auth.conf                         # :rest_authconfig
+            autosign.conf                     # :autosign
+            binder_config.yaml                # :binder_config
+            csr_attributes.yaml               # :csr_attributes
+            custom_trusted_oid_mapping.yaml   # :trusted_oid_mapping_file
+            device.conf                       # :deviceconfig
+            fileserver.conf                   # :fileserverconfig
+            puppet.conf *                     # :config
+            routes.yaml                       # :route_file
+            ssl                               # :ssldir
+        var *
+            log                               # :logdir                      same
+                puppet.log                    # not enabled by default
+            run                               # :rundir                      same
+                agent.pid                     # :pidfile
 
-    C:\ProgramData\PuppetLabs\puppet\var\run  # :rundir                      same
-        agent.pid                             # :pidfile
+    C:\Program Files\Puppet Labs\Puppet\bin *
+        cfacter.bat *                         # bat file wrappers
+        environment.bat *                     # setup LOAD_PATH
+        facter.bat *
+        hiera.bat *
+        mco.bat *
+        puppet.bat *
+        puppet_shell.bat *                    # targets for shortcuts
+        run_cfacter_interactive.bat *
+        run_facter_interactive.bat *
+        run_puppet_interactive.bat *
 
-    C:\Program Files\Puppet Labs\Puppet\bin
-        cfacter.bat                           # bat file wrappers
-        facter.bat
-        hiera.bat
-        mco.bat
-        puppet.bat
-        environment.bat                       # setup LOAD_PATH
-        *_interactive.bat                     # targets for shortcuts
+    C:\Program Files\Puppet Labs\Puppet\cfacter *
+        bin *                                 # executables and dlls
+            cfacter.exe *
+            libfacter.so *
+            lib*.dll *
+        inc *                                 # cfacter headers
+            facter *
+        lib *
+            cfacter.rb *                      # ruby bindings
 
-    C:\Program Files\Puppet Labs\Puppet\cfacter
-        bin                                   # executables and dlls
-            cfacter.exe
-            libfacter.so
-            lib*.dll
-        inc                                   # cfacter headers
-            facter
-        lib
-            cfacter.rb                        # ruby bindings
+    C:\Program Files\Puppet Labs\Puppet\facter *
+        bin *
+            facter *                          # ruby bin wrapper
+        lib *
+            facter.rb *
 
-    C:\Program Files\Puppet Labs\Puppet\facter
-        bin
-            facter                            # ruby bin wrapper
-        lib
-            facter.rb
+    C:\Program Files\Puppet Labs\Puppet\hiera *
+        bin *
+            hiera *                           # ruby bin wrapper
+        lib *
+            hiera.rb *
 
-    C:\Program Files\Puppet Labs\Puppet\hiera
-        bin
-            hiera                             # ruby bin wrapper
-        lib
-            hiera.rb
+    C:\Program Files\Puppet Labs\Puppet\mcollective *
+        bin *
+            mcollectived *                    # ruby bin wrapper
+            mco *
+        lib *
+            mcollective.rb *
 
-    C:\Program Files\Puppet Labs\Puppet\mcollective
-        bin
-            mcollectived                      # ruby bin wrapper
-        lib
-            mcollective.rb
+    C:\Program Files\Puppet Labs\Puppet\misc *
+        LICENSE.rtf *                         # license
+        puppetlabs.ico *                      # icon for start menu shortcut
+        puppetres.dll *                       # event log message resource dll
+        versions.txt *                        # versions of components
 
-    C:\Program Files\Puppet Labs\Puppet\misc
-        LICENSE.rtf                           # license
-        puppetlabs.ico                        # icon for start menu shortcut
-        puppetres.dll                         # event log message resource dll
-        versions.txt                          # versions of components
+    C:\Program Files\Puppet Labs\Puppet\puppet *
+        bin *
+            puppet *                          # ruby bin wrapper
+        lib *
+            puppet.rb *
 
-    C:\Program Files\Puppet Labs\Puppet\puppet
-        bin
-            puppet                            # ruby bin wrapper
-        lib
-            puppet.rb
+    C:\Program Files\Puppet Labs\Puppet\service *
+        daemon.rb *                           # windows service daemon
 
-    C:\Program Files\Puppet Labs\Puppet\service
-        daemon.rb                             # windows service daemon
+    C:\Program Files\Puppet Labs\Puppet\sys *
+        ruby *
+            bin *
+                ruby.exe *
+                ssleay32.dll *                # openssl dll
+            include *
+            lib *
+            share *
 
-    C:\Program Files\Puppet Labs\Puppet\sys
-        ruby
-            bin
-                ruby.exe
-                ssleay32.dll                  # openssl dll
-            include
-            lib
-            share
-
-        tools
-            bin
-                elevate.exe                   # Used to elevate interactive commands
+        tools *
+            bin *
+              elevate.exe *                   # Used to elevate interactive commands
 
 
 These sections describe other Puppet packages that rely on puppet-agent to create the initial directory layout. It does not attempt to specify the full set of file paths for these packages, just cases where the other package has a dependency on puppet-agent.
@@ -297,13 +308,36 @@ The package will install a service named `puppetserver`, create a
                 server_data               # :server_datadir
                 yaml                      # :yamldir
 
-    /var/log/puppetlabs                   # :logdir                      /var/lib/puppet/log
-        puppetserver/                     # writeable by puppetserver
+    /var/log/puppetlabs
+        puppetserver *                    # writeable by puppetserver
             puppetserver.log
 
     /var/run/puppetlabs                   # :rundir                      /var/lib/puppet/run
-        puppetserver/                     # writeable by puppetserver
+        puppetserver                      # writeable by puppetserver
             puppetserver.pid
+
+# puppetmaster
+
+This is a compatibility package using passenger to serve a ruby based puppetmaster.
+
+The package will install a service named `puppetmaster`, create a
+`puppet` user and group, and run the service as the `puppet` user.
+
+    /opt/puppetlabs/server *              # serverside apps live underneath
+        data *
+            puppetmaster *                # :vardir (and $HOME for services that use it)
+                bucket                    # :bucketdir
+                reports                   # :reportdir
+                server_data               # :server_datadir
+                yaml                      # :yamldir
+
+    /var/log/puppetlabs
+        puppetmaster *                    # writeable by puppetmaster
+            puppetmaster.log
+
+    /var/run/puppetlabs                   # :rundir                      /var/lib/puppet/run
+        puppetmaster *                    # writeable by puppetmaster
+            puppetmaster.pid
 
 # Notes
 
