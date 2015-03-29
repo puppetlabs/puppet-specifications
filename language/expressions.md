@@ -1650,6 +1650,13 @@ Syntax:
   * if the option is a `Regexp` the value must be a string for the match to trigger
   * if the option is a `Type` and the value is not, the option matches if the value is an instance of 
     the type.
+  * the option matches if the option and value both are of `Array` type, have the same
+    length, and all entries  in the option match the corresponding entry in the value (using
+    the case matching rules recursively).
+  * the option matches if the option and the value are both of `Hash` type, and the
+    options key-value pairs match entries in the value hash by having identical keys
+    and matching value (using the case matching rules recursively).
+  * a literal `default` nested inside an Array or Hash always matches the corresponding entry
   * in all other cases, the option matches if the value is equal (using operator `==` semantics)
     to the option value.
 * If one of the options match, the associated `Statements` are evaluated
@@ -1691,7 +1698,7 @@ Examples:
       }
     }
 
-    # example 1 - using cases an expression
+    # example 2 - using cases an expression
     notice case $name {
     
       'paul', 'ringo', 'george', 'john': { 
@@ -1714,6 +1721,18 @@ Examples:
         'out of range'
       }
     }
+    
+    # example 4 - using matching array
+    $x = [green, 2, $whatever]
+    case $x {
+      [/ee/, Integer[0,10], default] : {
+        notice 'this will be noticed'
+      }
+      default: {
+        notice 'this will not be noticed'
+      }
+    }
+
 
 **Option Support for Unfold/Splat**
 
