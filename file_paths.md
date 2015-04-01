@@ -7,6 +7,7 @@ This table specifies the file paths in a Puppet installation and the correspondi
 
 * [puppet-agent (*nix)](#puppet-agent-nix)
 * [puppet-agent (Windows)](#puppet-agent-windows)
+* [puppet-agent (non-root)](#puppet-agent-non-root)
 * [puppet-db](#puppet-db)
 * [puppetserver](#puppetserver)
 * [puppetmaster](#puppetmaster)
@@ -262,6 +263,24 @@ user or group.
             bin *
               elevate.exe *                   # Used to elevate interactive commands
 
+# puppet-agent (non-root)
+
+When running as non-root on \*nix and Windows, puppet will use the
+following *top-level* paths, where `~` is expanded to the user's home
+directory. On Windows this is `C:\Users\username` (or `C:\Documents
+and Settings\username` for Windows 2003).
+
+Only the top-level paths are different when running as non-root. Files
+and directories that descend from the top-level are the same when
+running as root and non-root, e.g. `puppet.conf` is always
+`$confdir/puppet.conf`. As a result, only the top-level paths are shown.
+
+    ~/.puppetlabs/etc/puppet              # :confdir                    ~/.puppet
+    ~/.puppetlabs/etc/code                # :codedir                    n/a
+    ~/.puppetlabs/opt/puppet/cache        # :vardir                     ~/.puppet/var
+    ~/.puppetlabs/var/run                 # :rundir                     ~/.puppet/var/run
+    ~/.puppetlabs/var/log                 # :logdir                     ~/.puppet/var/log
+    ~/.puppetlabs/opt/facter/facts.d      # n/a                         ~/.facter/facts.d
 
 These sections describe other Puppet packages that rely on puppet-agent to create the initial directory layout. It does not attempt to specify the full set of file paths for these packages, just cases where the other package has a dependency on puppet-agent.
 
