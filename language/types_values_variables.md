@@ -539,7 +539,7 @@ The `Tuple` type fully specifies the content of an `Array`. It is to `Array` wha
     Tuple[T1, T2, 1, 3]             # A tuple with a variable number of T2 (0-3 inclusive)
     Tuple[T1, 5, 5]                 # A tuple with exactly 5 T1
     Tuple[T1, 5, 10]                # A tuple 5 to 10 T1
-    Tuple[T1, T1, T2, 1, 3]         # A tuple of one T1, two T1, or two T1 followed by T3
+    Tuple[T1, T1, T2, 1, 3]         # A tuple of one T1, two T1, or two T1 followed by one T2
 
 All entries in the `Tuple` (except the optional size constraint min/max count) must be a type and denotes that there must be an occurrence of this type at this position. The tuple can be modified such that the min and max occurrences of the given types in the type sequence can be specified. The specification is made with one or two integer values or the keyword `default`. The min/max works the same way as for an `Integer` range. This way, if optional entries are wanted in the tuple the min is set to a value lower than the number of given types, and if the last type should repeat the max is given as a value higher than the number of given types. As an example, a size constraint entered as `Tuple[T, 0, 1]` means `T` occurs 0 or 1 time. If the max is unspecified, it defaults to infinity (which may also be spelled out with the keyword default).
 
