@@ -186,15 +186,8 @@ expressions.
 | `\t`                | an ASCII TAB
 | `\s`                | an ASCII SPACE
 | `\uXXXX`            | a UNICODE character denoted by 4 hex digits i.e. /[0-9a-fA-F]{4}/
+| `\u{XXXX}`          | a UNICODE character denoted by 1-6 hex digits i.e. /[0-9a-fA-F]{1,6}/
 | `\` *any other*     | a single `\` followed by *any other* (removes any special meaning from *any other*
-
-<table>
-<tr><th>Note</th></tr>
-<tr><td>
-  The handling of unicode characters in the <i>Supplementary Plane</i> U+10000 to U+10FFFF is
-  at present undefined.
-</td></tr>
-</table>
 
 #### Double Quoted String Expression Interpolation
 
