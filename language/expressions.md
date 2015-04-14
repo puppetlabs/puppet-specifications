@@ -1639,6 +1639,7 @@ Syntax:
       
     Option
       : Expression<R>
+      | LambdaExpression
       | 'default'
       ;
 
@@ -1657,6 +1658,9 @@ Syntax:
     options key-value pairs match entries in the value hash by having identical keys
     and matching value (using the case matching rules recursively).
   * a literal `default` nested inside an Array or Hash always matches the corresponding entry
+  * the option matches if it is a lambda expression and the call of this lambda expression with
+    result of the evaluated case_expression unfolded as arguments results in a value that
+    is neither `false` nor `undef`. **(PUP-4193)**
   * in all other cases, the option matches if the value is equal (using operator `==` semantics)
     to the option value.
 * If one of the options match, the associated `Statements` are evaluated
