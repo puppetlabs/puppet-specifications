@@ -1485,7 +1485,7 @@ Functions that allow being called using statement style:
     info
     notice
     warning
-    error
+    err
 
     # stop execution
     fail
