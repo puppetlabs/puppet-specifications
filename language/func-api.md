@@ -175,7 +175,11 @@ takes a block in which a series of calls are made to define the parameters using
 * `optional_param` - a parameter that may be omitted as an argument (may not be
   followed by a required parameter.
 * `repeated_param`- a parameter that accepts none or many given argument values (must be placed
-  last, or just before a block parameter).
+  last, or just before a block parameter). Can also be stated with `optional_repeated_param`. Can 
+  not be combined with `required_repeated_param`.
+* `required_repeated_param` - a parameter that accepts one or many given argument values (must be 
+  placed last, or just before a block parameter). Cannot be combined with `repeated_param` or 
+  `optional_repeated_param`.
 
 These take type (in string form) and name (a symbol) as arguments.
 
