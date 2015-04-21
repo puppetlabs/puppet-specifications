@@ -308,13 +308,11 @@ The package will install a service named `puppetserver`, create a
             httpd                         # httpd app dir
                 bin
                     httpd
-                etc
                 lib
 
             puppetserver                  # puppetserver app dir
                 bin
                     puppetserver
-                etc
                 lib
         bin                               # symlinks of server binaries
             httpd@                        -> /opt/puppetlabs/server/apps/httpd/bin/httpd
