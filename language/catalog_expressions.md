@@ -514,7 +514,7 @@ same resource modify it once per query (and depends on the implementation's
 evaluation order).
 
     CollectorExpression
-       : QualifiedRefererence QueryPart ('{' OverrideAttributeOperations '}')?
+       : QualifiedRefererence QueryPart ('{' AttributeOperations '}')?
        ;
        
      QueryPart
@@ -542,6 +542,7 @@ It is worth noting that:
 * It is not possible to include general purpose expressions as values (as shown
   in the EBNF above).
 * It is not possible to use arrays and hashes as query values.
+* It is allowed to use `* => hash` as an attribute operation
 
 The semantics of the Query is implementation dependent. However any implementation must accommodate:
 
