@@ -156,7 +156,7 @@ A resource expression instantiates a resource and realizes it, or optionally doe
 realize it (*virtual*), and optionally exports (*exported*) it to a central store for inclusion
 elsewhere via *exported resource collection*.
 
-     # This syntax is common the different kinds of resource expressions
+     # This syntax is common to the different kinds of resource expressions
      # See the semantic rules for details.
      
      # A tree data structure to describe the allowed title expression types.
@@ -311,17 +311,8 @@ entity that will be picked.
 </table>
 
     ResourceDefaultExpression
-      : type = QualifiedReference '{' DefaultAttributeOperations? '}'
+      : type = QualifiedReference '{' ResourceAttributes? '}'
       ;
-
-    DefaultAttributeOperations
-       : OverrideAttributeOperation (',' OverrideAttributeOperation)* ','?
-       ;
-       
-    DefaultAttributeOperation 
-       : name = SimpleName '=>' value = Expression
-       | name = SimpleName '+>' value = Expression
-       ;
      
 
 * The type must be a reference to an existing resource type (plugin or user defined). Only a 
@@ -337,6 +328,9 @@ entity that will be picked.
 * It is allowed to have multiple default expressions in the same scope provided they define
   different attributes.
 * All visible defaults are merged.
+* The use of `*` `=>` sets attributes from key/values in the RHS hash as if they had been 
+  individually given with `key => value`.
+
 
 ### Resource Override Expression
 
@@ -346,16 +340,7 @@ is declared in an inherited class when the override is evaluated in the scope of
 the derived class.
 
      ResourceOverrideExpression
-       : ResourceReferences '{' OverrideAttributeOperations '}'
-       ;
-
-    OverrideAttributeOperations
-       : OverrideAttributeOperation (',' OverrideAttributeOperation)* ','?
-       ;
-       
-    OverrideAttributeOperation 
-       : name = SimpleName '=>' value = Expression
-       | name = SimpleName '+>' value = Expression
+       : ResourceReferences '{' ResourceAttributes '}'
        ;
      
      ResourceReferences
@@ -376,6 +361,8 @@ the derived class.
     * If a value has been assigned, and it is not an array, the value is wrapped in an array
       before the new value is appended
     * If the resulting value is an array, it is also flattened (nested arrays are flattened out).
+  * The `*` `=>` sets attributes from key/values in the RHS hash as if they had been individually 
+      given with `key => value`
 * **Otherwise:**
   * The `=>` operators sets the value of the given attribute in all referenced resource instances
     provided that the attribute does not already have a value.
@@ -383,6 +370,9 @@ the derived class.
   * The `+>` operator raises and error (if there was a value it would append it and thus change
     the value; which is not allowed, and if there is no value, it is the same as `=>`, and
     this should have been used instead).
+  * The `*` `=>` sets attributes from key/values in the RHS hash as if they had been individually 
+    given with `key => value`
+  
     
 ** ResourceReferences **
 
