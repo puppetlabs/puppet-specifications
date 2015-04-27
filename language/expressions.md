@@ -101,7 +101,8 @@ String interpolation can be performed two different ways:
 
 The expression part has the following rules:
 
-* Resource expressions; `class`, `define`, or `nodes` expressions; or function calls without parentheses are not allowed
+* `class`, `define`, or `node` expressions; or statement-like function calls
+  (only function name without parentheses) are not allowed.
 * Automatic conversion to a variable is performed if the expression has one of the forms:
   * `${<KEYWORD>}` - e.g. `${node}`, `${class}` becomes `${$node}`, `${$class}`
   * `${<QualifiedName>}` - e.g. `${var}` becomes `${$var}`
