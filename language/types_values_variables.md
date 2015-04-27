@@ -448,6 +448,9 @@ this will result in an error (e.g. `/.*/m`).
 The result of `Regexp[pattern]` is a parameterized `Regexp` type that in certain operations
 can be used instead of a literal regular expression.
 
+If a non parameterized `Regexp` is used where a pattern is required, the pattern defaults to
+the empty pattern `//`.
+
 <table><tr><th>Note</th></tr>
 <tr><td>
   The Puppet Programming Language may be given control over options and support \A and \Z in
