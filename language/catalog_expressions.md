@@ -37,7 +37,9 @@ The parameter list is common to several of the catalog expressions:
 * A *captures rest* (as allowed for functions) is not allowed in parameter lists for a
   catalog related expression.
 * The default value expression must evaluate to an instance of the specified type.
+* The default value expression may evaluate to undef if the parameter type allows it.
 * If a parameter type is not specified, the default is `Any`.
+* The default value expression may not assign to/create a new variable.
 
 ### Node Definition
 
@@ -231,7 +233,8 @@ elsewhere via *exported resource collection*.
   conform to class naming rules.
 
 * The list of all titles (the `String[1]` or `Default` values of the `Tree`) from all
-  `TitleExpression`s in a single `ResourceExpression` must not contain the same title more than once.
+  `TitleExpression`s in a single `ResourceExpression` must not contain the same title more
+  than once.
 
 * The name of an attribute may be any keyword (except `true` or `false`), a simple name (a name
   not containing `::`). Names may not start with a digit. (Note that a future version of this 
@@ -255,8 +258,9 @@ elsewhere via *exported resource collection*.
   expression will use the attribute operations for this body as default values.
   
 * It is allowed to give a mix of `String` titles with the `default` title. The default title has
-  no effect on the created resources from the same title (it cannot, since the key/values are exactly 
-  the same), but defines the defaults for any additional bodies in the same resource expression.
+  no effect on the created resources from the same title (it cannot, since the key/values are 
+  exactly the same), but defines the defaults for any additional bodies in the same resource 
+  expression.
   
 * The effect of a *local default* does not extend beyond one resource expression.
 
@@ -274,15 +278,57 @@ All resources created by a resource expression are created with a status of eith
    1. The `AttributesFromHash` expression is evaluated. Each key of the resulting `Hash` is used as 
       the name of an attribute and the value for that key is the attribute's value.
 1. A resource is created for each title, except a resource with a title type of `Default`.
-   * The attributes of the resource are the evaluated default attributes overridden by the attributes 
-      from the title's `ResourceBody`. Note: an attribute with a value of `undef` is not handled 
-      specially as is done when deciding whether to use the default expression of a parameter.
+   * The attributes of the resource are the evaluated default attributes overridden by
+     the attributes from the title's `ResourceBody`. Note: an attribute with a value of `undef` is 
+     not handled specially as is done when deciding whether to use the default expression
+     of a parameter.
    * The set of attributes given is checked against the set of declared parameters for the 
      `type_name` (or the `title` in the case of a `class` type). It is an error if there is no 
      available type or if one of the evaluated attributes does not exist on the type.
+   * An attribute that evaluates to `undef` acts as if that attribute was not set and will
+     trigger the parameter's default expression (or automatic parameter lookup (if the resource
+     is a class)). Also see "Undef Parameters" below.
    * Virtual and exported resources are remembered for reference, and for future operations.
    * Regular resources are *realized* (placed in the catalog).
-1. The resource instance is lazily evaluated by placing it in a queue, as described in [Modus Operandi][1].
+1. The resource instance is lazily evaluated by placing it in a queue, as
+   described in [Modus Operandi][1].
+
+** Undef Parameter Values **
+As noted in "Order of Evaluation", an attribute operation that results in an undef value for a 
+parameter that has a default value expression is equivalent to not including an attribute operation for that name as a given undef triggers the default value expression for the parameter. If the resource is a class, it will also trigger the data binding service to supply the value. If the parameter does not have a default value expression (or value to lookup), a given `undef`, results in an `undef` parameter value, and a missing attribute operation results in an error (no value given, not even undef).
+
+This is illustrated in the table below. A `-` indicates missing as opposed to a given
+undef. These rules apply for classes since data binding lookup is not available for other
+resources.
+
+| default expression | lookup | given  | result
+| ---                | ---    | ---    | ---
+| 10                 | -      | -      | 10
+| 10                 | -      | 20     | 20
+| 10                 | -      | undef  | 10
+| 10                 | 30     | -      | 30
+| 10                 | 30     | 20     | 20
+| 10                 | 30     | undef  | 30
+| undef              | -      | -      | undef
+| undef              | -      | 20     | 20
+| undef              | -      | undef  | undef
+| undef              | 30     | -      | 30
+| undef              | 30     | 20     | 20
+| undef              | 30     | undef  | 30
+| -                  | -      | -      | **error**
+| -                  | -      | 20     | 20
+| -                  | -      | undef  | undef
+| -                  | 30     | -      | 30
+| -                  | 30     | 20     | 20
+| -                  | 30     | undef  | 30
+
+This means:
+
+* It is not possible to set an explicit `undef` if a value is bound via data binding.
+* A given explicit `undef` does not count as a missing value (if there is no default or value
+  to lookup).
+* Use a parameter type that does not accept `Undef` to ensure that value is never `undef`.
+* Use a default value of `undef` to equate missing value (and lookup) with a given `undef`.
 
 ### Resource Default Expression
 
