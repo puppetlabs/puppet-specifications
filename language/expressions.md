@@ -1233,14 +1233,22 @@ Examples:
     
 This shows that the left hand type can be specialized; an **open** `Resource` to a specific **typed** `Resource`, and a typed resource to a specific (titled) **Reference** resource (instance), and then further specialized to refer to a parameter of a referenced resource.
 
-* Note that lookup of a parameter that has no value will result in lookup of its current default 
-  value.
-* Evaluation of parameter lookup is evaluation order dependent and that resource instantiation is
-  lazily evaluated.
+Lookup of a parameter that at the time of accessing it has no value depends on if the
+resource type is a user defined or not, and if the attribute is a meta parameter, or if the value
+receives a default value by the implementation of the type, or via a Resource Default expression.
+If a parameter is not explicitly set, a default value is returned if a user defined type's parameter has a default value expression, or if there is a Resource Defaults expression that defines a default value. In all other cases the result is `undef` for a parameter that is not explicitly set.
+
+* It is an error to attempt to get a value for a name that is not an attribute of the type
+* It is an error to attempt to get a value from a resource that is not instantiated (it may be 
+  virtual or exported and unrealized)
+* Note that Evaluation of parameter lookup is evaluation order dependent and that resource 
+  instantiation is lazily evaluated.
 * Note that meta parameters only include values for what has explicitly been assigned as they 
   defaults are evaluated late, and may depend on other values.
 * Note that meta-parameters is an open ended concept where each meta-parameter defines its own
   behavior.
+* Note that a collector expression with an override clause may modify attribute values of resources
+  and that overrides are evaluated late.
 
 #### Integer Type [ ]
 
