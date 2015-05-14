@@ -64,6 +64,7 @@ the conceptual categories **Data Types** e.g.:
 * `Tuple`; an `Array` where each slot is typed individually
 * `Struct`; a Hash where each entry is individually named and typed
 * `Optional`; either `Undef` or a specific type
+* `NotUndef`; a type that represents all types not assignable from the `Undef` type
 * `Variant`; one of a selection of types
 * `Enum`; an enumeration of strings
 * `Pattern`; an enumeration of regular expression patterns
@@ -126,6 +127,7 @@ may appear more than once in the hierarchy (e.g. a `Scalar` is both `Any` and `D
        |
        |- Variant[*types]
        |- Optional[type]
+       |- NotUndef[type]
        |
        |- CatalogEntry
        |  |- Resource[type_name, title]
@@ -511,15 +513,44 @@ as a key (not accepting `Undef` is the default, and default for hashes that conf
 
 ### Struct Type
 
-The `Struct` type fully specifies the content of a `Hash`. The type is parameterized with a hash where the keys must be non empty strings, and the values must be types.
+The `Struct` type fully specifies the content of a `Hash`. The type is parameterized with a hash where each key must be a type from which a non empty string can be derived, and the values must be types.
 
-Here is an example, where the hash must contain the keys mode and path, and mode must have a value that is one of the strings "read", "write", or "update", and the key path must have a `String` value that is at least 1 character in length.
+Each key should be either a literal `key`, `NotUndef[key]` or `Optional[key]`.
+
+A key in the form of a string literal will be converted into its corresponding `String` type. It becomes `Optional[key]` if the value type is assignable from `Undef`. This means that by default, keys are optional if their values are. An explicit `NotUndef` or `Optional` wrapper can be added to make the key behavior explicit.
+
+When a `Struct` has a `NotUndef` key it will only accept a hash where this key is included. This applies even if the value type is optional (assignable from `Undef`). Conversely, if it has an
+`Optional` key it will accept a hash where the key is excluded even if the value type doesn't accept `undef`.
+
+Example 1. The hash must contain the keys mode and path, and mode must have a value that is one of the strings "read", "write", or "update", and the key path must have a `String` value that is at least 1 character in length.
 
     Struct[{mode=>Enum[read, write, update], path=>String[1]}]
-    
-A `Struct` type is compatible with a `Hash` type both ways, given that the constraints they express are met. A `Struct` is a `Collection`, but its size is controlled by the specified named entries.
 
-A `Struct` key that accepts an `Undef` value also accepts that the key missing is the hash. A hash that has keys not specified in the `Struct` will not match.
+
+Example 2. The key defaults to `Optional[article]` since `undef` is an instance of `Data`. An empty hash is hence an instance of this `Struct`.
+
+    Struct[{article=>Data}]
+
+
+Example 3. The key defaults to `NotUndef[article]` so a matching entry must be present in the hash and its value cannot be `undef`.
+
+    Struct[{article=>NotUndef[Data]}]
+
+
+Example 4. The 'article' entry must be present in the hash but the value can be `undef` since it is an instance of `Data`.
+
+    Struct[{NotUndef[article]=>Data}]
+
+
+Example 5. The 'article' entry is optional but when present its value cannot be `undef`.
+
+    Struct[{Optional[article]=>NotUndef[Data]}]
+
+
+A `Struct` type is compatible with a `Hash` type both ways, given that the constraints they express are met. A `Struct` is a `Collection`, but its size is controlled by the specified named entries
+such that the `from` size is determined by the number of required keys and the `to` size corresponds to the total number of entries.
+
+A hash that has keys not specified in the `Struct` will not match.
 
 An unparameterized `Struct` matches all structs and all hashes.
 
@@ -601,11 +632,30 @@ which is true if all the numbers in an array of numbers are between 1000 and 199
 The `Optional` type is parameterized with a single type. It represents the given type or
 Undef. An unparameterized `Optional` represents nothing.
 
+The parameter can be a literal string in which case it is converted into its corresponding
+`String` type.
+
 #### Type Algebra on Optional
 
     Optional[T]  ∪  T            → T
     Optional[T]  ∪  Undef        → Optional[T]
-    Optional[Q]  ∪  Optional[R]  → Optional[T ∪ R]
+    Optional[T]  ∪  Optional[R]  → Optional[T ∪ R]
+
+
+### NotUndef[T]
+
+The `NotUndef` type is parameterized with a single type. It represents all types assignable
+to the given type except those that are assignable from the `Undef` type. An unparameterized
+`NotUndef` is the same as `NotUndef[Any]`.
+
+The parameter can be a literal string in which case it is converted into its corresponding
+`String` type.
+
+#### Type Algebra on NotUndef
+
+    NotUndef[T]  ∪  T            → NotUndef[T]
+    NotUndef[T]  ∪  Undef        → Variant[]
+    NotUndef[T]  ∪  NotUndef[R]  → NotUndef[T ∪ R]
 
 
 ### Catalog Entry
