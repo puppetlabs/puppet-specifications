@@ -1233,24 +1233,24 @@ Examples:
     
 This shows that the left hand type can be specialized; an **open** `Resource` to a specific **typed** `Resource`, and a typed resource to a specific (titled) **Reference** resource (instance), and then further specialized to refer to a parameter of a referenced resource.
 
-Lookup of a parameter that at the time of accessing it has no value depends on if the
-resource type is a user defined or not, and if the attribute is a meta parameter, or if the value
-receives a default value by the implementation of the type, or via an evaluated Resource Default expression.
-If a parameter is not explicitly set, a default value is returned if a user defined type's parameter has a default value expression, or if there is an already evaluated Resource Defaults expression that defines a default value for that parameter. In all other cases the result is `undef` for a parameter that is not explicitly set.
+If a parameter is not explicitly set, a default value is returned if a user defined type's parameter has a default value expression, or if there is an already evaluated Resource Defaults expression that defines a default value for that type/parameter. In all other cases the result is `undef` for a parameter that is not explicitly set.
 
 * It is an error to attempt to get a value for a name that is not an attribute of the type
 * It is an error to attempt to get a value from a resource that is not instantiated (it may be 
   virtual or exported and unrealized)
 * Note that Evaluation of parameter lookup is evaluation order dependent and that resource 
-  instantiation is lazily evaluated.
+  instantiation is lazily evaluated. (This means that a resource instantiation followed immediately
+  by a parameter access will not be able to get default values due to the lazy/
+  queuing behavior of resource evaluation. See [Modus Operandi].
 * Note that accessing a default value set via a Resource Defaults expression depends on evaluation 
-  order as the Resource Defaults expression must have been evaluated for it to have any effect.
-* Note that meta parameters only include values for what has explicitly been assigned as they 
-  defaults are evaluated late, and may depend on other values.
+  order as the Resource Defaults expression must have been evaluated for it to have any effect. See 
+  [Modus Operandi].
 * Note that a collector expression with an override clause may modify attribute values of resources
   and that overrides are evaluated late.
   
 Due to the dependency on evaluation order and that late evaluating overrides and Resource Override expressions accessed resource parameter values may be different than what the value eventually ends up being in the produced catalog.
+
+[Modus Operandi]: modus-operandi.md
 
 #### Integer Type [ ]
 
