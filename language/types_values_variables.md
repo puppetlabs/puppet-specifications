@@ -12,9 +12,9 @@ There are two kinds of types in the Puppet Programming Language; *Puppet Types*,
 Many of the types in the type system are *Parameterized Types* which means that a *Base Type* can be further specialized.
 
 When describing types, the term **assignability** (in different forms) is used to describe the relationship between two types such that
-a Type T is assignable from a type T2 if all possible values having type T2 are also values of type T. This can also be expressed as
+a type T is assignable from a type T2 if all possible values having type T2 are also values of type T. This can also be expressed as
 "a type T2 is assignable to a type T", or "T accepts T2" (as a short form of "A variable typed T accepts an assignment of a value of
-type T2"). As an example; "The type ´Numeric´ is assignable from the type ´Integer´".
+type T2"). As an example we can say; "The type ´Numeric´ is assignable from the type ´Integer´".
 
 ### Platform Types
 
