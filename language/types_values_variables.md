@@ -9,7 +9,12 @@ The Kinds of Types and Values
 ---
 There are two kinds of types in the Puppet Programming Language; *Puppet Types*, and the types of the underlying runtime "platform" language - the *Platform Types*.
 
-Many of the types in the type system are *Parameterized Types* which means that a *Base Type* can be further specialized. 
+Many of the types in the type system are *Parameterized Types* which means that a *Base Type* can be further specialized.
+
+When describing types, the term **assignability** (in different forms) is used to describe the relationship between two types such that
+a Type T is assignable from a type T2 if all possible values having type T2 are also values of type T. This can also be expressed as
+"a type T2 is assignable to a type T", or "T accepts T2" (as a short form of "A variable typed T accepts an assignment of a value of
+type T2"). As an example; "The type ´Numeric´ is assignable from the type ´Integer´".
 
 ### Platform Types
 
@@ -26,9 +31,11 @@ As an example, if there is a puppet extension written in Ruby with the name `Pup
 ### The Undef Type
 
 There is a special undefined/null/nil type - called `Undef`; the type of the expression `undef`.
-Values of the `Undef` type can always undergo a widening reference conversion to any other type. The reverse is however not true; only the value `undef` has the type `Undef`.
 
-A value of `Undef` type is assignable to any other *optional* type with the meaning *it is allowed to have no value*. This is achieved by using the type `Optional[T]` instead of just the type `T`, by using `Any` to accept anything, or using `Data` to accept a pre-defined set of data types (including `Undef`).
+A value of `Undef` type is assignable to any other *optional* type with the meaning *it is allowed to have no value*.
+This is achieved by using the type `Optional[T]` instead of just the type `T`, by using `Any` to accept anything,
+or using `Data` to accept a pre-defined set of data types (including `Undef`), or using a `Variant` where one of the
+accepted types accepts an `Undef` value.
 
 
 ### The Default Type
