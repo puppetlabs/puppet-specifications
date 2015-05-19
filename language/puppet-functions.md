@@ -69,8 +69,11 @@ may be given in the call to the function - as shown in the table below
 When a lambda is optional and not lambda is given in a call, the parameter will be bound to
 `undef`.
 
-Calling a Lambda
+Calling a Lambda (Draft)
 ---
+**NOTE** We have to wait with supporting calling callables until we have fixed the scope implementation since it is not safe to return a lambda and use it later due to the scope implementation in 3x. There is no (non expensive) way of asserting that a function does not leak a Callable.
+
+
 Calling a lambda (any callable) may be done by applying the `()` operator.
 
     function(Array $arr, Callable $block) {
@@ -94,9 +97,6 @@ Call Rules:
 * An expression that evaluates to Callable can be called
 * Any other result raises an error
 
-**NOTE** We may have to wait with supporting calling callables until we have fixed scope
-since it is not safe to return a lambda and use it later due to the scope implementation in 3x.
-There is no (non expensive) way of asserting that a function does not leak a Callable.
 
 Type of Given Block
 ---
