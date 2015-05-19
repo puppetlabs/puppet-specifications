@@ -336,6 +336,7 @@ of internal functions have more access to the runtime and has an API that is con
   functions that does this, but it should not mutate the system state itself.
 * The function may not implement any of the reserved methods.
 * The function may not contain nested classes or modules
+* The function may not define Ruby constants
 
 Specifically, this means that a (non internal) function does not have access to the calling scope.
 If there is a need to access the calling scope, or other internal runtime services, the
