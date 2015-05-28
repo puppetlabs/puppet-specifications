@@ -25,7 +25,8 @@ concerns, the scoping rules of the EPP functions are as follows:
 * `inline_epp()` provides access to the local calling scope's variables unless an
   (optional) hash of variable name/value entries is given in which case these are used **instead** 
   of having access to the local scope variables.
-* The `epp` function does not provide access to the calling scope's variables.  
+* The `epp` function does not provide access to the calling scope's variables via short 
+  name references (unless the calling scope is also the top-scope).  
 * If a template declares parameters that require a value to be given, these must be given in 
   the name/value hash.
   
@@ -77,7 +78,7 @@ Below is the EPP Specific part of the Puppet Language Grammar, where parts of th
       : EPP_START epp_parameters_list? statements?
 
     epp_parameters_list
-      : '|' (parameters ','?)? '|'  # parameters is the same as for a lambda
+      : '|' (parameters ','?)? '|'  # parameters are the same as for a define
 
     epp_render_expression
       : RENDER_STRING
@@ -105,16 +106,18 @@ When the resulting EPP program is evaluated, it is evaluated the same way as a n
 > It is however allowed to call one of the EPP functions to
 > nest the result of evaluating another template.
 
-> NOTE: whitespace text is significant
-> Care must be taken to not introduce whitespace text in the middle of embedded puppet logic
-> since that would lead to syntax errors.
+> NOTE: emitted whitespace text is significant
+> Care must be taken to not introduce emitted whitespace text between separate tags of puppet logic
+> intended to be one sequence of logic since that can lead to syntax errors.
+> As a rule of thumb; emitting whitespace (or any other
+> text) can only be made in places in the puppet logic where a function call is allowed.
 
 Rules:
 
 * An `epp_render_expression` produces a string result as a side effect that is concatenated at
   the end of the process.
 * Each invocation of an `epp_render_expression` has `undef` value.
-* For a `render_epp_expression` that contains a block expression (with multiple statements), the
+* For a `epp_render_expression` that contains a block expression (with multiple statements), the
   result of the block is rendered (the last expression).
 * Variables that are assigned in the template are local to the template.
 * A local variable introduced in the template may shadow a variable in an outer scope.
@@ -156,7 +159,7 @@ Produces a notice of the string "This is the droid you are looking for!"
     
     $a = world
     notice inline_epp(@(END), {x => magic})
-      <%-( $x )-%>
+      <%-| $x |-%>
       <% Integer[1,3].each |$count| { %>
       hello epp <%= $x %> <%= $a %> <%= $count %>
       <%- } %>
