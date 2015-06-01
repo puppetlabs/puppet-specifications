@@ -142,10 +142,10 @@ This will notice `"a  b"`, because the verbatim text produces `undef`.
 | `<%=` | Switches to puppet expression mode. (Left trimming is not possible) |
 | `<%%` | A literal `<%` is rendered, mode does not change |
 | `%%>` | A literal `%>` is rendered, mode does not change |
-| `<%-` | Switches to puppet mode. Whitespace preceding the tag, up to and including a new line is not rendered. |
-| `<%#` | A comment not included in the output (up to the next `%>`, or right trimming `-%>`). Continues in text mode after having skipped the comment (observes right trimming semantics).
-| `%>` | Ends puppet mode
-| `-%>` | Ends puppet mode and trims any generated trailing whitespace |
+| `<%-` | Switches to puppet mode. Whitespace text immediately preceding the tag, up to but not including a new line, is not rendered. |
+| `<%#` | A comment not included in the output (up to the next `%>`, or right trimming `-%>`). Continues in text mode after having skipped the comment.Always left trims whitespace on the same line, and may optionally right trim by ending the tag with `-%>`. |
+| `%>` | Ends puppet mode |
+| `-%>` | Ends puppet mode and trims any generated trailing whitespace as well as whitespace immediately following the tag, up to, and including a newline. |
 
 
 ### Examples
