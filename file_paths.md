@@ -163,6 +163,7 @@ user or group.
                 mcollective.log
 
     C:\ProgramData\PuppetLabs\puppet
+    -------------------------------------------------------------------------------------------------------               
         cache                                 # :vardir                      C:\ProgramData\PuppetLabs\puppet\var
             bucket                            # :bucketdir
             client_yaml                       # :clientyamldir
@@ -177,6 +178,7 @@ user or group.
             server_data                       # :server_datadir
             state                             # :statedir
             yaml                              # :yamldir
+    -------------------------------------------------------------------------------------------------------               
         etc *                                 # :confdir                     same
             auth.conf                         # :rest_authconfig
             autosign.conf                     # :autosign
@@ -188,6 +190,7 @@ user or group.
             puppet.conf *                     # :config
             routes.yaml                       # :route_file
             ssl                               # :ssldir
+    -------------------------------------------------------------------------------------------------------               
         var *
             log                               # :logdir                      same
                 puppet.log                    # not enabled by default
