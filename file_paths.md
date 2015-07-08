@@ -112,6 +112,7 @@ The files annotated by an '*' indicate that they are created by package installa
             man *
             vim *
         ssl *
+        VERSION                           # puppet-agent package version
 
     /var/log/puppetlabs *
         mcollective.log
@@ -196,6 +197,9 @@ user or group.
                 puppet.log                    # not enabled by default
             run                               # :rundir                      same
                 agent.pid                     # :pidfile
+
+    C:\Program Files\Puppet Labs\Puppet
+        VERSION                               # puppet-agent package version
 
     C:\Program Files\Puppet Labs\Puppet\bin *
         cfacter.bat *                         # bat file wrappers
