@@ -56,8 +56,8 @@ The files annotated by an '*' indicate that they are created by package installa
         mco@ *                            -> /opt/puppetlabs/puppet/bin/mco
         puppet@ *                         -> /opt/puppetlabs/puppet/bin/puppet
 
-    /opt/puppetlabs/facter
-        facts.d                           # external facts directory (not pluginsync'ed)
+    /opt/puppetlabs/facter *
+        facts.d *                         # external facts directory (not pluginsync'ed)
 
     /opt/puppetlabs/mcollective/
         plugins                           # user installed plugins
