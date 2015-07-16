@@ -174,7 +174,6 @@ user or group.
             facts.d                           # :pluginfactdest (pluginsync'ed)
             lib                               # :libdir
             facts                             # used to generate :factpath
-            puppet-module                     # :module_working_dir
             reports                           # :reportdir
             server_data                       # :server_datadir
             state                             # :statedir
@@ -270,6 +269,8 @@ user or group.
             bin *
               elevate.exe *                   # Used to elevate interactive commands
 
+    C:\Windows\Temp                           # :module_working_dir
+
 # puppet-agent (non-root)
 
 When running as non-root on \*nix and Windows, puppet will use the
@@ -288,6 +289,10 @@ running as root and non-root, e.g. `puppet.conf` is always
     ~/.puppetlabs/var/run                 # :rundir                     ~/.puppet/var/run
     ~/.puppetlabs/var/log                 # :logdir                     ~/.puppet/var/log
     ~/.puppetlabs/opt/facter/facts.d      # n/a                         ~/.facter/facts.d
+
+On Windows, when not running on the SYSTEM account
+
+    ~/AppData/Local/Temp                  # :module_working_dir
 
 These sections describe other Puppet packages that rely on puppet-agent to create the initial directory layout. It does not attempt to specify the full set of file paths for these packages, just cases where the other package has a dependency on puppet-agent.
 
