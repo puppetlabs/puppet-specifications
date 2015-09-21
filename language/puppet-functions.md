@@ -7,7 +7,7 @@ Grammar
 ---
 
     FunctionDefinition
-      : 'private'? 'function' parameters = ParameterList? '{' statements += statements '}'
+      : 'function' parameters = ParameterList? '{' statements += statements '}'
       ;
       
     ParameterList
