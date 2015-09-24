@@ -15,8 +15,8 @@ This table specifies the file paths in a Puppet installation and the correspondi
 
 # puppet-agent (*nix)
 
-The package will create two services `puppet` and `mcollective`, both
-running as `root` by default. It will not create a `puppet` user or group.
+The package will create the following services `puppet`, `mcollective`, and `pxp-agent`,
+all running as `root` by default. It will not create a `puppet` user or group.
 The files annotated by an '*' indicate that they are created by package installation.
 
     Path                                  Setting                        3.x
@@ -58,6 +58,11 @@ The files annotated by an '*' indicate that they are created by package installa
         puppet.conf *                     # :config
         routes.yaml                       # :route_file
         ssl                               # :ssldir                      /etc/puppet/ssl
+
+    /etc/puppetlabs/pxp-agent *
+        modules *                         # stores configuration files for pxp-agent modules
+            pxp-module-puppet.conf *      # configuration file of the pxp module puppet
+        pxp-agent.conf                    # pxp-agent configuration file
 
     /opt/puppetlabs/bin *                 # symlink targets of puppet related binaries
         facter@ *                         -> /opt/puppetlabs/puppet/bin/facter
@@ -121,14 +126,20 @@ The files annotated by an '*' indicate that they are created by package installa
         ssl *
         VERSION                           # puppet-agent package version
 
+    /opt/puppetlabs/pxp-agent *
+        spool                             # directory containing results of pxp-agent modules
+
     /var/log/puppetlabs *
         mcollective.log
         puppet *                          # :logdir                      /var/lib/puppet/log
             puppet.log                    # not enabled by default
+        pxp-agent
+            pxp-agent.log                 # enabled by default
 
     /var/run/puppetlabs *                 # :rundir                      /var/lib/puppet/run
         agent.pid                         # :pidfile
         mcollectived.pid
+        pxp-agent.pid
 
 # puppet-agent (windows)
 
@@ -140,9 +151,9 @@ when installing puppet-agent 32-bit on 64-bit windows, the
 installation path defaults to `C:\Program Files (x86)\Puppet
 Labs`. The examples below assume 2008/2012 and puppet-agent (64-bit).
 
-The package will create two services `puppet` and `mcollective`
-running as `LocalSystem` by default. It will not create a `puppet`
-user or group.
+The package will create the following services `puppet`, `mcollective`,
+and `pxp-agent`, all running as `LocalSystem` by default. It will not
+create a `puppet` user or group.
 
     Path                                      Setting                        3.x
     C:\ProgramData                                                           n/a
@@ -171,7 +182,7 @@ user or group.
                 mcollective.log
 
     C:\ProgramData\PuppetLabs\puppet
-    -------------------------------------------------------------------------------------------------------               
+    -------------------------------------------------------------------------------------------------------
         cache                                 # :vardir                      C:\ProgramData\PuppetLabs\puppet\var
             bucket                            # :bucketdir
             client_yaml                       # :clientyamldir
@@ -185,7 +196,7 @@ user or group.
             server_data                       # :server_datadir
             state                             # :statedir
             yaml                              # :yamldir
-    -------------------------------------------------------------------------------------------------------               
+    -------------------------------------------------------------------------------------------------------
         etc *                                 # :confdir                     same
             auth.conf                         # :rest_authconfig
             autosign.conf                     # :autosign
@@ -197,12 +208,24 @@ user or group.
             puppet.conf *                     # :config
             routes.yaml                       # :route_file
             ssl                               # :ssldir
-    -------------------------------------------------------------------------------------------------------               
+    -------------------------------------------------------------------------------------------------------
         var *
             log                               # :logdir                      same
                 puppet.log                    # not enabled by default
             run                               # :rundir                      same
                 agent.pid                     # :pidfile
+
+    C:\ProgramData\PuppetLabs\pxp-agent *
+        etc *
+            pxp-agent.conf                    # pxp-agent configuration file
+            modules *                         # stores configuration files for pxp-agent modules
+                pxp-module-puppet.conf *      # configuration file of the pxp module puppet
+        var *
+            log
+                pxp-agent.log                 # enabled by default
+            spool                             # directory containing results of pxp-agent modules
+            run
+                pxp-agent.pid
 
     C:\Program Files\Puppet Labs\Puppet
         VERSION                               # puppet-agent package version
@@ -225,7 +248,7 @@ user or group.
         inc *                                 # facter headers
             facter *
         lib *
-            facter.rb *                      # ruby bindings
+            facter.rb *                       # ruby bindings
 
     C:\Program Files\Puppet Labs\Puppet\hiera *
         bin *
