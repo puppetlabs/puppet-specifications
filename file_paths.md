@@ -60,7 +60,6 @@ The files annotated by an '*' indicate that they are created by package installa
         ssl                               # :ssldir                      /etc/puppet/ssl
 
     /opt/puppetlabs/bin *                 # symlink targets of puppet related binaries
-        cfacter@ *                        -> /opt/puppetlabs/puppet/bin/cfacter
         facter@ *                         -> /opt/puppetlabs/puppet/bin/facter
         hiera@ *                          -> /opt/puppetlabs/puppet/bin/hiera
         mco@ *                            -> /opt/puppetlabs/puppet/bin/mco
@@ -74,7 +73,6 @@ The files annotated by an '*' indicate that they are created by package installa
 
     /opt/puppetlabs/puppet *              # ruby-puppet root
         bin *
-            cfacter *
             facter *
             gem *
             hiera *
@@ -109,7 +107,6 @@ The files annotated by an '*' indicate that they are created by package installa
             libssl.so *
             ruby *
                 vendor_ruby *             # ruby code
-                    cfacter.rb *
                     facter.rb *
                     hiera.rb *
                     mcollective.rb *
@@ -211,32 +208,24 @@ user or group.
         VERSION                               # puppet-agent package version
 
     C:\Program Files\Puppet Labs\Puppet\bin *
-        cfacter.bat *                         # bat file wrappers
         environment.bat *                     # setup LOAD_PATH
-        facter.bat *
+        facter.bat *                          # bat file wrappers
         hiera.bat *
         mco.bat *
         puppet.bat *
         puppet_shell.bat *                    # targets for shortcuts
-        run_cfacter_interactive.bat *
         run_facter_interactive.bat *
         run_puppet_interactive.bat *
 
-    C:\Program Files\Puppet Labs\Puppet\cfacter *
+    C:\Program Files\Puppet Labs\Puppet\facter *
         bin *                                 # executables and dlls
-            cfacter.exe *
+            facter.exe *
             libfacter.so *
             lib*.dll *
-        inc *                                 # cfacter headers
+        inc *                                 # facter headers
             facter *
         lib *
-            cfacter.rb *                      # ruby bindings
-
-    C:\Program Files\Puppet Labs\Puppet\facter *
-        bin *
-            facter *                          # ruby bin wrapper
-        lib *
-            facter.rb *
+            facter.rb *                      # ruby bindings
 
     C:\Program Files\Puppet Labs\Puppet\hiera *
         bin *
