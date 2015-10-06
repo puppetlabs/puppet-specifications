@@ -85,6 +85,7 @@ The files annotated by an '*' indicate that they are created by package installa
             mcollectived *
             openssl *
             puppet *
+            pxp-agent *
             ruby *
             virt-what *
         cache *                           # :vardir                      /var/lib/puppet
@@ -127,6 +128,8 @@ The files annotated by an '*' indicate that they are created by package installa
         VERSION                           # puppet-agent package version
 
     /opt/puppetlabs/pxp-agent *
+        modules *
+            pxp-module-puppet *
         spool                             # directory containing results of pxp-agent modules
 
     /var/log/puppetlabs *
@@ -274,6 +277,12 @@ create a `puppet` user or group.
             puppet *                          # ruby bin wrapper
         lib *
             puppet.rb *
+
+    C:\Program Files\Puppet Labs\Puppet\pxp-agent *
+        bin *
+            pxp-agent.exe *
+        modules *
+            pxp-module-puppet *
 
     C:\Program Files\Puppet Labs\Puppet\service *
         daemon.rb *                           # windows service daemon
