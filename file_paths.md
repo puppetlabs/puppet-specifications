@@ -286,6 +286,7 @@ create a `puppet` user or group.
 
     C:\Program Files\Puppet Labs\Puppet\service *
         daemon.rb *                           # windows service daemon
+        nssm.exe *                            # NSSM used to run pxp-agent
 
     C:\Program Files\Puppet Labs\Puppet\sys *
         ruby *
