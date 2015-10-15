@@ -222,7 +222,7 @@ create a `puppet` user or group.
         etc *
             pxp-agent.conf                    # pxp-agent configuration file
             modules *                         # stores configuration files for pxp-agent modules
-                pxp-module-puppet.conf *      # configuration file of the pxp module puppet
+                pxp-module-puppet.conf        # configuration file of the pxp module puppet
         var *
             log
                 pxp-agent.log                 # enabled by default
