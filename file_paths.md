@@ -222,11 +222,12 @@ create a `puppet` user or group.
         etc *
             pxp-agent.conf                    # pxp-agent configuration file
             modules *                         # stores configuration files for pxp-agent modules
-                pxp-module-puppet.conf        # configuration file of the pxp module puppet
+                pxp-module-puppet.conf        # configuration file of the pxp module puppet (optionally, to override puppet.bat location)
         var *
             log *
                 pxp-agent.log                 # enabled by default
-            spool *                            # directory containing results of pxp-agent modules
+            spool *                           # directory containing results of pxp-agent modules
+            run *
 
     C:\Program Files\Puppet Labs\Puppet
         VERSION                               # puppet-agent package version
@@ -245,7 +246,7 @@ create a `puppet` user or group.
         bin *                                 # executables and dlls
             facter.exe *
             libfacter.so *
-            lib*.dll *
+            lib*.dll *                        # gcc, mingw, boost libraries
         inc *                                 # facter headers
             facter *
         lib *
@@ -279,8 +280,11 @@ create a `puppet` user or group.
     C:\Program Files\Puppet Labs\Puppet\pxp-agent *
         bin *
             pxp-agent.exe *
+            lib*.dll *                        # gcc, mingw, boost libraries
+                                              # pxp-agent also loads openssl libraries (below)
         modules *
             pxp-module-puppet *
+            pxp-module-puppet.bat *
 
     C:\Program Files\Puppet Labs\Puppet\service *
         daemon.rb *                           # windows service daemon
@@ -291,6 +295,8 @@ create a `puppet` user or group.
             bin *
                 ruby.exe *
                 ssleay32.dll *                # openssl dll
+                libeay32.dll *                # openssl dll
+                lib*.dll *                    # yaml, iconv, gdbi & ffi libraries
             include *
             lib *
             share *
