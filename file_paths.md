@@ -227,8 +227,6 @@ create a `puppet` user or group.
             log *
                 pxp-agent.log                 # enabled by default
             spool *                            # directory containing results of pxp-agent modules
-            run *
-                pxp-agent.pid
 
     C:\Program Files\Puppet Labs\Puppet
         VERSION                               # puppet-agent package version
