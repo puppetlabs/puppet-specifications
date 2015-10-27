@@ -130,13 +130,13 @@ The files annotated by an '*' indicate that they are created by package installa
     /opt/puppetlabs/pxp-agent *
         modules *
             pxp-module-puppet *
-        spool                             # directory containing results of pxp-agent modules
+        spool *                            # directory containing results of pxp-agent modules
 
     /var/log/puppetlabs *
         mcollective.log
         puppet *                          # :logdir                      /var/lib/puppet/log
             puppet.log                    # not enabled by default
-        pxp-agent
+        pxp-agent *
             pxp-agent.log                 # enabled by default
 
     /var/run/puppetlabs *                 # :rundir                      /var/lib/puppet/run
@@ -224,11 +224,9 @@ create a `puppet` user or group.
             modules *                         # stores configuration files for pxp-agent modules
                 pxp-module-puppet.conf        # configuration file of the pxp module puppet
         var *
-            log
+            log *
                 pxp-agent.log                 # enabled by default
-            spool                             # directory containing results of pxp-agent modules
-            run
-                pxp-agent.pid
+            spool *                            # directory containing results of pxp-agent modules
 
     C:\Program Files\Puppet Labs\Puppet
         VERSION                               # puppet-agent package version
