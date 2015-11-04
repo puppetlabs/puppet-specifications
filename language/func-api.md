@@ -71,6 +71,14 @@ can look like this:
 This works, because we have named the created function and the method it contains the same
 way. (If there is no method with the same name an error is raised). It is legal to have
 additional helper methods but it is not possible to define classes nested inside of the function.
+Functions can now be namespaced for inclusion in a module, in which case the method would
+be named with the last segment of the function name:
+
+    Puppet::Functions.create_function(:"mymodule::min") do
+      def min(x,y)
+        x <= y ? x : y
+      end
+    end
 
 The function definition in the example above does obviously not define the required types of the
 arguments (since this cannot be done in Ruby). Instead, the introspection
