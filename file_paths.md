@@ -22,6 +22,10 @@ The files annotated by an '*' indicate that they are created by package installa
     Path                                  Setting                        3.x
     /etc/puppetlabs *                                                    n/a
 
+    /etc/puppetlabs/client-tools *        # default client tool settings
+        puppet-access.conf *
+        puppet-orchestrator.conf *
+
     /etc/puppetlabs/code *                # :codedir                     contents moved from :confdir
         environments *                    # :environmentpath
           production *
@@ -160,6 +164,11 @@ create a `puppet` user or group.
 
     Path                                      Setting                        3.x
     C:\ProgramData                                                           n/a
+
+    C:\ProgramData\PuppetLabs/client-tools    # default client tool settings
+        puppet-access.conf *
+        puppet-orchestrator.conf *
+
 
     C:\ProgramData\PuppetLabs\code *          # :codedir                     contents moved from C:\ProgramData\PuppetLabs\puppet\etc (:confdir)
         environments *                        # :environmentpath
@@ -319,6 +328,7 @@ and directories that descend from the top-level are the same when
 running as root and non-root, e.g. `puppet.conf` is always
 `$confdir/puppet.conf`. As a result, only the top-level paths are shown.
 
+    ~/.puppetlabs/client-tools            # user-specific client tool settings
     ~/.puppetlabs/etc/puppet              # :confdir                    ~/.puppet
     ~/.puppetlabs/etc/code                # :codedir                    n/a
     ~/.puppetlabs/opt/puppet/cache        # :vardir                     ~/.puppet/var
