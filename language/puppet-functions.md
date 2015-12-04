@@ -51,29 +51,98 @@ possible to call a puppet function with a lambda, and possibly also type a param
 
 Function Definition - Scope & Autoloading
 ---
-Puppet Functions are autoloaded from modules. They are located under <module-root>/functions.
-The filename must match the simple (non namespaced name part) of the function. Thus, a function 'min' in module 'testmodule' is placed like this:
+
+### Autoloading
+
+Namespaced Puppet Functions are auto loaded from modules and the environment when located under <module-root>/functions or <environment-root>/functions respectively. 
+
+Auto loaded puppet functions are always namespaced; in a module using the module name, and in an environment by using the special name `environment` (i.e. not the *name* of the environment since that typically changes as code is being developed, tested, put into production and then maintained, etc.).
+
+The name of the .pp file must match the simple (non namespaced name part) of the function. Thus, a function **'testmodule::min'** in module 'testmodule' is located like this:
 
     testmodule
       |- functions
          | min.pp
-         
-The functions defined this way in modules must be name-spaced. Thus the contents of this `min.pp` is:
+
+With the following contents in `min.pp` (note use of full namespace):
 
     function testmodule::min($a, $b) {
       # ...
     }
 
-It is allowed to defined Puppet Functions in the environment's logic (i.e. `site.pp`, or in the manifests loaded from the manifests directory). It is also allowed to defined functions directly
-on the command line when running puppet apply.
+And a function **'environment::min'** in a 'production' environment like this:
+
+    production
+      |- functions
+         | min.pp
+         
+With the following contents in `min.pp` (note use of namespace 'environment'):
+
+    function environment::min($a, $b) {
+      # ...
+    }
+
+Nested name spaces are allowed in both modules and the environment - e.g. a function **'testmodule::math::min'** would be located like this:
+
+    testmodule
+      |- functions
+         |- math
+            | min.pp
+
+With the following contents in `min.pp` (note use of full namespace):
+
+    function testmodule::math::min($a, $b) {
+      # ...
+    }
 
 Rules:
 
-* autoloaded functions in modules must have qualified names
-* functions that are defined in modules, but that are not autoloaded (loaded as part of something   
-  else) should also be defined in the module's namespace (it should be an error if an attempt is 
-  made to name it differently).
-* functions defined in the environment may have any name (global or namespaced)
-* A function loaded in the environment shadows functions from modules, but not system functions
+* Loading is performed by mapping the fully qualified function name to a 4.x Ruby function path, and a puppet function path, then:
+  * if the ruby path exist this 4.x Ruby function is loaded (and search stops)
+  * if the puppet path exists this Puppet function is loaded (and search stops)
+  * last, an attempt is made to load a 3.x Ruby function
+* Files containing an auto loaded function may only contain a single function (or an error is raised and evaluation stops).
 
+> Note:
+> 
+> Function loading only searches a set of distinct paths based on the fully qualified name of
+> the function.
+> Contrast this with other kinds of automatic loading of classes and user defined resource types
+> where a search is made using a widening of the namespace, and finally reaching
+> a modules `manifests/init.pp`.
+> 
+> **Specifically**: Autoloading a function from a module does not trigger loading of the module's 
+> `manifests/init.pp` (nor is such initialization required to call a function from a module).
+> If an author of a module provides functions that require that the module's `manifests/init.pp`
+> is loaded, the function should include the module's class, or require that the caller first
+> includes the module's class).
+>
+> **Specifically**: a file `init.pp` under the `functions` directory of a module or the environment
+> does not have any special rules associated with it.
+> If that file exists it is supposed to contain a function named `<module>::init`.
+> Contrast this with `manifests/init.pp` which represents the module it is in. There is no such 
+> concept for functions. 
+
+### Defining functions in Manifests
+
+It is possible to define a Puppet Function in any manifest. Such functions will come into existence when the manifest in question is loaded for some reason other than calling the function (e.g. from 'manifests/site.pp' or when including a class).
+
+The following restrictions/rules/conventions apply on naming non-auto-loaded functions:
+
+* A function defined in a module **must** be qualified with the module's namespace
+* A function defined in an environment's main manifest **should** begin with the special namespace 'environment'
+  * *except* when patching of a function is required - then the name may shadow other functions defined in the same environment, or the modules in this environment. Functions provided by the puppet runtime cannot be shadowed. A shadowed function cannot be called.
+
+Note that the term "environment's main manifest" means logic loaded from the command line (`apply -e`), the Puppet setting `code`, the code loaded from the setting `manifest` (e.g. the `manifests/site.pp` file, or a directory of manifests).
+
+The use cases for using functions defined in manifests are:
+
+* Defining several helper functions that are used locally in a class/user defined type. (Although not yet provided in the language, these functions would typically be made `private` to the module).
+* For patching:
+  * To define a single word (non name-spaced) function (not recommended in general, useful for integrating code that needs such a function and where the original function's implementation is flawed/unwanted)
+  * To override/shadow functions in modules that are flawed/unwanted.
+  * To experiment during development
+ 
+> Note: In the current implementation of Puppet 4.3.x the naming restrictions on non-auto-loaded
+> functions are not enforced. They are expected to be enforced in some future release.
 
