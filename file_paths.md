@@ -165,7 +165,7 @@ create a `puppet` user or group.
     Path                                      Setting                        3.x
     C:\ProgramData                                                           n/a
 
-    C:\ProgramData\PuppetLabs/client-tools    # default client tool settings
+    C:\ProgramData\PuppetLabs\client-tools    # default client tool settings
         puppet-access.conf *
         puppet-orchestrator.conf *
 
