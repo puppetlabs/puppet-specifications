@@ -252,8 +252,7 @@ values outside of this range, such values cannot correctly be represented in cat
 Puppet db.**
 
 The Integer type can optionally be parameterized with `from`, `to` values to provide a range.
-The range can be *ascending* or *descending*. (The direction is only important when iterating
-over the set of instances as the range of values is the same if `from > to` as when `from < to`).
+The range must be *ascending*.
 
 If `from` is unassigned, the default is MIN INTEGER, and if `to` is unassigned, the default is MAX INTEGER.
 
@@ -294,7 +293,6 @@ Testing value against range:
 Iterating over an integer range:
 
      Integer[1,5].each |$x| { notice $x } # => notices 1,2,3,4,5
-     Integer[5,1].each |$x| { notice $x } # => notices 5,4,3,2,1
      
      Integer[0, default].each |$x| { notice $x } # error, unbound range (infinite)
 
