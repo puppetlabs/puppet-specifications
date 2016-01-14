@@ -498,7 +498,7 @@ When used without parameters, the default is `Array[Data]`.
 
 ### Hash[K, V, from, to]
 
-`Hash` represents an unordered collection of associations between a key (of `K` type), and
+`Hash` represents an ordered collection of associations between a key (of `K` type), and
 a value (of `V` type), optionally constrained in size by the integer range parameters *from* and
 *to*.
 
@@ -506,6 +506,12 @@ The types of `K` and `V` are unrestricted.
 
 While the key is generally not restricted, it is recommended that `Undef` is not accepted
 as a key (not accepting `Undef` is the default, and default for hashes that conforms to the `Data` type).
+
+The hash maintains the order of the entires so that iteration over the hash yields the entries
+in the order they were inserted. When hashes are merged (using the `+` operator), the order of the keys
+in the constructed hash have the same order as the LHS side keys, and the RHS keys not present in the LHS
+are inserted at the end of the resulting hash in their RHS order.
+
 
 #### Type Algebra on Hash
 
