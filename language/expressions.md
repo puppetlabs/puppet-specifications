@@ -260,6 +260,9 @@ may never silently produce an incorrect value.
   * If the RHS of a merge is an `Array`, it is converted to a `Hash` (the array should be
     on the form `[key, value, key, value, ...]`, or `[[key, value], [key, value], ...]`
     * if the array does not have one of the expected forms and error is raised.
+  * The merged result retains the insertion order of the LHS's keys irrespective of if
+    the value has been modified or not. Additional merged keys from the RHS are inserted into
+    the result in their RHS order.
 
 Examples
 
