@@ -163,160 +163,201 @@ The package will create the following services `puppet`, `mcollective`,
 and `pxp-agent`, all running as `LocalSystem` by default. It will not
 create a `puppet` user or group.
 
-    Path                                      Setting                        3.x
-    C:\ProgramData                                                           n/a
+    Path                                          Setting                        3.x
+    C:\ProgramData\PuppetLabs *                                                  n/a
 
-    C:\ProgramData\PuppetLabs\client-tools    # default client tool settings
+    C:\ProgramData\PuppetLabs\client-tools        # default client tool settings
         puppet-access.conf *
         puppet-orchestrator.conf *
         puppet-db.conf *
 
-
-    C:\ProgramData\PuppetLabs\code *          # :codedir                     contents moved from C:\ProgramData\PuppetLabs\puppet\etc (:confdir)
-        environments *                        # :environmentpath
+    C:\ProgramData\PuppetLabs\code *              # :codedir                     contents moved from C:\ProgramData\PuppetLabs\puppet\etc (:confdir)
+        environments *                            # :environmentpath
           production *
             environment.conf *
             manifests *
             modules *
-        hiera.yaml *                          # :hiera_config
-        hieradata *                           # n/a
-        modules *                             # user modulepath
+        hiera.yaml *                              # :hiera_config
+        hieradata *                               # n/a
+        modules *                                 # user modulepath
 
-    C:\ProgramData\PuppetLabs\facter *                                       same
-        facts.d *                             # external facts directory (not pluginsync'ed)
+    C:\ProgramData\PuppetLabs\facter *                                           same
+        facts.d *                                 # external facts directory (not pluginsync'ed)
 
-    C:\ProgramData\PuppetLabs\mcollective
-        plugins *                             # user installed plugins
-        etc *                                                                same
-            client.cfg
-            facts.yaml
-            server.cfg
-        var *                                                                same
+    C:\ProgramData\PuppetLabs\mcollective *
+        etc *                                                                    same
+            client.cfg *
+            facts.yaml *
+            server.cfg *
+        plugins *                                 # user installed plugins
+        var *                                                                    same
             log *
                 mcollective.log
 
     C:\ProgramData\PuppetLabs\puppet
-    -------------------------------------------------------------------------------------------------------
-        cache                                 # :vardir                      C:\ProgramData\PuppetLabs\puppet\var
-            bucket                            # :bucketdir
-            client_yaml                       # :clientyamldir
-            client_data                       # :client_datadir
-            clientbucket                      # :clientbucketdir
-            devices                           # :devicedir
-            facts.d                           # :pluginfactdest (pluginsync'ed)
-            lib                               # :libdir
-            facts                             # used to generate :factpath
-            reports                           # :reportdir
-            server_data                       # :server_datadir
-            state                             # :statedir
-            yaml                              # :yamldir
-    -------------------------------------------------------------------------------------------------------
-        etc *                                 # :confdir                     same
-            auth.conf                         # :rest_authconfig
-            autosign.conf                     # :autosign
-            binder_config.yaml                # :binder_config
-            csr_attributes.yaml               # :csr_attributes
-            custom_trusted_oid_mapping.yaml   # :trusted_oid_mapping_file
-            device.conf                       # :deviceconfig
-            fileserver.conf                   # :fileserverconfig
-            puppet.conf *                     # :config
-            routes.yaml                       # :route_file
-            ssl                               # :ssldir
-    -------------------------------------------------------------------------------------------------------
+        cache *                                   # :vardir                      C:\ProgramData\PuppetLabs\puppet\var
+            bucket                                # :bucketdir
+            client_yaml                           # :clientyamldir
+            client_data                           # :client_datadir
+            clientbucket                          # :clientbucketdir
+            devices                               # :devicedir
+            facts.d                               # :pluginfactdest (pluginsync'ed)
+            lib                                   # :libdir
+            facts                                 # used to generate :factpath
+            reports                               # :reportdir
+            server_data                           # :server_datadir
+            state                                 # :statedir
+            yaml                                  # :yamldir
+
+        etc *                                     # :confdir                     same
+            auth.conf *                           # :rest_authconfig
+            autosign.conf                         # :autosign
+            binder_config.yaml                    # :binder_config
+            csr_attributes.yaml                   # :csr_attributes
+            custom_trusted_oid_mapping.yaml       # :trusted_oid_mapping_file
+            device.conf                           # :deviceconfig
+            fileserver.conf                       # :fileserverconfig
+            puppet.conf *                         # :config
+            routes.yaml                           # :route_file
+            ssl                                   # :ssldir
         var *
-            log                               # :logdir                      same
-                puppet.log                    # not enabled by default
-            run                               # :rundir                      same
-                agent.pid                     # :pidfile
+            log *                                 # :logdir                      same
+                puppet.log                        # not enabled by default
+            run *                                 # :rundir                      same
+                agent.pid                         # :pidfile
 
     C:\ProgramData\PuppetLabs\pxp-agent *
         etc *
-            pxp-agent.conf                    # pxp-agent configuration file
-            modules *                         # stores configuration files for pxp-agent modules
-                pxp-module-puppet.conf        # configuration file of the pxp module puppet (optionally, to override puppet.bat location)
+            pxp-agent.conf                        # pxp-agent configuration file
+            modules *                             # stores configuration files for pxp-agent modules
+                pxp-module-puppet.conf            # configuration file of the pxp module puppet (optionally, to override puppet.bat location)
         var *
             log *
-                pxp-agent.log                 # enabled by default
-            spool *                           # directory containing results of pxp-agent modules
+                pxp-agent.log                     # enabled by default
             run *
+            spool *                               # directory containing results of pxp-agent modules
 
-    C:\Program Files\Puppet Labs\Puppet
-        VERSION                               # puppet-agent package version
-
-    C:\Program Files\Puppet Labs\Puppet\bin *
-        environment.bat *                     # setup LOAD_PATH
-        facter.bat *                          # bat file wrappers
-        hiera.bat *
-        mco.bat *
-        puppet.bat *
-        puppet_shell.bat *                    # targets for shortcuts
-        run_facter_interactive.bat *
-        run_puppet_interactive.bat *
-
-    C:\Program Files\Puppet Labs\Puppet\facter *
-        bin *                                 # executables and dlls
-            facter.exe *
-            libfacter.so *
-            lib*.dll *                        # gcc, mingw, boost libraries
-        inc *                                 # facter headers
-            facter *
-        lib *
-            facter.rb *                       # ruby bindings
-
-    C:\Program Files\Puppet Labs\Puppet\hiera *
-        bin *
-            hiera *                           # ruby bin wrapper
-        lib *
-            hiera.rb *
-
-    C:\Program Files\Puppet Labs\Puppet\mcollective *
-        bin *
-            mcollectived *                    # ruby bin wrapper
-            mco *
-        lib *
-            mcollective.rb *
+    C:\Program Files\Puppet Labs\Puppet\bin *     # symlink targets of puppet related binaries
+        environment.bat@ *                        -> C:\Program Files\Puppet labs\Puppet\puppet\bin\environment.bat
+        facter.bat@ *                             -> C:\Program Files\Puppet labs\Puppet\puppet\bin\facter.bat
+        facter_interactive.bat@ *                 -> C:\Program Files\Puppet labs\Puppet\puppet\bin\facter_interactive.bat
+        hiera.bat@ *                              -> C:\Program Files\Puppet labs\Puppet\puppet\bin\hiera.bat
+        mco.bat@ *                                -> C:\Program Files\Puppet labs\Puppet\puppet\bin\mco.bat
+        puppet.bat@ *                             -> C:\Program Files\Puppet labs\Puppet\puppet\bin\puppet.bat
+        puppet_interactive.bat@ *                 -> C:\Program Files\Puppet labs\Puppet\puppet\bin\puppet_interactive.bat
+        puppet_shell.bat@ *                       -> C:\Program Files\Puppet labs\Puppet\puppet\bin\puppet_shell.bat
+        run_facter_interactive.bat@ *             -> C:\Program Files\Puppet labs\Puppet\puppet\bin\run_facter_interactive.bat
+        run_puppet_interactive.bat@ *             -> C:\Program Files\Puppet labs\Puppet\puppet\bin\run_puppet_interactive.bat
 
     C:\Program Files\Puppet Labs\Puppet\misc *
-        LICENSE.rtf *                         # license
-        puppetlabs.ico *                      # icon for start menu shortcut
-        puppetres.dll *                       # event log message resource dll
-        versions.txt *                        # versions of components
+        LICENSE.rtf *                             # license
+        puppetlabs.ico *                          # icon for start menu shortcut
+        versions.txt *                            # versions of components
 
-    C:\Program Files\Puppet Labs\Puppet\puppet *
-        bin *
-            puppet *                          # ruby bin wrapper
-        lib *
-            puppet.rb *
+
+    C:\Program Files\Puppet Labs\Puppet\puppet *  # ruby-puppet root
+        bin *                                     # executables and dlls
+            c_rehash *
+            catstomp *
+            catstomp.bat *
+            curl.exe *
+            curl-config *
+            daemon.bat *
+            daemon.rb *                           # windows service daemon
+            elevate.exe *                         # Used to elevate interactive commands
+            elevate.exe.config *
+            environment.bat *                     # setup LOAD_PATH, globally used by all our .bat files, to be symlinked to C:\Program Files\Puppet Labs\bin
+            erb.bat *
+            extlookup2hiera *
+            extlookup2hiera.bat *
+            facter.bat *                          # bat file wrapper
+            facter.exe *
+            facter_interactive.bat *
+            gem.bat *
+            hiera *                               # ruby bin wrapper
+            hiera.bat *                           # bat file wrapper
+            irb.bat *
+            libcpp-pcp-client.so *
+            libcurl-4.dll *                       # curl dll
+            libeay32.dll *                        # openssl dll
+            libfacter.so *
+            libgcc_s_seh-1.dll *
+            libstdc++-6.dll *
+            libwinpthread-1.dll *
+            mco *                                 # ruby bin wrapper
+            mco.bat *                             # bat file wrapper
+            mco_daemon.bat *
+            mcollectived *                        # ruby bin wrapper
+            minitar *
+            minitar.bat *
+            nssm.exe *                            # NSSM used to run pxp-agent
+            openssl.exe *
+            puppet *                              # ruby bin wrapper
+            puppet.bat *                          # bat file wrapper
+            puppet_interactive.bat *
+            puppet_shell.bat *                    # targets for shortcuts
+            puppetres.dll *                       # event log message resource dll
+            pxp-agent.exe *
+            rake.bat *
+            rdoc.bat *
+            ri.bat *
+            ruby.exe *
+            rubyw.exe *
+            run_facter_interactive.bat *
+            run_puppet_interactive.bat *
+            ssleay32.dll *                        # openssl dll
+            stompcat *
+            stompcat.bat *
+            testrb.bat *
+            x64-msvcrt-ruby210.dll *              # ruby dll
+            zlib1.dll *
+
+        include *
+            boost *
+            cpp-pcp-client *
+            curl *
+            facter *                              # facter headers
+            leatherman *
+            openssl *
+            ruby-2.1.0 *
+
+        lib
+            cmake
+            engines
+            leatherman*.a *
+            lib*.a *                              # compiled libraries (cpp-pcp-client, openssl, curl, facter, ruby, etc)
+            ruby *
+                2.1.0
+                gems *
+                    2.1.0 *
+                        gems *
+                        specifications *
+                            facter.gemspec *
+                            hiera.gemspec *
+                            puppet.gemspec *
+                vendor_ruby *
+                    facter.rb *                   # facter ruby bindings
+                    hiera.rb *
+                    hiera_puppet.rb *
+                    mcollective.rb *
+                    puppet.rb *
+
+        modules *
+        share *
+            man *
+            vim *
+        ssl *
+            cert.pem *
+            certs *
+            openssl.cnf *
+        VERSION *                                 # puppet-agent package version
 
     C:\Program Files\Puppet Labs\Puppet\pxp-agent *
-        bin *
-            pxp-agent.exe *
-            lib*.dll *                        # gcc, mingw, boost libraries
-                                              # pxp-agent also loads openssl libraries (below)
         modules *
             pxp-module-puppet *
-            pxp-module-puppet.bat *
+            pxp-module-puppet.bat
 
-    C:\Program Files\Puppet Labs\Puppet\service *
-        daemon.rb *                           # windows service daemon
-        nssm.exe *                            # NSSM used to run pxp-agent
-
-    C:\Program Files\Puppet Labs\Puppet\sys *
-        ruby *
-            bin *
-                ruby.exe *
-                ssleay32.dll *                # openssl dll
-                libeay32.dll *                # openssl dll
-                lib*.dll *                    # yaml, iconv, gdbi & ffi libraries
-            include *
-            lib *
-            share *
-
-        tools *
-            bin *
-              elevate.exe *                   # Used to elevate interactive commands
-
-    C:\Windows\Temp                           # :module_working_dir
+    C:\Windows\Temp                               # :module_working_dir
 
 # puppet-agent (non-root)
 
