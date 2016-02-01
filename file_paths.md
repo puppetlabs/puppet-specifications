@@ -25,6 +25,7 @@ The files annotated by an '*' indicate that they are created by package installa
     /etc/puppetlabs/client-tools *        # default client tool settings
         puppet-access.conf *
         puppet-orchestrator.conf *
+        puppet-db.conf *
 
     /etc/puppetlabs/code *                # :codedir                     contents moved from :confdir
         environments *                    # :environmentpath
@@ -168,6 +169,7 @@ create a `puppet` user or group.
     C:\ProgramData\PuppetLabs\client-tools    # default client tool settings
         puppet-access.conf *
         puppet-orchestrator.conf *
+        puppet-db.conf *
 
 
     C:\ProgramData\PuppetLabs\code *          # :codedir                     contents moved from C:\ProgramData\PuppetLabs\puppet\etc (:confdir)
