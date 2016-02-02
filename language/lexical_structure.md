@@ -7,17 +7,20 @@ A Puppet Program consists of source text written in ASCII (character values enco
 with the values 0-127).
 
 <table><tr><th>Note</th></tr>
+<tr><th>Since Puppet 4.4.0</th></tr>
 <tr><td>
-  The Puppet 4x implementation uses Ruby default encoding when reading Puppet source text files.
+  All Puppet source code is expected to be in UTF-8. Non Ascii characters must be in UTF-8 and
+  may appear in comments, single and double quoted strings, heredocs, and templates.
+</td></tr>
+<tr><th>Before Puppet 4.4.0</th></tr>
+<tr><td>
+  The implementation uses Ruby default encoding when reading
+  Puppet source text files.
   Thus, while the language itself does not make use of any non ASCII characters, it is possible
   to include other characters in strings given that the source file is written using the Ruby
   runtime environments default encoding and that a Ruby version is used that supports encodings.
-  <b>The only platform neutral way is to use Puppet 4x Unicode Escape mechanism \uXXXX.</b>
-</td></tr>
-<tr><th>Future Direction</th></tr>
-<tr><td>
-  In the future it may be possible to specify the encoding of all source files in a module
-  as well as for individual files.
+  For Puppet code running on runtimes before Puppet 4.4.0, the only platform neutral way to use non  
+  ASCII characters in the source is to use the Puppet 4x Unicode Escape mechanism \uXXXX.
 </td></tr>
 </table>
 
@@ -187,7 +190,7 @@ expressions.
 | `\s`                | an ASCII SPACE
 | `\uXXXX`            | a UNICODE character denoted by 4 hex digits i.e. /[0-9a-fA-F]{4}/
 | `\u{XXXX}`          | a UNICODE character denoted by 1-6 hex digits i.e. /[0-9a-fA-F]{1,6}/
-| `\` *any other*     | a single `\` followed by *any other* (removes any special meaning from *any other*
+| `\` *any other*     | a single `\` followed by *any other* (removes any special meaning from *any other*)
 
 #### Double Quoted String Expression Interpolation
 
