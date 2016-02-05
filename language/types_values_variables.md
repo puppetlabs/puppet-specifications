@@ -76,6 +76,8 @@ the conceptual categories **Data Types** e.g.:
 * `Enum`; an enumeration of strings
 * `Pattern`; an enumeration of regular expression patterns
 * `Any`; the parent type of all types
+* `Iterable`; a type that represents all types that allow iteration
+* `Iterator`; a special kind of lazy `Iterable` suitable for chaining
 
 (The term *abstract* denotes that instances of such a type are always an instance of some other
 *concrete* type).
@@ -135,6 +137,15 @@ may appear more than once in the hierarchy (e.g. a `Scalar` is both `Any` and `D
        |- Variant[*types]
        |- Optional[type]
        |- NotUndef[type]
+       |
+       |- Iterator[type]
+       |- Iterable[type]
+       |  |- Array[type]
+       |  |- Hash[type]
+       |  |- Integer[from,to]
+       |  |- Type[Integer[from,to]]
+       |  |- Enum[*strings]
+       |  |- Iterator[type]
        |
        |- CatalogEntry
        |  |- Resource[type_name, title]
@@ -251,7 +262,7 @@ and MAX INTEGER=2^63-1.
 values outside of this range, such values cannot correctly be represented in catalogs and
 Puppet db.**
 
-The Integer type can optionally be parameterized with `from`, `to` values to provide a range.
+The `Integer` type can optionally be parameterized with `from`, `to` values to provide a range.
 The range must be *ascending*.
 
 If `from` is unassigned, the default is MIN INTEGER, and if `to` is unassigned, the default is MAX INTEGER.
@@ -668,6 +679,47 @@ The parameter can be a literal string in which case it is converted into its cor
     NotUndef[T]  ∪  Undef        → Variant[]
     NotUndef[T]  ∪  NotUndef[R]  → NotUndef[T ∪ R]
 
+### Iterable[T]
+
+Since version 4.4.0.
+
+The `Iterable` type represents all data types that can be iterated; i.e. that the value is some kind of container of individual values. The `Iterable` type is abstract in that it does not specify if it represents a concrete data type (such as `Array`) that has storage in memory, of if it is an algorithmic construct like a transformation function (e.g the `step()` function).
+
+The `Iterable` type is of value when writing generic iterative functions. In the implementation of such functions it is almost always the type parameter `T` that is of interest, and often not even that, as the operation may be some shuffling around of abstract things that the function does not really care about. It is seldom the case that it matters if the source is an `Array`, a `Hash`, or some algorithmic transformation.
+
+The Iterable types are:
+
+* `Array[T]` => `Iterable[T]`; where each element from index `0`, to index `n` is produced
+* `Hash[K,V]` => `Iterable[Tuple[K,V]]`; - where each hash entry (key, value), in the order they were added to the hash, are produced. It is up to the iterative function to treat the values as a singe tuple, or as two separate values when yielding them to the next function in a chain of iterables.
+* `Integer[n,n]` => `Iterable[Integer[0,n-1]]`; represents a "times" iteration from `0` up to `n - 1`.
+* `Type[Integer[from, to]]` => `Iterable[Integer[from, to]`; represents the range of values `from -> to`, yielding each value in the range.
+* `Type[Enum[*strings]]` => `Iterable[Enum[*strings]]`; yields each of the enum strings in the order they were specified in the `Enum` type.
+* `Iterator[T]` => `Iterable[T]`; represents an algorithmic transformation of some source and yields a series of type `T` values.
+
+For a value to be considered `Iterable` it must represent a bounded sequence of values. As an example `Integer[1,default]` represents all numbers from 1 to positive infinity and it can not be iterated.
+
+
+
+### Iterator[T]
+
+Since version 4.4.0.
+
+The `Iterator` type is an `Iterable` that does not have a concrete backing data type holding a copy of the values it will produce when iterated over. It represents an algorithmic transformation of some source (which in turn can be algorithmic). When iterated it will produce values of type `T`.
+
+An Iterator may not be assigned to an attribute of a resource, and it may not be used as an argument to a version 3.x functions. To create a concrete value an Iterator must be "rolled out" by using a function at the end of a chain that produces a concrete value.
+
+Example 1; `step()` in combination with `reverse_each()`, and a `map()`
+
+~~~
+$array_of_numbers = [1, 2, 3]
+$result = $array_of_numbers.reverse_each.step(2).map |$x| { $x * 100 }
+
+~~~
+
+Given Example 1, the value of `$result` would be `[300, 200, 100]`.
+
+Note that, in each connection in the chain, there may either be a concrete value, the reverse_each could construct a new `Array` with the elements in reverse order, or it can produce an `Iterator`, that when a new value is pulled from the end of the chain (in the example by `map()`) will calculate which of the values is the next in reverse order, and produce that without requiring an intermediate `Array` to hold the values. View a chain of iterative functions like a pipe-line where values flow through the pipe. Contrast this with transport by tank truck where not a single drop will appear until the truck arrives with the full load.  
+
 
 ### Catalog Entry
 
@@ -678,7 +730,7 @@ subtypes are `Resource`, and `Class`.
 <tr><td>
   Stage may get its own type in a future specification.
 </td></tr>
-</table>
+</table> 
 
 ### Resource[type_name, *title]
 
