@@ -344,8 +344,11 @@ may never silently produce an incorrect value.
     UnarySplatExpression : '*' Expression<R> ;
     
 * Transforms the RHS Expression to an `Array` if not already an `Array`
-* If the RHS evaluates to `undef` the result is an empty array in general and interpreted as
+  * If the RHS evaluates to `undef` the result is an empty array in general and interpreted as
   *nothing* when unfolded where a comma separated list of values is accepted.
+  * If the RHS is a `Iterator` it is unrolled into the produced `Array`.
+  * If the RHS is a `Hash` it is transformed to an `Array` of key-value arrays.
+  * Any other value is wrapped in an `Array`.
 * Unfolds the content of the RHS array (or just converted value) when applied in a context where a 
   comma separated list of values is accepted:
   * arguments to a call
