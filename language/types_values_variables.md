@@ -718,7 +718,16 @@ $result = $array_of_numbers.reverse_each.step(2).map |$x| { $x * 100 }
 
 Given Example 1, the value of `$result` would be `[300, 200, 100]`.
 
-Note that, in each connection in the chain, there may either be a concrete value, the reverse_each could construct a new `Array` with the elements in reverse order, or it can produce an `Iterator`, that when a new value is pulled from the end of the chain (in the example by `map()`) will calculate which of the values is the next in reverse order, and produce that without requiring an intermediate `Array` to hold the values. View a chain of iterative functions like a pipe-line where values flow through the pipe. Contrast this with transport by tank truck where not a single drop will appear until the truck arrives with the full load.  
+Note that, in each connection in the chain, there may either be a concrete value, the reverse_each could construct a new `Array` with the elements in reverse order, or it can produce an `Iterator`, that when a new value is pulled from the end of the chain (in the example by `map()`) will calculate which of the values is the next in reverse order, and produce that without requiring an intermediate `Array` to hold the values. View a chain of iterative functions like a pipe-line where values flow through the pipe. Contrast this with transport by tank truck where not a single drop will appear until the truck arrives with the full load. 
+
+An Iterator can be transformed to an `Array` by using the unary Unfold Operator (a.k.a splat).
+
+~~~ 
+$a = *[1,2,3].reverse_each
+notice $a =~ Array
+~~~
+
+Will notice `true`.
 
 
 ### Catalog Entry
