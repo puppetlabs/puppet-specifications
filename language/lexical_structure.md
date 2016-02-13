@@ -349,11 +349,13 @@ keyword token is produced instead of a `NAME` token. Keywords are case sensitive
 | `define`
 | `else`
 | `elsif`
+| `function`
 | `if`
 | `in`
 | `inherits`
 | `node`
 | `or`
+| `type`
 | `unless`
 
 The semantics of these is described in [Expressions][1].
@@ -362,8 +364,6 @@ The following keywords are considered reserved for future use and should be avoi
 
 | Reserved Words
 | ---
-| `type`
-| `function`
 | `private`
 | `attr`
 
@@ -373,34 +373,36 @@ elements:
 | Reserved Names / Types
 | ---
 | `any, Any`
-| `hash, Hash`
 | `array, Array`
-| `integer, Integer`
-| `float, Float`
-| `collection, Collection`
-| `scalar, Scalar`
-| `resource, Resource`
-| `string, String`
-| `pattern, Pattern`
+| `attr, Attr`
 | `boolean, Boolean`
-| `class, Class`
-| `type, Type`
-| `runtime, Runtime`
-| `numeric, Numeric`
-| `data, Data`
 | `catalogentry, catalogEntry, CatalogEntry`
-| `enum, Enum`
-| `variant, Variant`
+| `class, Class`
+| `collection, Collection`
 | `data, Data`
+| `default, Default`
+| `enum, Enum`
+| `float, Float`
+| `hash, Hash`
+| `integer, Integer`
+| `numeric, Numeric`
+| `object, Object`
+| `optional, Optional`
+| `scalar, Scalar`
+| `pattern, Pattern`
+| `private, Private`
+| `resource, Resource`
+| `runtime, Runtime`
+| `string, String`
 | `struct, Struct`
 | `tuple, Tuple`
-| `optional, Optional`
+| `type, Type`
 | `undef, Undef`
-| `default, Default`
+| `variant, Variant`
 
-While the lower case names are perfectly fine to use (they have no special meaning) when
-using them as names of classes, or user defined defined resource types, the name clashes
-with the built in types (as the lower case name automatically gets an upper cased type reference).
+While the lower case names are perfectly fine to use unless they are also keywords (i.e. when they have no special meaning) they should not be 
+used as names of functions, classes, or user defined defined resource types as the name would clashes
+with the built in types. This occurs because lower case named definitions automatically get an upper cased type reference.
 
 
 Separators / Punctuation
