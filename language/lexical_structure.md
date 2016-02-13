@@ -3,14 +3,15 @@ Lexical Structure
 
 Unicode
 ---
-A Puppet Program consists of source text written in ASCII (character values encoded as 8-bit bytes
-with the values 0-127).
 
-<table><tr><th>Note</th></tr>
+<table><tr><th>Puppet Language keywords and punctuation uses only ASCII. Strings (single and double quoted), Heredoc text, and Comments can contain non ASCII:</th></tr>
 <tr><th>Since Puppet 4.4.0</th></tr>
 <tr><td>
   All Puppet source code is expected to be in UTF-8. Non Ascii characters must be in UTF-8 and
   may appear in comments, single and double quoted strings, heredocs, and templates.
+  <br/>
+  <p>Byte order marks (BOM) are not allowed. If present an error is raised identifying the
+  kind of byte order mark.</p>
 </td></tr>
 <tr><th>Before Puppet 4.4.0</th></tr>
 <tr><td>
@@ -21,6 +22,8 @@ with the values 0-127).
   runtime environments default encoding and that a Ruby version is used that supports encodings.
   For Puppet code running on runtimes before Puppet 4.4.0, the only platform neutral way to use non  
   ASCII characters in the source is to use the Puppet 4x Unicode Escape mechanism \uXXXX.
+  <br/>
+  <p>Byte order marks (BOM) causes undefined behavior.</p>
 </td></tr>
 </table>
 
