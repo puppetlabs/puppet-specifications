@@ -17,7 +17,6 @@ This section focuses on the syntactic aspects of these expressions. There are ad
 
 The general loading and evaluation of Puppet logic is described in the section [Modus Operandi][1]. For the semantics for each type (e.g. `File`, `User`), please refer to the documentation available per resource type.
 
-[1]: modus-operandi.md
 
 ### Parameter List
 
@@ -40,6 +39,9 @@ The parameter list is common to several of the catalog expressions:
 * The default value expression may evaluate to undef if the parameter type allows it.
 * If a parameter type is not specified, the default is `Any`.
 * The default value expression may not assign to/create a new variable.
+
+See [Parameter Scope][2] for more information about default value expressions.
+
 
 ### Node Definition
 
@@ -330,6 +332,7 @@ This means:
 * Use a parameter type that does not accept `Undef` to ensure that value is never `undef`.
 * Use a default value of `undef` to equate missing value (and lookup) with a given `undef`.
 
+
 ### Resource Default Expression
 
 A Resource Default Expression sets the default values to use for resources created in a scope where the expression is visible.
@@ -377,6 +380,7 @@ entity that will be picked.
 * The use of `*` `=>` sets attributes from key/values in the RHS hash as if they had been 
   individually given with `key => value`.
 
+Also see [Parameter Scope][2] for more information about default value expressions.
 
 ### Resource Override Expression
 
@@ -596,3 +600,6 @@ The semantics of the Query is implementation dependent. However any implementati
 * The collector when executing realizes all resources it finds and keeps track
   of what it has found so far (the specified operation; relationships, or
   resource attribute overrides) are only applied once for any given resource.
+
+[1]: modus-operandi.md
+[2]: parameter_scope.md

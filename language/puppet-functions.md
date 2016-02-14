@@ -42,6 +42,7 @@ The above rules for `captures_rest` are motivated by the thought that the most c
 not to pass multiple arrays, and it is more convenient to write `foo(String *$rest)` then to have to write `foo(Array[String] *$rest)`, since the `*` already implies `Array`. The consequence is when using that shorthand notation is that an array of arrays must be written `Array[Array[T]]` - which is expected to be far more uncommon, than either capping the list
 (e.g. `foo(Array[String,1,10] *$rest)`, or passing a variable number of arrays.
 
+See [Parameter Scope][1] for more information about scopig rules an variable access in a default value expression.
 
 Lambda Support
 ---
@@ -146,3 +147,4 @@ The use cases for using functions defined in manifests are:
 > Note: In the current implementation of Puppet 4.3.x the naming restrictions on non-auto-loaded
 > functions are not enforced. They are expected to be enforced in some future release.
 
+[1]: parameter_scope.md
