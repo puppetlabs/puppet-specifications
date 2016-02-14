@@ -70,8 +70,9 @@ The Parameter Scope, in addition to the parameter variables, also provides acces
 | -------- |
 | `function example($a = 10, $b = $a) {` <br/> `}`
 
-| When called like this... | the parameters are set like this:
-| --- |
+
+| When called like this... | the parameters are set like this: |
+| ---- | ---- |
 | `example(0)` | `$a = 10`<br/>`$b = 10`
 | `example(2)` | `$a = 2`<br/>`$b = 2`
 | `example(2, 5)` | `$a = 2`<br/>`$b = 5`
@@ -85,7 +86,7 @@ The Parameter Scope, in addition to the parameter variables, also provides acces
 | `function example($a = 10, $b = $c, $c = 20) {` <br/> `}`
 
 | When called like this... | the parameters are set like this:
-| --- |
+| --- | ---
 | `example(1,2,3)` | `$a = 1`<br/>`$b = 2`<br/>`$c = 3`
 | `example(1,2)`   | `$a = 1`<br/>`$b = 2`<br/>`$c = 20`
 | `example(1)`     | error, default expression for $b tries to illegally access not yet evaluated $c
@@ -105,7 +106,7 @@ preceding match, or where such a match did not produce a matching capture for th
 | `function example($a = $0, $b = $1) {` <br/> `}`
 
 | When called like this... | the parameters are set like this:
-| --- |
+| --- | ---
 | `example()`      | `$a = undef`<br/>`$b = undef`
 
 
@@ -116,7 +117,7 @@ preceding match, or where such a match did not produce a matching capture for th
 | `function example($a = ['hello' =~ /(h)(.*)/, $1, $2], $b = $1) {` <br/> `}`
 
 | When called like this... | the parameters are set like this:
-| --- |
+| --- | ---
 | `example()`      | `$a = [true, 'h', 'ello']`<br/>`$b = undef`
 
 | Function |
@@ -124,7 +125,7 @@ preceding match, or where such a match did not produce a matching capture for th
 | `function example($a=['hello' =~ /(h)(.*)/, $1, $2], $b=['hi' =~ /(h)(.*)/, $1, $2], $c=$1) {` <br/> `}`
 
 | When called like this... | the parameters are set like this:
-| --- |
+| --- | ---
 | `example()`      | `$a = [true, 'h', 'ello']`<br/>`$b = [true, 'h', 'i']`<br/>`$c = undef`
 
 
@@ -135,7 +136,7 @@ preceding match, or where such a match did not produce a matching capture for th
 | `function example($a = ['hi' =~ /(h)(.*)/, $1, if 'foo' =~ /f(oo)/ { $1 }, $1, $2], $b = $0) {` <br/> `}`
 
 | When called like this... | the parameters are set like this:
-| --- |
+| --- | ---
 | `example()`      | `$a = [true, 'h', 'oo', 'h', 'i']`<br/>`$b = undef`
 
 
@@ -148,7 +149,7 @@ Note that the top level match scope is restored at index 3, and empty again for 
 | `'foo' =~ /(f)(o)(o)/`<br/>`function example($a = $0 {` <br/> `}`
 
 | When called like this... | the parameters are set like this:
-| --- |
+| --- | ---
 | `function caller() {`<br/>&nbsp;&nbsp;`'foo' =~ /(f)(o)(o)/`<br/>&nbsp;&nbsp;`example()`<br/>`}`<br/>`caller()` | `$a = undef`
 | `function caller() {`<br/>&nbsp;&nbsp;`example()`<br/>`}`<br/>`'foo' =~ /(f)(o)(o)/`<br/>`caller()` | `$a = undef`
 
