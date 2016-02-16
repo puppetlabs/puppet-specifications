@@ -1840,4 +1840,103 @@ Example:
 
 The Selector Expression supports unfold/splat the same way as in Case Expression.
 
+Definition Expressions
+---
+The Puppet Language has several definition expressions:
+
+* Function definition
+* User defied resource dfinition
+* Host Class definition
+* Type Alias defiition
+
+The user defied resource definition and host class definition expressions are specified
+in [Catalog Expressions][2], and function definition in [Puppet Functions][3], and [Function API][4].
+
+### Type Alias Expression
+
+The Type Alias Expression makes it possible to assign a type definition to a type
+name, and use the new type name as a 100% equivalence to the assigned type.
+
+In this version of the specification, only the case of the initial letter in each name segment
+is significant; MyType is equivalent to MYTYPE, MytYPe, etc. This may change in a later release.
+
+The grammar is:
+
+```
+TypeAliasExpression
+  : 'type' QualifiedReference '=' Expression<Type>
+  ;
+```
+
+Example use:
+
+~~~
+type PositiveInts = Array[Integer[0, default]]
+$a = [1,2,3] ~= PositiveInts
+$b = Array[Integer[0, default]] == PositiveInts
+~~~
+
+Would set both `$a` and `$b` to `true`.
+
+Type references are autoloaded from the environment and modules. The autoloading rules are:
+
+* The name of the file must be in lower case.
+* No underscore `_` should be use to separate words in a camel cased name; the file for
+  `MyType` should be `mytype.pp`, not `my_type.pp`.
+* Each namespace segment maps to a directory path with the same name.
+* For a module, the `<module_root>/types` corresponds to the module's namespace.
+* For an environment, the `<env_root>/types` corresponds to the `Environment::` namespace
+* An autoloaded type alias `.pp` file may only contain a single type alias.
+  No other expressions are allowed (comments are).
+* The autoloaded type alias must use the full namespace on the left hand side, e.g.
+  `MyModule::MyType`, or `MyModule::Nested::MyType` for a nested namespace.
+
+
+Type references may be created in any manifest, but this should be avoided as they
+cannot be autoloaded and is affected by the order in which manifests are loaded and evaluated.
+This is mainly supported to enable writing small examples and experimentation.
+
+In general:
+* Type aliases are processed before the rest of the logic in the file.
+* All types are allowed on the RHS, even the alias being defined (this creates
+  a *self recursive type*).
+* Recursive types are supported in general, i.e. not only by direct recursion created by
+  using the alias being defined on the RHS.
+
+Example: Type Aliases are defied before evaluation takes place
+
+```
+function foo(MyType $x) {
+  notice $x
+}
+notice foo(42)
+
+type MyType = Integer[42,42]
+```
+
+Examples of recursive types:
+
+```
+type IntegerTree = Array[Variant[Integer, IntegerTree]]
+type Mix = Variant[Integer, String, MixedTree]
+type MixedTree = Array[Variant[Mix, MixedTree]]
+
+function integer_tree(IntegerTree $x) {
+  notice $x
+}
+integer_tree( [1, 2, [42, 4], [[[ 5 ]]] ] )
+
+function mixed(MixedTree $x) {
+  notice $x
+}
+mixed( [1, 2, [hello, 4], [[[ 5, deep ]]] ] )
+
+```
+
+Since 4.4.0
+
 [1]: types_values_variables.md#string-tofrom-numeric-conversions
+[2]: catalog-expressions.md
+[3]: puppet-functions.md
+[4]: func-api.md
+

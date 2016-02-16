@@ -100,12 +100,32 @@ Optional Typing
 ---
 Typing is optional. When something is not typed, it has the type `Any`.
 
+Type Aliases
+---
+It is possible to create type aliases in the Puppet Programming Language. An aliased type is
+indistinguishable from the original type.
+
+~~~
+type MyInteger = Integer
+~~~
+
+Recursive Types
+---
+It is possible to create type aliases for recursive types. An alias definition may refer to itself.
+
+~~~
+type IntegerTree = Array[Variant[Integer, IntegerTree]]
+~~~
+
+For more details see the type alias expression.
+
 The Type System
 ===============
 
 A type is denoted by an upper cased bare word; e.g. `Integer` (an integer value) optionally followed
 by one or more type parameters enclosed in square brackets `[]`, e.g. `Integer[1,10]` (integer values
-1 to 10 inclusive), or `Array[String[1]]` (an array of non empty strings). See the description of each type for the available type parameters.
+1 to 10 inclusive), or `Array[String[1]]` (an array of non empty strings). See the description of each
+type for the available type parameters.
 
 The type hierarchy is shown in the figure below. (A single capital letter denotes a 
 reference to a type, lower case type parameters have special processing rules as shown
@@ -718,7 +738,16 @@ $result = $array_of_numbers.reverse_each.step(2).map |$x| { $x * 100 }
 
 Given Example 1, the value of `$result` would be `[300, 200, 100]`.
 
-Note that, in each connection in the chain, there may either be a concrete value, the reverse_each could construct a new `Array` with the elements in reverse order, or it can produce an `Iterator`, that when a new value is pulled from the end of the chain (in the example by `map()`) will calculate which of the values is the next in reverse order, and produce that without requiring an intermediate `Array` to hold the values. View a chain of iterative functions like a pipe-line where values flow through the pipe. Contrast this with transport by tank truck where not a single drop will appear until the truck arrives with the full load.  
+Note that, in each connection in the chain, there may either be a concrete value, the reverse_each could construct a new `Array` with the elements in reverse order, or it can produce an `Iterator`, that when a new value is pulled from the end of the chain (in the example by `map()`) will calculate which of the values is the next in reverse order, and produce that without requiring an intermediate `Array` to hold the values. View a chain of iterative functions like a pipe-line where values flow through the pipe. Contrast this with transport by tank truck where not a single drop will appear until the truck arrives with the full load. 
+
+An Iterator can be transformed to an `Array` by using the unary Unfold Operator (a.k.a splat).
+
+~~~ 
+$a = *[1,2,3].reverse_each
+notice $a =~ Array
+~~~
+
+Will notice `true`.
 
 
 ### Catalog Entry
