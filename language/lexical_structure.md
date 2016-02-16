@@ -400,9 +400,10 @@ elements:
 | `undef, Undef`
 | `variant, Variant`
 
-While the lower case names are perfectly fine to use unless they are also keywords (i.e. when they have no special meaning) they should not be 
-used as names of functions, classes, or user defined defined resource types as the name would clashes
-with the built in types. This occurs because lower case named definitions automatically get an upper cased type reference.
+While the lower case names are perfectly fine to use unless they are also keywords (i.e. when they
+have no special meaning) they should not be  used as names of functions, classes, or user defined
+defined resource types as the name would clashes with the built in types. This occurs because lower
+case named definitions automatically get an upper cased type reference.
 
 
 Separators / Punctuation

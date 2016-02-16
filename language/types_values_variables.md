@@ -102,7 +102,8 @@ Typing is optional. When something is not typed, it has the type `Any`.
 
 Type Aliases
 ---
-It is possible to create type aliases in the Puppet Programming Language. An aliased type is indistinguishable from the original type.
+It is possible to create type aliases in the Puppet Programming Language. An aliased type is
+indistinguishable from the original type.
 
 ~~~
 type MyInteger = Integer
@@ -123,7 +124,8 @@ The Type System
 
 A type is denoted by an upper cased bare word; e.g. `Integer` (an integer value) optionally followed
 by one or more type parameters enclosed in square brackets `[]`, e.g. `Integer[1,10]` (integer values
-1 to 10 inclusive), or `Array[String[1]]` (an array of non empty strings). See the description of each type for the available type parameters.
+1 to 10 inclusive), or `Array[String[1]]` (an array of non empty strings). See the description of each
+type for the available type parameters.
 
 The type hierarchy is shown in the figure below. (A single capital letter denotes a 
 reference to a type, lower case type parameters have special processing rules as shown

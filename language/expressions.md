@@ -1854,7 +1854,8 @@ in [Catalog Expressions][2], and function definition in [Puppet Functions][3], a
 
 ### Type Alias Expression
 
-The Type Alias Expression makes it possible to assign a type definition to a type name, and use the new type name as a 100% equivalence to the assigned type.
+The Type Alias Expression makes it possible to assign a type definition to a type
+name, and use the new type name as a 100% equivalence to the assigned type.
 
 In this version of the specification, only the case of the initial letter in each name segment
 is significant; MyType is equivalent to MYTYPE, MytYPe, etc. This may change in a later release.
@@ -1872,7 +1873,7 @@ Example use:
 ~~~
 type PositiveInts = Array[Integer[0, default]]
 $a = [1,2,3] ~= PositiveInts
-$b = Array[Integer[0, default] == PositiveInts
+$b = Array[Integer[0, default]] == PositiveInts
 ~~~
 
 Would set both `$a` and `$b` to `true`.
@@ -1898,7 +1899,7 @@ This is mainly supported to enable writing small examples and experimentation.
 In general:
 * Type aliases are processed before the rest of the logic in the file.
 * All types are allowed on the RHS, even the alias being defined (this creates
-  a *recursive type*).
+  a *self recursive type*).
 * Recursive types are supported in general, i.e. not only by direct recursion created by
   using the alias being defined on the RHS.
 
@@ -1916,7 +1917,7 @@ type MyType = Integer[42,42]
 Examples of recursive types:
 
 ```
-type IntegerTree = Array[Variant[Integer, IntegerTree]
+type IntegerTree = Array[Variant[Integer, IntegerTree]]
 type Mix = Variant[Integer, String, MixedTree]
 type MixedTree = Array[Variant[Mix, MixedTree]]
 
