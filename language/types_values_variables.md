@@ -164,7 +164,7 @@ may appear more than once in the hierarchy (e.g. a `Scalar` is both `Any` and `D
        |  |- Hash[type]
        |  |- Integer[from,to]
        |  |- Type[Integer[from,to]]
-       |  |- Enum[*strings]
+       |  |- Type[Enum[*strings]]
        |  |- Iterator[type]
        |
        |- CatalogEntry
