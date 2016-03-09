@@ -1884,7 +1884,7 @@ Would set both `$a` and `$b` to `true`.
 Type references are autoloaded from the environment and modules. The autoloading rules are:
 
 * The name of the file must be in lower case.
-* No underscore `_` should be use to separate words in a camel cased name; the file for
+* No underscore `_` should be used to separate words in a camel cased name; the file for
   `MyType` should be `mytype.pp`, not `my_type.pp`.
 * Each namespace segment maps to a directory path with the same name.
 * For a module, the `<module_root>/types` corresponds to the module's namespace.
