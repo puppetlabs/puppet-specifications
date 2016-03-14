@@ -291,6 +291,44 @@ a regular Ruby Proc). Also note that when using Ruby 1.8.7 the Proc API is limit
 
 Use the `closure` method on the proc to get the Puppet closure (an instance of `Puppet::Pops::Evaluator::Closure`).
 
+### Local Type Aliases
+
+Since Puppet 4.5.0 it is possible to define local type aliases that can be used to type
+the parameters of the function. This is done in a call to `local types`, which must be
+placed before all dispatchers.
+
+```
+local_types do
+  type  'AliasName = SomeDefinedType'
+  type ...
+end
+```
+
+Each call to `type` in the block given to `local_types` defines a type alias. The syntax for the string given
+to the `type` function is exactly the same as what may follow the keyword `type` in the Puppet Language when
+defining a type alias.
+
+The locally defined type aliases may be used in the dispatchers when describing parameters. These aliases are only
+available inside the function.
+
+Example of usage:
+
+```
+local_types do
+  type 'PartColor = Enum[blue, red, green, mauve, teal, white, pine]'
+  type 'Part = Enum[cubicle_wall, chair, wall, desk, carpet]'
+  type 'PartToColorMap = Hash[Part, PartColor]'
+end
+
+dispatch :define_colors do
+  param 'PartToColorMap', :part_color_map
+end
+
+def define_colors(part_color_map)
+  # etc
+end
+```
+
 ### Reserved method names
 
 The Function class reserves the following method names:
