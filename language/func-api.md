@@ -324,7 +324,7 @@ dispatch :define_colors do
   param 'PartToColorMap', :part_color_map
 end
 
-def define_colors(color_map)
+def define_colors(part_color_map)
   # etc
 end
 ```
