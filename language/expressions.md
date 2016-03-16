@@ -1848,9 +1848,9 @@ Definition Expressions
 The Puppet Language has several definition expressions:
 
 * Function definition
-* User defined resource dfinition
+* User defined resource definition
 * Host Class definition
-* Type Alias defiition
+* Type Alias definition
 
 The user defined resource definition and host class definition expressions are specified
 in [Catalog Expressions][2], and function definition in [Puppet Functions][3], and [Function API][4].
