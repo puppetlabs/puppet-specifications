@@ -1848,11 +1848,11 @@ Definition Expressions
 The Puppet Language has several definition expressions:
 
 * Function definition
-* User defied resource dfinition
+* User defined resource dfinition
 * Host Class definition
 * Type Alias defiition
 
-The user defied resource definition and host class definition expressions are specified
+The user defined resource definition and host class definition expressions are specified
 in [Catalog Expressions][2], and function definition in [Puppet Functions][3], and [Function API][4].
 
 ### Type Alias Expression
@@ -1906,7 +1906,7 @@ In general:
 * Recursive types are supported in general, i.e. not only by direct recursion created by
   using the alias being defined on the RHS.
 
-Example: Type Aliases are defied before evaluation takes place
+Example: Type Aliases are defined before evaluation takes place
 
 ```
 function foo(MyType $x) {
