@@ -127,7 +127,7 @@ by one or more type parameters enclosed in square brackets `[]`, e.g. `Integer[1
 1 to 10 inclusive), or `Array[String[1]]` (an array of non empty strings). See the description of each
 type for the available type parameters.
 
-The type hierarchy is shown in the figure below. (A single capital letter denotes a 
+The type hierarchy is shown in the figure below. (A single capital letter denotes a
 reference to a type, lower case type parameters have special processing rules as shown
 in section specific to each type). Note that a type supporting parameters also may be referenced
 without any parameters, in which case type specific rules apply. Also note that the same type
@@ -160,6 +160,7 @@ may appear more than once in the hierarchy (e.g. a `Scalar` is both `Any` and `D
        |
        |- Iterator[type]
        |- Iterable[type]
+       |  |- String
        |  |- Array[type]
        |  |- Hash[type]
        |  |- Integer[from,to]
@@ -248,7 +249,7 @@ hash element key may not be `Undef`.
     Data ∪ Hash[Scalar, Data]   → Data
     Data ∪ Undef                → Data
     Data ∪ (T ∉ Data)           → Any
- 
+
 ### Scalar
 
 Represents the abstract notion of "value", its subtypes are `Numeric`, `String` (including subtypes
@@ -310,21 +311,21 @@ if the lower and upper bounds are equal.
      Integer[1,10] > Integer[1,10]  # => false (not a subset, they are equal)
      Integer[1,10] >= Integer[1,10] # => true (they are equal)
      Integer[1,10] == Integer[1,10] # => true (they are equal)
-     
+
 Testing value against range:
 
      $value =~ Integer[1,10]
-     
+
      $value ? { Integer[1,10] => true }
 
      case $value {
        Integer[1,10] : { true }
      }
-          
+
 Iterating over an integer range:
 
      Integer[1,5].each |$x| { notice $x } # => notices 1,2,3,4,5
-     
+
      Integer[0, default].each |$x| { notice $x } # error, unbound range (infinite)
 
 #### Type Algebra on Integer
@@ -377,7 +378,7 @@ range type.
 
     'abc' =~ String[1]   # true, has more than one character
     'abc' =~ String[1,2] # false, has more than two characters
-    
+
     $size = Integer[1,2]
     'abc' =~ String[$size] # false, has more than 2 characters
 
@@ -388,8 +389,8 @@ when the type system is used from Ruby logic.
 Given the input:
 
      ['a', 'b', 'c']
-     
-The type is inferred to `Array[String]`, internally the String type also holds the values 
+
+The type is inferred to `Array[String]`, internally the String type also holds the values
 ['a', 'b', 'c']]`. This allows type calculations to assert:
 
      ['a', 'b', 'c'] =~ Array[Pattern['a-z']]  # true
@@ -427,7 +428,7 @@ the size constraint.
 
 An `Enum` without any given parameters matches all other Enum, and thus matches all possible Strings.
 
-     
+
 #### Type Algebra
 
 The commonality of two `Enum` types is the set operation enum | enum.
@@ -447,7 +448,7 @@ Example:
 
      Pattern['.*']
      Pattern[/^all of me$/]
-     
+
 #### Type Algebra
 
 The commonality of two Pattern types is the set operation pattern | pattern:
@@ -511,7 +512,7 @@ the empty pattern `//`.
 
 `Array` represents an ordered collection of elements of type `V`, optionally constrained in
 size by the integer range parameters *from* and *to*.
- 
+
 The first index in an array instance is a non negative integer and starts with 0.
 (Operations in the Puppet Language allows negative values to be used to perform different calculations w.r.t index). See Array [] operation (TODO: REFERENCE TO THIS EXPRESSION SPEC).
 
@@ -637,7 +638,7 @@ The `Tuple` type is a subtype of `Collection`. Its size is specified by the give
 
 ### Collection[to, from]
 
-A Collection is the common type for `Array` and `Hash` (and subtypes `Tuple` and `Struct`), it may optionally be parameterized with a size constraint (`from` a min size to a `max` size). The `to` and `from` parameters 
+A Collection is the common type for `Array` and `Hash` (and subtypes `Tuple` and `Struct`), it may optionally be parameterized with a size constraint (`from` a min size to a `max` size). The `to` and `from` parameters
 are the same as for an `Integer` range. The size constraint can also be specified with a
 single `Integer` range parameter.
 
@@ -646,7 +647,7 @@ single `Integer` range parameter.
     Collection  ∪  Collection    → Collection
     Collection  ∪  Array         → Collection
     Collection  ∪  Hash          → Collection
-    
+
     [1,2,3]      =~ Collection[1,3]  # true, size >= 1 and <= 3
     {a=>1, b=>2} =~ Collection[3]    # false, size is < 3
 
@@ -666,7 +667,7 @@ which is true if all the numbers in an array of numbers are between 1000 and 199
     Variant         ∪  Variant          → Variant
     Variant[*T]     ∪  Variant[*Q]      → Variant[*T | *Q]
     Variant[*T]     ∪  Q                → Variant[*T | Q]
-    
+
     Variant[Optional[T]] == Variant[T, Undef] == Optional[Variant[T]] == Optional[T]
 
 ### Optional[T]
@@ -709,6 +710,7 @@ The `Iterable` type is of value when writing generic iterative functions. In the
 
 The Iterable types are:
 
+* `String` => `Iterable[String]`; where each character in the string is produced as a string.
 * `Array[T]` => `Iterable[T]`; where each element from index `0`, to index `n` is produced
 * `Hash[K,V]` => `Iterable[Tuple[K,V]]`; - where each hash entry (key, value), in the order they were added to the hash, are produced. It is up to the iterative function to treat the values as a singe tuple, or as two separate values when yielding them to the next function in a chain of iterables.
 * `Integer[n,n]` => `Iterable[Integer[0,n-1]]`; represents a "times" iteration from `0` up to `n - 1`.
@@ -717,8 +719,6 @@ The Iterable types are:
 * `Iterator[T]` => `Iterable[T]`; represents an algorithmic transformation of some source and yields a series of type `T` values.
 
 For a value to be considered `Iterable` it must represent a bounded sequence of values. As an example `Integer[1,default]` represents all numbers from 1 to positive infinity and it can not be iterated.
-
-
 
 ### Iterator[T]
 
@@ -738,11 +738,11 @@ $result = $array_of_numbers.reverse_each.step(2).map |$x| { $x * 100 }
 
 Given Example 1, the value of `$result` would be `[300, 200, 100]`.
 
-Note that, in each connection in the chain, there may either be a concrete value, the reverse_each could construct a new `Array` with the elements in reverse order, or it can produce an `Iterator`, that when a new value is pulled from the end of the chain (in the example by `map()`) will calculate which of the values is the next in reverse order, and produce that without requiring an intermediate `Array` to hold the values. View a chain of iterative functions like a pipe-line where values flow through the pipe. Contrast this with transport by tank truck where not a single drop will appear until the truck arrives with the full load. 
+Note that, in each connection in the chain, there may either be a concrete value, the reverse_each could construct a new `Array` with the elements in reverse order, or it can produce an `Iterator`, that when a new value is pulled from the end of the chain (in the example by `map()`) will calculate which of the values is the next in reverse order, and produce that without requiring an intermediate `Array` to hold the values. View a chain of iterative functions like a pipe-line where values flow through the pipe. Contrast this with transport by tank truck where not a single drop will appear until the truck arrives with the full load.
 
 An Iterator can be transformed to an `Array` by using the unary Unfold Operator (a.k.a splat).
 
-~~~ 
+~~~
 $a = *[1,2,3].reverse_each
 notice $a =~ Array
 ~~~
@@ -759,7 +759,7 @@ subtypes are `Resource`, and `Class`.
 <tr><td>
   Stage may get its own type in a future specification.
 </td></tr>
-</table> 
+</table>
 
 ### Resource[type_name, *title]
 
@@ -772,17 +772,17 @@ The Resource type is parameterized by `type_name`, and optionally `title`(s).
 
 * The title type parameter is optional and multi valued. Each title is an `Expression` evaluating
   to a `String` representing the title of a resource.
-  
-* If no title is given, the result is a reference to the type itself; e.g. `Resource[File]`, 
-  `Resource['file']`, `Resource[file]` are all references to the puppet resource type called 
+
+* If no title is given, the result is a reference to the type itself; e.g. `Resource[File]`,
+  `Resource['file']`, `Resource[file]` are all references to the puppet resource type called
   `"File"`.
-  
+
 * When a single title is given, the result is a reference to the singleton instance of the
   resource uniquely identified by the title string.
-  
+
 * When multiple titles are given, the result is an `Array[Resource[T]]`; e.g.
   `Resource[File, 'a', 'b']`  produces the array `[Resource[File, 'a'], Resource[File, 'b']]`.
-  
+
 #### Shorthand Notation
 
 Any Qualified Reference that does not reference a known type is interpreted as a reference
@@ -799,7 +799,7 @@ array of two references - `File['a']` and `File['b']`.
     Resource[RT, T] != Resource[RT, T2]
     Resource[RT]    == RT
     Resource[RT, T] == RT[T]
-    
+
     Resource        ∪  Resource            → Resource
     Resource[RT]    ∪  Resource[RT]        → Resource[RT]
     Resource[RT1]   ∪  Resource[RT2]       → Resource
@@ -807,7 +807,7 @@ array of two references - `File['a']` and `File['b']`.
     Resource[RT,T1] ∪  Resource[RT, T2]    → Resource[RT]
     Resource[?]     ∪  (T ∈ CatalogEntry)  → CatalogEntry
     Resource[?]     ∪  (T ∉ CatalogEntry)  → Any
-    
+
 ### Class[*class_name]
 
 Represents a Puppet (Host) Class. The `Class` type is parameterized with the name of
@@ -832,12 +832,12 @@ The type system does not treat (Host) Class inheritance as subtyping.
 The reason for this is that if the type system were to do this, then classes need to be loaded in order for type operations to correctly answer if a class inherits another. There is a suspicion
 that this may affect the result (logic may reference a class that should not be loaded because
 it is used as a condition to load classes that are not present. Loading a class may also have other
-side effects as it is not a pure load operation). 
+side effects as it is not a pure load operation).
 
 <table><tr><th>Note</th></tr>
 <tr><td>
   Further work is needed to make a final decision. If the decision is made to keep it the way
-  it is currently implemented, the user logic will need to check twice, or with a <tt>Variant</tt>   
+  it is currently implemented, the user logic will need to check twice, or with a <tt>Variant</tt>
   (is it the subclass or the superclass); this since Puppet only supports one level deep inheritance.
 </td></tr>
 </table>
@@ -876,7 +876,7 @@ in error messages when communicating why a given set of arguments do not match a
 The signature of a `Callable` denotes the type and multiplicity of the arguments it accepts and consists of a sequence of parameters; a list of types, where the three last entries may optionally be min count, max count, and a `Callable` (which is taken as its block_type).
 
 * If neither min or max are specified the parameters must match exactly.
-* A min < size(params) means that the difference is optional. 
+* A min < size(params) means that the difference is optional.
 * If max > size(params) means that the last type repeats until the given max cap number of arguments
 * if max is literal `default`, the max value is unbound (+Infinity).
 * If no types and no min/max are given, the Callable describes any callable i.e. `Callable[0, default]` (i.e. no type constraint, and any number of parameters).
@@ -926,7 +926,7 @@ Examples:
 
     Callable[String] ∪ Callable[Scalar]  → Callable[String]
     Callable[String] ∪ Callable[Numeric] → Callable
-    
+
     A ∈ Callable[String, Callable[String]]
     B ∈ Callable[Scalar, Callable[Scalar]]
     A ∪ B → Callable[String, Callable[String]]
@@ -948,7 +948,7 @@ The operations available per type is specified in the section TODO REF TO OPERAT
 
 Variables
 ---
-A variable is a storage container for a value. Variables are immutable (once assigned they cannot be assigned to another value, and the value it is referring to is also immutable. Variables are also used to define parameters of defines, classes, lambdas (and functions) - the term *parameter* is 
+A variable is a storage container for a value. Variables are immutable (once assigned they cannot be assigned to another value, and the value it is referring to is also immutable. Variables are also used to define parameters of defines, classes, lambdas (and functions) - the term *parameter* is
 used to denote such variables.
 
 The type of a non parameter variable is determined by what is assigned to it.
@@ -963,25 +963,25 @@ Variable names must conform to the following syntax:
      Variable
        : '$' (NumericVariable | NamedVariable )
        ;
-       
+
      NumericVariable
        : /0|([1-9][0-9]*)/
        ;
-       
+
      NamedVariable
        : /[a-z_]\w*/
        | /(::)?[a-z]\w*(::[a-z]\w*)*/
        ;
 
-* That is, a numeric variable must be a valid decimal number (a name that starts with 0 and has 
+* That is, a numeric variable must be a valid decimal number (a name that starts with 0 and has
   additional digits is also illegal).
-  
+
 * A named variable must start with a lower case letter a-z or '_' (underscore)
   and after that contain any word characters (a-z, A-Z, 0-9 or _). Specifically, a hyphen character
-  or a period are not allowed as they were in some earlier versions of the Puppet Programming 
+  or a period are not allowed as they were in some earlier versions of the Puppet Programming
   Language.
 
-* Also note that it is not allowed to use an upper case letter in the initial position of a name 
+* Also note that it is not allowed to use an upper case letter in the initial position of a name
   segment.
 * It is also not allowed to use an underscore in the initial position of a name segment
   in a fully qualified variable.
@@ -1012,7 +1012,7 @@ All numeric variables are said to exist. If they have not been set by the last m
 the same scope, they evaluate to `undef`.
 
 Variables that have not been assigned, do not exist, and thus do not have a value. When
-strict variables feature is turned off, a reference to such a variable results in the value `undef`. 
+strict variables feature is turned off, a reference to such a variable results in the value `undef`.
 
 Conversions and Promotions
 ===
@@ -1032,7 +1032,7 @@ Numeric Conversions
 
 * There are never any under or overflow when performing integer arithmetic. The implementation
   handles automatic conversion from 32 to 64 bit numbers to bignum.
-  
+
 * `Numeric` types are only converted to `String` when they are interpolated into a double quoted
   string, or when explicitly converted using a function such as `sprintf`. Interpolation converts
   the numeric value using a decimal (base 10) format.
@@ -1045,12 +1045,12 @@ String to Numeric Conversion
 
 * Arithmetic operations are done on `Numeric` or `String` types - if an operand is not `Numeric` or a
   `String` that can be converted to `Numeric`, the operation will fail.
-  
+
 * Explicit `String` to `Numeric` conversion can be performed with the function `scanf()`.
 
 <table>
 <tr><th>Note</th></tr>
-<tr><td>  
+<tr><td>
   Versions of Puppet before 4.0 performed automatic conversion of String to Numeric if the LHS was
   Numeric, and the RHS a String (but not consistently for all operators). Versions of "future
   parser" before 3.4.7 performed String to Numeric conversion if Strings could successfully be
@@ -1072,7 +1072,7 @@ the Boolean logic expressions `if`, `unless`, `and`, `or` and `!` (not):
 
 <table>
 <tr><th>Note</th></tr>
-<tr><td>  
+<tr><td>
   3x treats '' (empty string) as equivalent to <tt>undef</tt>.
 </tr></td>
 </table>
@@ -1127,4 +1127,3 @@ A `Numeric` is turned into a `String` when it is interpolated. The result is in 
 
 Conversion of any other type to `String` is undefined. It will typically be the underlying
 runtime system's string representation of the object.
- 
