@@ -511,7 +511,7 @@ the empty pattern `//`.
 ### Array[V, from, to]
 
 `Array` represents an ordered collection of elements of type `V`, optionally constrained in
-size by the integer range parameters *from* and *to*.
+size by the integer range parameters *from* and *to*. 
 
 The first index in an array instance is a non negative integer and starts with 0.
 (Operations in the Puppet Language allows negative values to be used to perform different calculations w.r.t index). See Array [] operation (TODO: REFERENCE TO THIS EXPRESSION SPEC).
@@ -519,6 +519,10 @@ The first index in an array instance is a non negative integer and starts with 0
 The type of `V` is unrestricted.
 
 When used without parameters, the default is `Array[Data]`.
+
+An empty array is denoted with `Array[0, 0]`.
+It is illegal to specify the element type for an empty array. An empty array is accepted by
+any typed arraay that allows *from* to be 0.
 
 #### Type Algebra on Array
 
@@ -544,6 +548,9 @@ in the order they were inserted. When hashes are merged (using the `+` operator)
 in the constructed hash have the same order as the LHS side keys, and the RHS keys not present in the LHS
 are inserted at the end of the resulting hash in their RHS order.
 
+An empty hash is denoted with `Hash[0, 0]`.
+It is illegal to specify the key and/or element type for an empty hash.
+An empty hash is accepted by any typed hash that allows *from* to be 0. 
 
 #### Type Algebra on Hash
 
