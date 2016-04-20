@@ -30,6 +30,10 @@ Puppet::Type.newtype(:ec2_instance) do
 end
 ```
 
+### namevar
+
+The type must specify a parameter to be the name of the resource, aka namevar. The name must uniquely identity that resource. By default, a parameter named `name` will be the namevar. This behavior can be modified using `title_patterns` and/or explicitly declaring a parameter to be a namevar.
+
 ### title patterns
 
 Provides a way for setting attributes from the title. For example, the `file` resource sets its `path` namevar based on its `title`, stripping trailing slashes in the process. So if `title` is `/foo/bar//`, then `path` will be `/foo/bar`.
@@ -51,6 +55,21 @@ Creates an `ensure` property with acceptable values of `present` and `absent`, e
 ```ruby
 Puppet::Type.newtype(:ec2_instance) do
   ensurable
+end
+```
+
+Ensurable can also take a block, and in that case, the type should define the allowed set of values. For example, the `package` type defines allowed values as:
+
+```ruby
+Puppet::Type.newtype(:package) do
+  ensurable do
+    newvalue(:present)
+    newvalue(:absent)
+    newvalue(:purged)
+    newvalue(:held)
+    newvalue(:latest)
+    newvalue(/./)
+  end
 end
 ```
 
@@ -107,6 +126,10 @@ end
 ```
 
 Autorequires are by far the most common, though recently puppet added support for `autobefore`, `autonotify`, and `autosubscribe`.
+
+### pre_run_check
+
+The agent will call the `pre_run_check` method for each `Puppet::Type` instance in the agent's catalog. This provides an opportunity for a resource to perform consistency checks/validation against other resources in the catalog. It differs from the `validate` method, since it is called later during catalog application, and can rely on the catalog having all generated resources.
 
 ### provider features
 
@@ -206,6 +229,17 @@ Puppet::Type.newtype(:ec2_instance) do
 end
 ```
 
+As mentioned earlier, if a type specifies a parameter named `:name`, it will automatically be the namevar, so the call to `isnamevar` is redundant, but is explicit.
+
+Alternatively, you can pass an option when calling newparam:
+
+```ruby
+Puppet::Type.newtype(:ec2_instance) do
+  newparam(:name, :namevar => true) do
+  end
+end
+```
+
 Note that the namevar is necessarily a parameter, and not a property, since changing the name identifies a different resource as opposed to changing the name of an existing resource.
 
 Defining a parameter as the namevar also means it is required. Normally the namevar is automatically set to be the same as the title, unless the type overrides the `title_patterns` method, e.g. for composite namevars.
@@ -276,6 +310,34 @@ Puppet::Type.newtype(:ec2_instance) do
     newvalue(:stopped) do
       provider.stop unless provider.stopped?
     end
+  end
+end
+```
+
+The `newvalue` and `newvalues` methods can also be passed a regex. Puppet will compare explicit symbols/strings first, and if there are no matches, compare regex's. For example, the `package` type defines:
+
+```ruby
+Puppet::Type.newtype(:package) do
+  newproperty(:ensure) do
+    newvalue(:present)
+    newvalue(:absent)
+    ...
+    newvalue(/./)
+  end
+end
+```
+
+The last regex is used to match version strings, e.g `ensure => '1.2.3'`
+
+### aliasvalue
+
+Aliases a value to be the same as an existing value. For example, the package type aliases `installed` to be the same as `present`, because it's more natural to declare that a package is `installed`:
+
+```
+Puppet::Type.newtype(:ec2_instance) do
+  newproperty(:ensure) do
+    newvalue(:present)
+    aliasvalue(:installed, :present)
   end
 end
 ```
