@@ -42,7 +42,9 @@ end
 
 ### namevar
 
-The type must specify a parameter to be the name of the resource, aka namevar. The name must uniquely identity that resource. By default, a parameter named `name` will be the namevar. This behavior can be modified using `title_patterns` and/or explicitly declaring a parameter to be a namevar.
+The type must specify a parameter to uniquely identify the resource. Conceptually this is referred to as the namevar. The type can specify multiple namevar parameters, which is referred to a composite namevar. For example, the identity of a `package` resource is based on the name of the package and provider, because you can have different types of packages with the same name, e.g. rpm and gem.
+
+Puppet will implicitly treat any parameter named `name` as a namevar. A parameter can explicitly specify that it is a namevar, described in the Parameter & Properties section below.
 
 ### title patterns
 
