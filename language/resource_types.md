@@ -16,6 +16,16 @@ end
 
 The `newtype` method creates a new class `Puppet::Type::Ec2_instance`, which subclasses `Puppet::Type`. The block passed to the `newtype` method defines methods and variables on the `Puppet::Type::Ec2_instance` class.
 
+## Puppet::Type.type method
+
+Defines a method for retrieving the class for a resource type, for example, when writing a provider for the `ec2_instance` type:
+
+```ruby
+Puppet::Type.type(:ec2_instance).provide(:v2, ...) do
+  # provider definition
+end
+```
+
 ## Puppet::Type::&lt;name&gt; methods
 
 Within the `Puppet::Type.newtype` block, the following DSL methods are often called, and are evaluated in the context of the  `Puppet::Type::<name>` class:
@@ -148,6 +158,13 @@ Puppet::Type.newtype(:service) do
   newproperty(:enable, :required_features => :enableable) do
   end
 end
+```
+
+An array of features can also be specified, e.g.
+
+```ruby
+  newproperty(:enable, :required_features => [:green, :blue]) do
+  end
 ```
 
 A **provider** indicates it supports the feature using `has_feature`:
