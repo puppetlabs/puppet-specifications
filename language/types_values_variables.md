@@ -337,6 +337,52 @@ Iterating over an integer range:
     Integer ∪ (T ∉ Scalar)          → Any
     Integer[a, b] ∪ Integer[c, d]   → Integer[min(a, c), max(b,d)]
 
+#### Integer.new
+
+Since version 4.5.0
+
+A new `Integer` can be created from `Integer`, `Float`, `Boolean`, and `String` values.
+For conversion `from` String it is possible to specify the radix.
+
+Signature:
+
+~~~ puppet
+
+type Radix = Variant[Default, Integer[2,2], Integer[8,8], Integer[10,10], Integer[16,16]]
+type 'NamedArgs   = Struct[{from => Convertible, Optional[radix] => Radix}]'
+Callable[Variant[String, Numeric, Boolean] Radix, 1, 2]
+Callable[NamedArgs]
+
+~~~
+
+* When converting from `String` the default radix is 10
+* If radix is not specified an attempt is made to detect the radix from the start of the string:
+  * `0b` or `0B` is taken as radix 2
+  * `0x` or `0X` is taken as radix 16 
+  * `0` as radix 8
+  * all other are decimal
+* Conversion from `String` accepts an optional sign in the string.
+* For hexadecimal (radix 16) conversion an optional leading "0x", or "0X" is accepted
+* for octal (radix 8) an optional leading "0" is accepted
+* for binary (radix 2) an optional leading "0b" or "0B" is accepted
+* When `radix` is set to `default`, the conversion is based on the leading
+  characters in the string. A leading "0" for radix 8, a leading "0x", or "0X" for
+  radix 16, and leading "0b" or "0B" for binary.
+* Conversion from `Boolean` results in 0 for `false` and 1 for `true`.
+* Conversion from `Integer`, `Float`, and `Boolean` ignores the radix.
+* `Float` value fractions are truncated (no rounding)
+
+Example Converting to Integer
+
+~~~ puppet
+
+$a_number = Integer("0xFF", 16)  # results in 255
+$a_number = Numeric("010")       # results in 8
+$a_number = Numeric("010", 10)   # results in 10
+$a_number = Integer("true")      # results in 1
+
+~~~
+
 ### Float ([from, to])
 
 Represents a range of *inexact* real number values. The default is the range +/- Infinity.
