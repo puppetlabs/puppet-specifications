@@ -765,6 +765,29 @@ The commonality of two Pattern types is the set operation pattern | pattern:
 
 The types of the boolean expressions `true` and `false`.
 
+#### Boolean.new
+
+Since version 4.5.0
+
+Accepts a single value as argument:
+
+* Float 0.0 is `false`, all other float values are `true`
+* Integer 0 is `false`, all other integer values are `true`
+* Strings
+  * `true` if string is one of 'true', 'yes', or 'y' (case independent compare)
+  * `false` if string is one of 'false', 'no', or 'n' (case independent compare)
+* Boolean is already boolean and is simply returned
+
+Examples of converting to Boolean:
+
+~~~ puppet
+$b2 = Boolean('true')  # true
+$b2 = Boolean('false') # false
+$b1 = Boolean('YEs')   # true
+$b1 = Boolean(0)       # false
+
+~~~
+
 ### Regexp[pattern]
 
 An unparameterized `Regexp` describes the set of all regular expressions. A parameterized `Regexp`
