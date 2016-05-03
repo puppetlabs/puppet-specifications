@@ -709,7 +709,7 @@ An L-value is a name referring to a named "slot" in the current scope (that is, 
   * *Array* - each variable is assigned from the RHS array's index 0-n. It is an error if there are too few values.
   * *Hash* - each variable is assigned the value from the corresponding key in the RHS hash. It is in an error if the key is not present.
   * *Type[Class]* - each variable is assigned the value of the corresponding variable/parameter in the referenced class. The
-    class must have been included, and the referenced variable must exist, but may have an `undef` value assigned.
+    class must have been added to the catalog, and the referenced variable must exist, but may have an `undef` value assigned.
 
 Assignment also takes place in parameter declarations of user defined resource types and
 classes. An alternate form of assignment also takes place when resource attributes are set.
