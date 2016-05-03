@@ -691,6 +691,11 @@ The parameter can be a literal string in which case it is converted into its cor
     Optional[T]  ∪  Undef        → Optional[T]
     Optional[T]  ∪  Optional[R]  → Optional[T ∪ R]
 
+#### Optional[T].new
+
+Since version 4.5.0
+
+Calling `new` on an `Optional[T]` is the same as calling `new` on `T` and then asserting that the result is `T` or `undef`.
 
 ### NotUndef[T]
 
@@ -706,6 +711,12 @@ The parameter can be a literal string in which case it is converted into its cor
     NotUndef[T]  ∪  T            → NotUndef[T]
     NotUndef[T]  ∪  Undef        → Variant[]
     NotUndef[T]  ∪  NotUndef[R]  → NotUndef[T ∪ R]
+
+#### NotUndef[T].new
+
+Since version 4.5.0
+
+Calling `new` on a `NotUndef[T]` is the same as calling `new` on `T` and then asserting that the result is not `undef`.
 
 ### Iterable[T]
 
