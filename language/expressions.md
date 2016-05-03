@@ -1407,52 +1407,54 @@ The Puppet Programming Language supports calling functions.
 Function calls come in three forms:
 
 * *statement* - arguments to the function does not require parentheses, may not appear in
-  expressions, have syntactical restrictions on their argument. Only a handful of explicitly
+  expressions, have syntactical restrictions on their arguments. Only a handful of explicitly
   listed functions can be called this way. Users can not add new statement type functions as
   their names are determined by the Puppet Parser.
-* *prefix* - function name is first, arguments are always given in parentheses
+* *prefix*
+  * function name is first, arguments are always given in parentheses.
+  * Type expression is first, arguments are always given in parentheses.
 * *infix* - uses '.' to apply a function to the first argument to the function. Additional
-  arguments are placed in parentheses after the function name. (e.g. $x.notice)
-  
+  arguments are placed in parentheses after the function name (for example, `$x.notice`, `$x.notice($y)`).
+
 Syntax:
 
     StatementStyleCall
       : QualifiedName Expression (',' Expression)* 
       ;
-      
+
     PrefixStyleCall
-      : QualifiedName arguments = ArgumentList LambdaExpression?
+      : (QualifiedName | Expression<Type>) arguments = ArgumentList LambdaExpression?
       ;
-      
+
     InfixStyleCall
        : Expression '.' QualifiedName ('(' Expression (',' Expression)* ','? ')')? LambdaExpression?
        ;
-    
+
     ArgumentList
       :  '(' args += Expression (',' args += Expression)* ','? ')'
       ;
-                  
+
     LambdaExpression
       : '|' ParameterList? '|' '{' Statements? '}'
       ;
-      
+
     ParameterList
       : ParameterDeclaration (',' ParameterDeclaration)* ','?
       ;
-      
+
     ParameterDeclaration
       : type= Expression<Type>?
         varag ?= '*'?
         name = VariableExpression ('=' default_value = Expression)?
       ;
-    
+
     VariableExpression : VARIABLE ;  # e.g. $x, $my_param
-      
+
 
 **General**:
 
 * In 4x the Qualified Name function name is not restricted to a *simple name* (in 3x all functions 
-  are in the same namespace).
+  are in the same namespace, and in 4.x they can be namespaced).
 * A function may be called using any of the three styles (statement style is restricted to a given 
   list of functions, see below) - there is no difference in
   evaluation between them - only syntactical differences, and the varying support for
@@ -1463,7 +1465,8 @@ Syntax:
   r-value and statement type, they all produce a value, and a function should produce
   Ruby nil (mapped to undef) if no other valid return value is suitable.
 * A function call is never an L-value (a function can not produce something that is assignable).
-  
+* A call to a Type is the same as calling the function `new` with that type as the first argument.
+
 **Parameters**
 
 * Parameters may be optionally typed by preceding them with a type expression
@@ -1483,7 +1486,7 @@ Syntax:
 * This stye cannot be used when the argument is a literal `Hash` because the expression is
   indistinguishable from a resource expression without title. **(PUP-979)**
 * A statement type call always produces `undef`.
-  
+
 Example:
 
     require 'myclass'
@@ -1506,7 +1509,7 @@ Functions that allow being called using statement style:
 
     # stop execution
     fail
-    
+
     # raises an error as it is discontinued
     import
 
@@ -1536,9 +1539,9 @@ Examples:
     [1,2,3].reduce(10) |$memo, $x| { $memo + $x }                   # => 16
     'myclass'.require                                               # => undef
     [1,2,3].map |$x| { $x * 10 }.reduce |$memo, $x| { $memo + $x }  # => 60
-    
+
 **Lambda**:
-  
+
 * A Lambda is an unnamed function, it has an optional `ParameterList` that declares the name
   and an optional default value expression (if too few arguments are given when it is invoked).
 * Parameter declarations with default value expressions must come after parameter declarations 
@@ -1546,6 +1549,24 @@ Examples:
 * The parameter list is syntactically the same as the parameter list for a Resource Type definitions,
   and a Class definitions.
 * Evaluation of default value expressions take place in the scope where the lambda is declared.
+
+**Calling Types - new-operation**
+Since 4.5.0.
+
+Calling a type - for example:
+
+    Integer("0xFF")
+
+creates a new instance of the type and an assertion is made that the value is compliant with the type.
+An error is raised if the result is not compliant.
+
+    Integer[0,10]("0xFF")
+
+Would fail, since the result is not within the given range 0-10.
+
+The parameters are specific to each type - see the documentation per type.
+
+A call to a type is equivalent to calling the function `new` with the type as the first argument.
 
 **Function Call Semantics**
 
