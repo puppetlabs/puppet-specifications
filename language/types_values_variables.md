@@ -437,6 +437,18 @@ You can learn more about floating point than you ever want to know from these ar
     Float ∪ (T ∉ Scalar)        → Any
     Float[a, b] ∪ Float[c, d]   → Float[min(a, c), max(b,d)]
 
+#### Float.new
+
+Since version 4.5.0
+
+A new `Float` can be created from `Integer`, `Float`, `Boolean`, and `String` values.
+For conversion `from` String both float and integer formats are supported.
+
+* For an integer, the floating point fraction of .0 is added to the value.
+* A Boolean true is converted to 1.0, and a false to 0.0
+* In String format, integer prefixes for hex and binary are understood (but not octal since
+  floating point in string format may start with a '0').
+
 ### String([from, to])
 
 Represents a sequence of Unicode characters up to a maximum length of 2^31-1 (the maximum
