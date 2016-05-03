@@ -490,6 +490,237 @@ only, it can not be used in the Puppet Programming Language.
     String ∪ (T ∈ Scalar)  → Scalar
     String ∪ (T ∉ Scalar)  → Any
 
+#### String.new
+
+Since version 4.5.0
+
+Conversion to String is the most comprehensive conversion as there are many
+use cases where a String representation is wanted. The defaults for the many options
+have been chosen with care to be the most basic "value in textual form" representation.
+
+A new String can be created from all other data types. The process is performed in
+several steps - first the type of the given value is inferred, then the resulting type
+is used to find the most significant format specified for that type. And finally,
+the found format is used to convert the given value.
+
+The mapping from type to format is referred to as the format map. This map
+allows different formatting depending on type.
+
+Example Positive Integers in Hexadecimal prefixed with '0x', negative in Decimal
+
+~~~ puppet
+
+$format_map = { Integer[default, 0] => "%d",
+  Integer[1, default] => "%#x"
+}
+String("-1", $format_map)  # produces '-1'
+String("10", $format_map)  # produces '0xa'
+
+~~~
+
+A format is specified on the form:
+
+~~~
+
+%[Flags][Width][.Precision]Format
+
+~~~
+
+`Width` is the number of characters into which the value should be fitted. This allocated space is
+padded if value is shorter. By default it is space padded, and the flag 0 will cause padding with 0
+for numerical formats.
+
+`Precision` is the number of fractional digits to show for floating point, and the maximum characters
+included in a string format.
+
+Note that all data type supports the formats `s` and `p` with the meaning "default to string" and
+"default programmatic string representation" (which for example means that a String is quoted in 'p' format).
+
+##### Signatures of String conversion
+
+~~~ puppet
+
+type Format = Pattern[/^%([\s\+\-#0\[\{<\(\|]*)([1-9][0-9]*)?(?:\.([0-9]+))?([a-zA-Z])/]
+type ContainerFormat = Struct[{
+  format         => Optional[String],
+  separator      => Optional[String],
+  separator2     => Optional[String],
+  string_formats => Hash[Type, Format]
+  }]
+type TypeMap = Hash[Type, Variant[Format, ContainerFormat]]
+type Formats = Variant[Default, String[1], TypeMap]
+
+Callable[Any, Formats]
+
+~~~
+
+Where:
+* `separator` is the string used to separate entries in an array, or hash (extra space should not be included at
+  then end), defaults to `","`
+* `separator2` is the separator between key and value in a hash entry (space padding should be included as
+  wanted), defaults to `" => ".
+* `string_formats` is a type to format map for values contained in arrays and hashes - defaults to `{Any => "%p"}`. Note that
+  these nested formats are not applicable to containers which are always formatted as per the top level format specification.
+
+Example Simple Conversion to String (using defaults)
+
+~~~ puppet
+
+$str = String(10)      # produces '10'
+$str = String([10])    # produces '["10"]'
+
+~~~
+
+Example Simple Conversion to String specifying the format for the given value directly
+
+~~~ puppet
+
+$str = String(10, "%#x")    # produces '0x10'
+$str = String([10], "%(a")  # produces '("10")'
+
+~~~
+
+Example Specifying type for values contained in an array
+
+~~~ puppet
+
+$formats = { Array => {format => '%(a', string_formats => { Integer => '%#x' } }
+$str = String([1,2,3], $formats) # produces '(0x1, 0x2, 0x3)'
+
+~~~
+
+Given formats are merged with the default formats, and matching of values to convert against format is based on
+the specificity of the mapped type; for example, different formats can be used for short and long arrays.
+
+##### Integer to String
+
+| Format  | Integer Formats
+| ------  | ---------------
+| d       | Decimal, negative values produces leading '-'
+| x X     | Hexadecimal in lower or upper case. Uses ..f/..F for negative values unless # is also used
+| o       | Octal. Uses ..0 for negative values unless # is also used
+| b B     | Binary with prefix 'b' or 'B'. Uses ..1/..1 for negative values unless # is also used
+| c       | numeric value representing a Unicode value, result is a one unicode character string, quoted if alternative flag # is used
+| s       | same as d, or d in quotes if alternative flag # is used
+| p       | same as d
+| eEfgGaA | converts integer to float and formats using the floating point rules
+
+Defaults to `d`
+
+##### Float to String
+
+| Format  | Float formats
+| ------  | -------------
+| f       | floating point in non exponential notation
+| e E     | exponential notation with 'e' or 'E'
+| g G     | conditional exponential with 'e' or 'E' if exponent < -4 or >= the precision
+| a A     | hexadecimal exponential form, using 'x'/'X' as prefix and 'p'/'P' before exponent
+| s       | converted to string using format p, then applying string formatting rule, alternate form # quotes result
+| p       | f format with minimum significant number of fractional digits, prec has no effect
+| dxXobBc | converts float to integer and formats using the integer rules
+
+Defaults to `p`
+
+##### String to String
+
+| Format | String
+| ------ | ------
+| s      | unquoted string, verbatim output of control chars
+| p      | programmatic representation - strings are quoted, interior quotes and control chars are escaped
+| C      | each :: name segment capitalized, quoted if alternative flag # is used
+| c      | capitalized string, quoted if alternative flag # is used
+| d      | downcased string, quoted if alternative flag # is used
+| u      | upcased string, quoted if alternative flag # is used
+| t      | trims leading and trailing whitespace from the string, quoted if alternative flag # is used
+
+Defaults to `s` at top level and `p` inside array or hash.
+
+##### Boolean to String
+
+| Format    | Boolean Formats
+| ----      | -------------------   
+| t T       | 'true'/'false' or 'True'/'False' , first char if alternate form is used (i.e. 't'/'f' or 'T'/'F').
+| y Y       | 'yes'/'no', 'Yes'/'No', 'y'/'n' or 'Y'/'N' if alternative flag # is used
+| dxXobB    | numeric value 0/1 in accordance with the given format which must be valid integer format
+| eEfgGaA   | numeric value 0.0/1.0 in accordance with the given float format and flags
+| s         | 'true' / 'false'
+| p         | 'true' / 'false'
+
+##### Regexp to String
+
+| Format    | Regexp Formats (%/)
+| ----      | ------------------
+| s         | / / delimiters, alternate flag replaces / delimiters with quotes
+| p         | / / delimiters
+
+##### Undef to String
+
+| Format    | Undef formats
+| ------    | -------------
+| s         | empty string, or quoted empty string if alternative flag # is used
+| p         | 'undef', or quoted '"undef"' if alternative flag # is used
+| n         | 'nil', or 'null' if alternative flag # is used
+| dxXobB    | 'NaN'
+| eEfgGaA   | 'NaN'
+| v         | 'n/a'
+| V         | 'N/A'
+| u         | 'undef', or 'undefined' if alternative # flag is used
+
+##### Default value to String
+
+| Format    | Default formats
+| ------    | ---------------
+| d D       | 'default' or 'Default', alternative form # causes value to be quoted
+| s         | same as d
+| p         | same as d
+
+##### Array & Tuple to String
+
+| Format    | Array/Tuple Formats
+| ------    | -------------
+| a         | formats with `[ ]` delimiters and `,`, alternate form `#` indents nested arrays/hashes
+| s         | same as a
+| p         | same as a
+
+See "Flags" `<[({\|` for formatting of delimiters, and "Additional parameters for containers; Array and Hash" for
+more information about options.
+
+The alternate form flag `#` will cause indentation of nested array or hash containers. If width is also set
+it is taken as the maximum allowed length of a sequence of elements (not including delimiters). If this max length
+is exceeded, each element will be indented.
+
+##### Hash & Struct to String
+
+| Format    | Hash/Struct Formats
+| ------    | -------------
+| h         | formats with `{ }` delimiters, `,` element separator and ` => ` inner element separator unless overridden by flags 
+| s         | same as h
+| p         | same as h
+| a         | converts the hash to an array of [k,v] tuples and formats it using array rule(s)
+
+See "Flags" `<[({\|` for formatting of delimiters, and "Additional parameters for containers; Array and Hash" for
+more information about options.
+
+The alternate form flag `#` will format each hash key/value entry indented on a separate line.
+
+##### Type to String
+
+| Format    | Array/Tuple Formats
+| ------    | -------------
+| s         | The same as p, quoted if alternative flag # is used
+| p         | Outputs the type in string form as specified by the Puppet Language
+
+##### Flags
+
+| Flag     | Effect 
+| ------   | ------
+| (space)  | space instead of + for numeric output (- is shown), for containers skips delimiters
+| #        | alternate format; prefix 0x/0x, 0 (octal) and 0b/0B for binary, Floats force decimal '.'. For g/G keep trailing 0.
+| +        | show sign +/- depending on value's sign, changes x,X, o,b, B format to not use 2's complement form
+| -        | left justify the value in the given width
+| 0        | pad with 0 instead of space for widths larger than value
+| <[({\|   | defines an enclosing pair <> [] () {} or \| \| when used with a container type
+
 ### Enum[*strings]
 
 Represents all strings that are equal to one of the string type parameters given to the `Enum` type.
