@@ -861,6 +861,29 @@ any typed arraay that allows *from* to be 0.
     Array[R,a,b] ∪  Array[Q,c,d]  → Array[R ∪ Q, min(a,c), max(b,d)]
     Array[?]     ∪  Hash[?,?]     → Collection
 
+#### Array.new
+
+Since version 4.5.0
+
+When given a single value as argument:
+
+* A non empty `Hash` is converted to an array matching `Array[Tuple[Any,Any], 1]`
+* An empty `Hash` becomes an empty array
+* An `Array` is simply returned
+* An `Iterable[T]` is turned into an array of `T` instances
+
+When given a second Boolean argument
+* if `true`, a value that is not already an array is returned as a one element array
+* if `false`, (the default), converts the first argument as shown above.
+
+Example ensuring value is array
+
+~~~ puppet
+
+$arr = Array($value, true)
+
+~~~
+
 ### Hash[K, V, from, to]
 
 `Hash` represents an ordered collection of associations between a key (of `K` type), and
@@ -970,6 +993,13 @@ The `Tuple` type is a subtype of `Collection`. Its size is specified by the give
 
     Tuple           ∪  Tuple           → Tuple
     Tuple[R, ...]   ∪  Tuple[S, ...]   → Tuple[R ∪ S, ...]
+
+#### Tuple.new
+
+Since version 4.5.0
+
+Conversion to a `Tuple` works exactly as conversion to an `Array` (Array.new), only that the constructed array is
+asserted against the given tuple type.
 
 
 ### Collection[to, from]
