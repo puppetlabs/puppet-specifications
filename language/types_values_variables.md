@@ -272,6 +272,35 @@ Represents the abstract notion of "number", its subtypes are `Integer`, and `Flo
     Numeric ∪ (T ∈ Scalar)     → Scalar
     Numeric ∪ (T ∉ Scalar)     → Any
 
+#### Numeric.new
+
+Since version 4.5.0
+
+A new `Integer` or `Float` can be created from `Integer`, `Float`, `Boolean` and
+`String` values.
+
+~~~ puppet
+
+Callable[Variant[Numeric, Boolean, String]]
+
+~~~
+
+* If the value has a decimal period, or if given in scientific notation
+  (e/E), the result is a `Float`, otherwise the value is an `Integer`.
+* The conversion from `String` always uses a radix based on the prefix of the string.
+* Conversion from Boolean results in 0 for `false` and 1 for `true`.
+
+Example Converting to Numeric
+
+~~~ puppet
+
+$a_number = Numeric("true")  # results in 1
+$a_number = Numeric("0xFF")  # results in 255
+$a_number = Numeric("010")   # results in 8
+$a_number = Numeric("3.14")  # results in 3.14 (a float)
+
+~~~
+
 ### Integer ([from, to])
 
 Represents a range of integral numeric value. The default is the range MIN INTEGER to MAX INTEGER.
