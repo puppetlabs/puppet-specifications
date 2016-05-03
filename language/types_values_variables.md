@@ -912,6 +912,17 @@ An empty hash is accepted by any typed hash that allows *from* to be 0.
     Hash[?]       ∪  (T ∈ Collection)   → Collection
     Hash[?]       ∪  (T ∉ Collection)   → Any
 
+#### Hash.new
+
+Since version 4.5.0
+
+Accepts a single value as argument:
+
+* An empty `Array` becomes an empty Hash
+* An `Array` matching `Array[Tuple[Any,Any], 1]` is converted to a hash where each tuple describes a key/value entry
+* An `Array` with an even number of entries is interpreted as `[key1, val1, key2, val2, ...]`
+* An `Iterable` is turned into an `Array` and then converted to Hash as per the array rules
+* A `Hash` is simply returned
 
 ### Struct Type
 
@@ -964,6 +975,13 @@ An unparameterized `Struct` matches all structs and all hashes.
     Struct[{s => T}]     ∪  Hash[K,V]          → Hash[String ∪ K, T ∪ V]
     Struct[?]            ∪  (T ∈ Collection)   → Collection
     Struct[?]            ∪  (T ∉ Collection)   → Any
+
+#### Struct.new
+
+Since version 4.5.0
+
+`Struct.new` works exactly as `Hash.new`, only that the constructed hash is
+asserted against the given struct type.
 
 ### Tuple Type
 
