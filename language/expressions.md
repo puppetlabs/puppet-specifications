@@ -1388,7 +1388,7 @@ see [Optional Type].
 
 * A single type can be given as parameter
 * It is an error if the list of parameters is empty
-      
+
 [Optional Type]: types_values_variables.md#optionalt
 
 #### Variant Type [ ]
@@ -1420,8 +1420,21 @@ see [Type].
 
 * A single type can be given as parameter
 * It is an error if the list of parameters is empty
-      
+
 [Type]: types_values_variables.md#typet
+
+#### Type SemVer [ ]
+
+Produces a new `SemVer` type that matches one or a (possibly disjunct) set of version ranges.
+For more information about the type see [SemVer].
+
+A SemVer type is constructed from one or more:
+
+* Strings - each in Semantic Version string form, which can represent a single versio or a range
+* An instance of SemVer
+* An instance of SemVerRange
+
+[SemVer]: types_values_variables.md#semverversion-ranges
 
 Function Calls
 ---
