@@ -699,7 +699,7 @@ The assignment operator assigns the result of the RHS to one or more L-values pr
 An L-value is a name referring to a named "slot" in the current scope (that is, typically a variable).
 
 * A `$` variable produces an L-value name
-* Only a Simple Name is accepted, it is not allowed to assign to something in another namepace
+* Only a Simple Name is accepted, it is not allowed to assign to something in another namespace
 * Numerical L-values are not allowed (numerical variables are read-only and set by side effect
   of matching with a regular expression).
 * Assignment is an R-value
