@@ -695,15 +695,21 @@ The following table shows the result of searching for a LHS of a particular type
 Assignment Operator
 ---
 
-The assignment operator assigns the result of the RHS to the L-Value produced by the LHS. An L-value is a name referring to a "slot" in the current scope (that can be referenced (typically by a 
-variable) to obtain the value).
+The assignment operator assigns the result of the RHS to one or more L-values produced by the LHS expression.
+An L-value is a name referring to a named "slot" in the current scope (that is, typically a variable).
 
 * A `$` variable produces an L-value name
-* Only a Simple Name is accepted
+* Only a Simple Name is accepted, it is not allowed to assign to something in another namespace
 * Numerical L-values are not allowed (numerical variables are read-only and set by side effect
   of matching with a regular expression).
 * Assignment is an R-value
 * The value of an assignment is the value of the RHS
+* An array of L-values forms a multi-assignment where several variables can be assigned at once from the given RHS source
+* In a multi-assignment the result depends on the type of the RHS:
+  * *Array* - each variable is assigned from the RHS array's index 0-n. It is an error if there are too few values.
+  * *Hash* - each variable is assigned the value from the corresponding key in the RHS hash. It is in an error if the key is not present.
+  * *Type[Class]* - each variable is assigned the value of the corresponding variable/parameter in the referenced class. The
+    class must have been added to the catalog, and the referenced variable must exist, but may have an `undef` value assigned.
 
 Assignment also takes place in parameter declarations of user defined resource types and
 classes. An alternate form of assignment also takes place when resource attributes are set.
@@ -720,8 +726,25 @@ result. Chained assignments are permitted.
 
 Examples:
 
+~~~puppet
+
     $a = 10
     $x = $y = 0
+
+    # from array
+    [$a, $b] = [1, 2]  # assigns 1 to $a, and 2 to $b
+
+    # from hash
+    [$a, $b] = { a => 10, b => 20, c => 30 }  # assigns 10 to $a, and 20 to $b
+
+    # from class
+    class mymodule::someclass::example($x = 100) {
+      $a = 10
+    }
+    include example
+    [$a, $x] = Class['mymodule::someclass::example']  # assigns 10 to $a, and 100 to $x
+
+~~~
 
 [ ] Access Operator
 ---
