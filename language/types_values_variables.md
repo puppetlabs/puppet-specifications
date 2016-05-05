@@ -373,6 +373,13 @@ Since version 4.5.0
 A new `Integer` can be created from `Integer`, `Float`, `Boolean`, and `String` values.
 For conversion `from` String it is possible to specify the radix.
 
+| Radix Name      | Base   | Prefixes    |
+| ---             | ---    | ---         |
+| binary          |  2     | `0b` `0B`   |
+| octal           |  8     | `0`         |
+| decimal         | 10     | *no prefix* |
+| hexadecimal     | 16     | `0x` `0X`   |
+
 Signature:
 
 ~~~ puppet
@@ -385,20 +392,13 @@ Callable[NamedArgs]
 ~~~
 
 * When converting from `String` the default radix is 10
-* If radix is not specified an attempt is made to detect the radix from the start of the string:
-  * `0b` or `0B` is taken as radix 2
-  * `0x` or `0X` is taken as radix 16 
-  * `0` as radix 8
-  * all other are decimal
+* If radix is not specified or set to `default` an attempt is made to detect the radix by
+  matching the radix prefix against the start of the string.
+  Strings without such a prefix are decimal.
 * Conversion from `String` accepts an optional sign in the string.
-* For hexadecimal (radix 16) conversion an optional leading "0x", or "0X" is accepted
-* for octal (radix 8) an optional leading "0" is accepted
-* for binary (radix 2) an optional leading "0b" or "0B" is accepted
-* When `radix` is set to `default`, the conversion is based on the leading
-  characters in the string. A leading "0" for radix 8, a leading "0x", or "0X" for
-  radix 16, and leading "0b" or "0B" for binary.
+* When radix is 2, 8, or 16, the conversion accepts an optional leading corresponding radix prefix.
 * Conversion from `Boolean` results in 0 for `false` and 1 for `true`.
-* Conversion from `Integer`, `Float`, and `Boolean` ignores the radix.
+* Radix is only applicable to `String` conversion, and is ignored for all others.
 * `Float` value fractions are truncated (no rounding)
 
 Example Converting to Integer
@@ -409,6 +409,7 @@ $a_number = Integer("0xFF", 16)  # results in 255
 $a_number = Numeric("010")       # results in 8
 $a_number = Numeric("010", 10)   # results in 10
 $a_number = Integer("true")      # results in 1
+$a_number = Numeric("0x10", 10)  # this is an error. Prefix and radix does not match.
 
 ~~~
 
@@ -442,11 +443,11 @@ You can learn more about floating point than you ever want to know from these ar
 Since version 4.5.0
 
 A new `Float` can be created from `Integer`, `Float`, `Boolean`, and `String` values.
-For conversion `from` String both float and integer formats are supported.
+For conversion from `String` both float and integer formats are supported.
 
 * For an integer, the floating point fraction of .0 is added to the value.
-* A Boolean true is converted to 1.0, and a false to 0.0
-* In String format, integer prefixes for hex and binary are understood (but not octal since
+* A boolean `true` is converted to 1.0, and a `false` to 0.0
+* In `String` format, integer prefixes for hex and binary radix are understood (but not octal since
   floating point in string format may start with a '0').
 
 ### String([from, to])
@@ -518,12 +519,13 @@ the found format is used to convert the given value.
 The mapping from type to format is referred to as the format map. This map
 allows different formatting depending on type.
 
-Example Positive Integers in Hexadecimal prefixed with '0x', negative in Decimal
+Example: Positive Integers in Hexadecimal prefixed with '0x', negative in Decimal
 
 ~~~ puppet
 
-$format_map = { Integer[default, 0] => "%d",
-  Integer[1, default] => "%#x"
+$format_map = { 
+  Integer[default, -1] => "%d",
+  Integer[0, default] => "%#x"
 }
 String("-1", $format_map)  # produces '-1'
 String("10", $format_map)  # produces '0xa'
@@ -545,8 +547,8 @@ for numerical formats.
 `Precision` is the number of fractional digits to show for floating point, and the maximum characters
 included in a string format.
 
-Note that all data type supports the formats `s` and `p` with the meaning "default to string" and
-"default programmatic string representation" (which for example means that a String is quoted in 'p' format).
+Note that all data type supports the formats `s` and `p` with the meaning "default string representation" and
+"default programmatic string representation" (as an example, a String is quoted in 'p' format).
 
 ##### Signatures of String conversion
 
@@ -617,7 +619,11 @@ the specificity of the mapped type; for example, different formats can be used f
 | p       | same as d
 | eEfgGaA | converts integer to float and formats using the floating point rules
 
-Defaults to `d`
+Defaults to `d`.
+
+Note that the notation `..0`, `..1`, `..f`, `..F` indicates that value is truncated at the number of known
+value bits and that the actual leftmost bits depends on the physical representation (8, 16, 32, 64 bits). This because
+negative values are in 2's complement format and have the highest order bit set to 1.
 
 ##### Float to String
 
