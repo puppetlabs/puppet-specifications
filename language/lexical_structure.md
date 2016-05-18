@@ -396,6 +396,8 @@ elements:
 | `private, Private`
 | `resource, Resource`
 | `runtime, Runtime`
+| `semver, SemVer`
+| `semverrange, SemVerRange`
 | `string, String`
 | `struct, Struct`
 | `tuple, Tuple`
