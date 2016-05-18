@@ -275,7 +275,7 @@ Examples:
     ::apache
     ::apache::port
 
-### Upper Case Bare Words / REF / Qualified Reference
+### Upper Case Bare Words / REF / QualifiedReference
 
 ```
 REF
