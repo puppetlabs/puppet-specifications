@@ -148,6 +148,9 @@ may appear more than once in the hierarchy (e.g. a `Scalar` is both `Any` and `D
        |  |- Boolean
        |  |- Regexp[pattern_string]
        |
+       |- SemVer
+       |- SemVerRange
+       |
        |- Collection
        |  |- Array[T]
        |  |  |- Tuple[*types, from, to]
@@ -855,6 +858,114 @@ the empty pattern `//`.
     Regexp[?]    ∪  (T ∈ Scalar)   → Scalar
     Regexp[?]    ∪  (T ∉ Scalar)   → Any
 
+### SemVer[version-ranges]
+
+Since Version 4.5.0
+
+Represents all [Semantic Versions](http://semver.org/) which can be narrowed to a single specific
+semantic version, or to a disjunct set of version ranges.
+
+An instance of this type describes a single version.
+
+The `SemVer` type is accompanied by the `SemVerRange` type which as a type represents all ranges
+and which's instances represent a contiguous version range.
+
+A `SemVer` type may be parameterized with one or more of:
+
+* SemVer instances
+* Strings representing single versions or ranges of versions
+* SemVerRange instances representing a contiguous version range
+
+An instance of `SemVer` can be created from a String, individual values, or a hash of individual values.
+
+A SemVer instance consists of up to 5 segments:
+
+* major version
+* minor version
+* patch (version)
+* prerelease tag
+* build tag
+
+Examples
+
+~~~ puppet
+
+$t = SemVer[SemVerRange('>=1.0.0 <2.0.0'), SemVerRange('>=3.0.0 <4.0.0')]
+notice(SemVer('1.2.3') =~ $t) # true
+notice(SemVer('2.3.4') =~ $t) # false
+notice(SemVer('3.4.5') =~ $t) # true
+
+~~~
+
+
+#### SemVer Type Algebra
+
+* When type is inferred, adjacent and overlapping version ranges will be merged.
+* When a parameterized SemVer is created, adjacent and overlapping version ranges will be normalized (merged)
+* A SemVer instance matches a SemVerType if it is enclosed in one of the types ranges
+
+#### SemVer.new
+
+Signatures:
+
+~~~
+type PositiveInteger = Integer[0,default]
+type SemVerQualifier = Pattern[/\A(?<part>[0-9A-Za-z-]+)(?:\.\g<part>)*\Z/]
+type SemVerString = String[1]
+type SemVerHash =Struct[{
+  major                =>PositiveInteger,
+  minor                =>PositiveInteger,
+  patch                =>PositiveInteger,
+  Optional[prerelease] =>SemVerQualifier,
+  Optional[build]      =>SemVerQualifier
+}]
+
+function SemVer.new(SemVerString $str)
+function SemVer.new(
+        PositiveInteger           $major
+        PositiveInteger           $minor
+        PositiveInteger           $patch
+        Optional[SemVerQualifier] $prerelease = undef
+        Optional[SemVerQualifier] $build = undef
+        )
+function SemVer.new(SemVerHash $hash_args)
+~~~
+
+### SemVerRange
+
+A SemVerRange represents all Semantic Version Ranges. New ranges an be constructed using `SemVerRange.new`.
+
+The string format of a SemVerRang is specified by the [SemVer Range Grammar](https://github.com/npm/node-semver#range-grammar).
+The logical or `||` operator is not supported in the Puppet Type System SemVerRange type.
+
+#### SemVerRange Type Algebra
+
+* A SemVerRange type matches all instances of SemVerRange
+* SemVerRange < Any
+
+#### SemVerRange.new
+
+Signatures:
+
+~~~ puppet
+
+type SemVerRangeString = String[1]
+type SemVerRangeHash = Struct[{
+  min                   => Variant[default, SemVer],
+  Optional[max]         => Variant[default, SemVer],
+  Optional[exclude_max] => Boolean
+}]
+
+function SemVerRange.new( SemVerRangeString $semver_range_string)
+
+function SemVerRange.new(
+           Variant[default,SemVer] $min
+           Variant[default,SemVer] $max
+           Optional[Boolean]       $exclude_max = undef
+         }
+
+function SemVerRange.new(SemVerRangeHash $semver_range_hash)
+~~~
 
 ### Array[V, from, to]
 

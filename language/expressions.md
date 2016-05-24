@@ -541,6 +541,13 @@ When the RHS is a `Type`:
 * the match is true if the LHS is an instance of the type
   * No match variables are set in this case.
 
+When the RHS is a `SemVerRange`
+
+* the match is true if the LHS is a `SemVer`, and the version is within the range
+* the match is true if the LHS is a `String` representing a SemVer, and the version is within the range
+* If the LHS is neither a `String` with a valid `SemVer` representation, nor a `SemVer` an error is raised.
+* otherwise the result is `false` (not in range).
+
 When the RHS is not a `Type`:
 
 * If the RHS evaluates to a `String` a new Regular Expression is created with the string value
@@ -636,6 +643,7 @@ A comparison operator converts the result to a `Boolean`.
   * `Numeric` with `Numeric` (or with strings in numeric form)
   * `Type` with `Type`
     * Here the smaller type is the more specific. See [The Type System], and example below.
+* SemVer instances can be compared.
 * It is not possible to compare other types (except for equality)
 
 [The Type System]: types_values_variables.md#the-type-system
@@ -683,11 +691,13 @@ The following table shows the result of searching for a LHS of a particular type
 | LHS         | RHS       | Description |
 |------       |------     |------       |
 | `String`    | `String`    | searches for the LHS string as a substring in RHS (LHS and RHS downcased), `true` if a substring is found. Also see [PUP-1800] regarding case. |
+| `String`    | `SemVerRange` | `true` if the SemVer version represented by the LHS String is in the range
 | `Regexp`    | `String`    | true if the string matches the Regexp (`=~`) |
 | `Type`      | `String`    | `false` |
 | *any other* | `String`    | `false` |
 | `Type`      | `Array`     | `true` if there is an element that is an instance of the given type |
 | `Regexp`    | `Array`     | `true` if there is an array element that matches the Regexp (`=~`). Non string elements are skipped.   |
+| `SemVer`    | `SemVerRange` | `true` if the version is in the range
 | *any other* | `Array`     | `true` if there is an array element equal (`==`) to the LHS |
 | *any*       | `Hash`      | `true` if the LHS `in` the array of hash keys is `true` |
 | *any*       | *any other* | `false` |
@@ -1388,7 +1398,7 @@ see [Optional Type].
 
 * A single type can be given as parameter
 * It is an error if the list of parameters is empty
-      
+
 [Optional Type]: types_values_variables.md#optionalt
 
 #### Variant Type [ ]
@@ -1420,8 +1430,21 @@ see [Type].
 
 * A single type can be given as parameter
 * It is an error if the list of parameters is empty
-      
+
 [Type]: types_values_variables.md#typet
+
+#### Type SemVer [ ]
+
+Produces a new `SemVer` type that matches one or a (possibly disjunct) set of version ranges.
+For more information about the type see [SemVer].
+
+A SemVer type is constructed from one or more:
+
+* Strings - each in Semantic Version string form, which can represent a single versio or a range
+* An instance of SemVer
+* An instance of SemVerRange
+
+[SemVer]: types_values_variables.md#semverversion-ranges
 
 Function Calls
 ---
@@ -1714,6 +1737,7 @@ Syntax:
   * if the option is a `Regexp` the value must be a string for the match to trigger
   * if the option is a `Type` and the value is not, the option matches if the value is an
     instance of the type.
+  * if the option is a `SemVerRange` the value matches using operator `=~` semantics (version in range)
   * the option matches if the option and value both are of `Array` type, have the same
     length, and all entries in the option match the corresponding entry in the value (using
     the case matching rules recursively).
