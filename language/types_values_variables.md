@@ -611,9 +611,9 @@ the specificity of the mapped type; for example, different formats can be used f
 | Format  | Integer Formats
 | ------  | ---------------
 | d       | Decimal, negative values produces leading '-'
-| x X     | Hexadecimal in lower or upper case. Uses ..f/..F for negative values unless # is also used
-| o       | Octal. Uses ..0 for negative values unless # is also used
-| b B     | Binary with prefix 'b' or 'B'. Uses ..1/..1 for negative values unless # is also used
+| x X     | Hexadecimal in lower or upper case. Uses ..f/..F for negative values unless + is also used. A `#` adds prefix 0x/0X.
+| o       | Octal. Uses ..0 for negative values unless ´+´ is also used. A `#` adds prefix 0.
+| b B     | Binary with prefix 'b' or 'B'. Uses ..1/..1 for negative values unless `+` is also used
 | c       | numeric value representing a Unicode value, result is a one unicode character string, quoted if alternative flag # is used
 | s       | same as d, or d in quotes if alternative flag # is used
 | p       | same as d
@@ -623,7 +623,8 @@ Defaults to `d`.
 
 Note that the notation `..0`, `..1`, `..f`, `..F` indicates that value is truncated at the number of known
 value bits and that the actual leftmost bits depends on the physical representation (8, 16, 32, 64 bits). This because
-negative values are in 2's complement format and have the highest order bit set to 1.
+negative values are in 2's complement format and have the highest order bit set to 1. Use the `+` flag to instead output
+as negative value.
 
 ##### Float to String
 
