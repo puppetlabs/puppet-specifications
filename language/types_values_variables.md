@@ -756,6 +756,7 @@ the size constraint.
 
 An `Enum` without any given parameters matches all other Enum, and thus matches all possible Strings.
 
+When iterated over, an enum will present each unique value in lexiographical order.
 
 #### Type Algebra
 
