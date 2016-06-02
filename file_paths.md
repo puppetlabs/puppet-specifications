@@ -34,7 +34,7 @@ The files annotated by an '*' indicate that they are created by package installa
             environment.conf *
             manifests *
             modules *
-        hiera.yaml *                      # :hiera_config
+        hiera.yaml *                      # :hiera_config (deprecated location, puppet and hiera look here first)
         modules *                         # user modulepath
 
     /etc/puppetlabs/code-staging          # staging directory            n/a
@@ -44,7 +44,7 @@ The files annotated by an '*' indicate that they are created by package installa
             environment.conf
             manifests
             modules
-        hiera.yaml
+        hiera.yaml                        # only if using deprecated default location
         modules
 
     /etc/puppetlabs/mcollective *
@@ -60,6 +60,7 @@ The files annotated by an '*' indicate that they are created by package installa
         custom_trusted_oid_mapping.yaml   # :trusted_oid_mapping_file
         device.conf                       # :deviceconfig
         fileserver.conf                   # :fileserverconfig
+        hiera.yaml *                      # :hiera_config
         puppet.conf *                     # :config
         routes.yaml                       # :route_file
         ssl                               # :ssldir                      /etc/puppet/ssl
@@ -178,7 +179,7 @@ create a `puppet` user or group.
             environment.conf *
             manifests *
             modules *
-        hiera.yaml *                          # :hiera_config
+        hiera.yaml *                          # :hiera_config (deprecated location, puppet and hiera look here first)
         hieradata *                           # n/a
         modules *                             # user modulepath
 
@@ -219,6 +220,7 @@ create a `puppet` user or group.
             custom_trusted_oid_mapping.yaml   # :trusted_oid_mapping_file
             device.conf                       # :deviceconfig
             fileserver.conf                   # :fileserverconfig
+            hiera.yaml *                      # :hiera_config
             puppet.conf *                     # :config
             routes.yaml                       # :route_file
             ssl                               # :ssldir
