@@ -8,7 +8,7 @@ This table specifies the file paths in a Puppet installation and the correspondi
 * [puppet-agent (*nix)](#puppet-agent-nix)
 * [puppet-agent (Windows)](#puppet-agent-windows)
 * [puppet-agent (non-root)](#puppet-agent-non-root)
-* [puppet-db](#puppet-db)
+* [puppetdb](#puppetdb)
 * [puppetserver](#puppetserver)
 * [puppetmaster](#puppetmaster)
 * [Notes](#notes)
@@ -25,7 +25,7 @@ The files annotated by an '*' indicate that they are created by package installa
     /etc/puppetlabs/client-tools *        # default client tool settings
         puppet-access.conf *
         puppet-orchestrator.conf *
-        puppet-db.conf *
+        puppetdb.conf *
 
     /etc/puppetlabs/code *                # :codedir                     contents moved from :confdir
         environments *                    # :environmentpath
@@ -170,7 +170,7 @@ create a `puppet` user or group.
     C:\ProgramData\PuppetLabs\client-tools    # default client tool settings
         puppet-access.conf *
         puppet-orchestrator.conf *
-        puppet-db.conf *
+        puppetdb.conf *
 
 
     C:\ProgramData\PuppetLabs\code *          # :codedir                     contents moved from C:\ProgramData\PuppetLabs\puppet\etc (:confdir)
@@ -346,7 +346,7 @@ On Windows, when not running on the SYSTEM account
 
 These sections describe other Puppet packages that rely on puppet-agent to create the initial directory layout. It does not attempt to specify the full set of file paths for these packages, just cases where the other package has a dependency on puppet-agent.
 
-# puppet-db
+# puppetdb
 
     /etc/puppetlabs/puppet
         puppetdb.conf
