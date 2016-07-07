@@ -7,7 +7,7 @@ Grammar
 ---
 
     FunctionDefinition
-      : 'private'? 'function' parameters = ParameterList? '{' statements += statements '}'
+      : 'function' parameters = ParameterList? '{' statements += statements '}'
       ;
       
     ParameterList
@@ -18,13 +18,12 @@ Grammar
      : type=Expression<Type>? captures_rest='*'? name=QualifiedName ('=' value = Expression)?
      ;
      
-The `Parameter` definition is the same as for Lambda (after PUP-514 is merged).
+The `Parameter` definition is the same as for Lambda.
 
-* Only `FunctionDefinition` and `Lambda` can use `captures_rest` since they use arguments passed
-  'by position'.
+* Only `FunctionDefinition` and `Lambda` can use `captures_rest` in their `ParameterList` since they use arguments passed 'by position'.
 * A `captures_rest` parameter (if used), must be placed last in the list
 * A parameter with a default value can not be placed after one that that does not have one.
-* A default expression may refer to parameters defined in a parameter that is to the left of it. 
+* A default expression may refer to parameters defined in a parameter that is to the left of it. (once PUP-1985 is implemented - undefined otherwise)
 * The default expressions are evaluated in the **function's closure scope** (i.e. global scope), with
   the exception of parameters defined in the function list, such that:
   * it is an error to refer to a (non '::' anchored) variable name that appears as a parameter
@@ -43,150 +42,109 @@ The above rules for `captures_rest` are motivated by the thought that the most c
 not to pass multiple arrays, and it is more convenient to write `foo(String *$rest)` then to have to write `foo(Array[String] *$rest)`, since the `*` already implies `Array`. The consequence is when using that shorthand notation is that an array of arrays must be written `Array[Array[T]]` - which is expected to be far more uncommon, than either capping the list
 (e.g. `foo(Array[String,1,10] *$rest)`, or passing a variable number of arrays.
 
-Which option is best?
-
-a) Require always specifying `Array[T]` ?
-b) Allow `T (T ∉ Array)` to be shorthand for `Array[T]` ?
+See [Parameter Scope][1] for more information about scopig rules an variable access in a default value expression.
 
 Lambda Support
 ---
-The language handles a Lambda given in a call as an extra argument that is always delivered last - 
-even after a captures-rest. The lambda is either present or not.
-
-A function can declare that it accepts a lambda, by typing the last parameter as a `Callable`.
-If the last parameter is a captures-rest (irrespective of if it is `Callable` or not), this is treated as the function not supporting a lambda, and it is an error to call it with one.
-
-If last parameter after (optional) captures-rest parameter is a callable variant, a lambda
-may be given in the call to the function - as shown in the table below
-
-| given last (non captures-rest) type     | meaning
-| ---                                     | ---
-| `Callable`                              | required lambda (any signature)
-| `Optional[Callable]`                    | optional lambda (any signature)
-| `Variant[<callable variants>]`          | requires one of the lambda signatures
-| `Optional[Variant[<callable variant>]`  | optionally one of the lambda signatures
-
-When a lambda is optional and not lambda is given in a call, the parameter will be bound to
-`undef`.
-
-Calling a Lambda
----
-Calling a lambda (any callable) may be done by applying the `()` operator.
-
-    function(Array $arr, Callable $block) {
-      $arr.each |$x| { $block($x) }
-    }
-
-The above is the same (albeit slower) as calling each directly with the block. 
-
-Since the function API treats a last parameter being a Callable special, it can be passed
-to functions that accepts a block directly - like this:
-  
-    function(Array $arr, Callable $block) {  
-      $arr.each($block)
-    }
-
-To call a lambda, the variable holding the block is simply called.
-
-Call Rules:
-
-* A name can be called (i.e. like it is now done)
-* An expression that evaluates to Callable can be called
-* Any other result raises an error
-
-**NOTE** We may have to wait with supporting calling callables until we have fixed scope
-since it is not safe to return a lambda and use it later due to the scope implementation in 3x.
-There is no (non expensive) way of asserting that a function does not leak a Callable.
-
-Type of Given Block
----
-Since the function can use a Variant type, it is not known which of the allowed
-Callable signatures that was given. The (not yet implemented) type_of(instance) function
-will return the Callable (or a subtype of it) that can be used in a switch. This is useful if
-a function wants to take alternative paths depending on the number of parameters in the Callable.
+Functions written in the Puppet Language does not support lambdas / code blocks. While it is
+possible to call a puppet function with a lambda, and possibly also type a parameter as accepting a `Callable` parameter, this can not be put to any practical use since there is no support for calling the given block. It expected that this will be supported in a later version of this specification. Until then, the behavior of calling a puppet function with a code block is undefined.
 
 
 Function Definition - Scope & Autoloading
 ---
-Puppet Functions are autoloaded from modules. They are located under <module-root>/functions.
-The filename must match the simple (non namespaced name part) of the function. Thus, a function 'min' in module 'testmodule' is placed like this:
+
+### Autoloading
+
+Namespaced Puppet Functions are auto loaded from modules and the environment when located under <module-root>/functions or <environment-root>/functions respectively. 
+
+Auto loaded puppet functions are always namespaced; in a module using the module name, and in an environment by using the special name `environment` (i.e. not the *name* of the environment since that typically changes as code is being developed, tested, put into production and then maintained, etc.).
+
+The name of the .pp file must match the simple (non namespaced name part) of the function. Thus, a function **'testmodule::min'** in module 'testmodule' is located like this:
 
     testmodule
       |- functions
          | min.pp
-         
-The functions defined this way in modules must be name-spaced. Thus the contents of this `min.pp` is:
+
+With the following contents in `min.pp` (note use of full namespace):
 
     function testmodule::min($a, $b) {
       # ...
     }
 
-It is allowed to defined Puppet Functions in the environment's logic (i.e. `site.pp`, or in the manifests loaded from the manifests directory). It is also allowed to defined functions directly
-on the command line when running puppet apply.
+And a function **'environment::min'** in a 'production' environment like this:
 
-Rules:
+    production
+      |- functions
+         | min.pp
+         
+With the following contents in `min.pp` (note use of namespace 'environment'):
 
-* autoloaded functions in modules must have qualified names
-* functions that are defined in modules, but that are not autoloaded (loaded as part of something   
-  else) should also be defined in the module's namespace (it should be an error if an attempt is 
-  made to name it differently).
-* functions defined in the environment may have any name (global or namespaced)
-* A function loaded in the environment shadows functions from modules, but not system functions
-
-
-Related Functionality
----
-### Function Reference
-
-Other ways to obtain a callable (than to give a lambda to a function) are to:
-
-* add a `lambda` function that simply returns the lambda given to it
-* add an unary function reference operator (`&`) that turns a reference to a function into a `Callable`.
-
-Here is the `lambda` function written in Puppet:
-
-     function lambda(Callable $block) { $block }
-
-Here, the `&` operator is used to reference a function.
-
-     function min($a, $b) { if $a < $b { $a } else { $b } }
-     
-     [1,295,26,9,2,5,7,0].reduce(&min)
-     
-     # the last expression is equivalent to
-     [1,295,26,9,2,5,7,0].reduce() |$memo, $x| { min($memo, $x) }
-
-Rules:
-
-* A `&NAME` must resolve to an existing function or an error is raised
-* It produces a `Callable` with the signature of the found function
-* It is illegal to apply the & operator to anything except a NAME
-
-### Unfold (PUP-2240, merged)
-
-The splat/unfold operator is related to 'captures-rest', but is really a general purpose operator. It
-unfolds the RHS if it is an Array, and it can be used to unfold into literal lists, function arguments, and case options. If given something that is not an array, it is first turned into one.
-If used where Unfold has no special meaning, the result is an array (a hash is turned into an array,
-and all other values are wrapped in an array).
-
-Grammar
-
-    UnfoldExpression
-      : '*' Expression
-      ;
-      
-The UnfoldExpression has no effect unless it is used in one of the positions where it has special
-meaning.
-
-    $a = [1,2,3]
-    foo(*$a) # same as foo(1, 2, 3)
-    
-    case $something {
-      *$a: { # matches 1 or 2 or 3
-      }
+    function environment::min($a, $b) {
+      # ...
     }
 
-    $b = [10, *$a, 20] # creates [10, 1, 2, 3, 20]
-    
-This operator is important as it removes the need for functions to have complex signatures
-that either accepts individual values or arrays - it is instead up to the caller.    
+Nested name spaces are allowed in both modules and the environment - e.g. a function **'testmodule::math::min'** would be located like this:
+
+    testmodule
+      |- functions
+         |- math
+            | min.pp
+
+With the following contents in `min.pp` (note use of full namespace):
+
+    function testmodule::math::min($a, $b) {
+      # ...
+    }
+
+Rules:
+
+* Loading is performed by mapping the fully qualified function name to a 4.x Ruby function path, and a puppet function path, then:
+  * if the ruby path exist this 4.x Ruby function is loaded (and search stops)
+  * if the puppet path exists this Puppet function is loaded (and search stops)
+  * last, an attempt is made to load a 3.x Ruby function
+* Files containing an auto loaded function may only contain a single function (or an error is raised and evaluation stops).
+
+> Note:
+> 
+> Function loading only searches a set of distinct paths based on the fully qualified name of
+> the function.
+> Contrast this with other kinds of automatic loading of classes and user defined resource types
+> where a search is made using a widening of the namespace, and finally reaching
+> a modules `manifests/init.pp`.
+> 
+> **Specifically**: Autoloading a function from a module does not trigger loading of the module's 
+> `manifests/init.pp` (nor is such initialization required to call a function from a module).
+> If an author of a module provides functions that require that the module's `manifests/init.pp`
+> is loaded, the function should include the module's class, or require that the caller first
+> includes the module's class).
+>
+> **Specifically**: a file `init.pp` under the `functions` directory of a module or the environment
+> does not have any special rules associated with it.
+> If that file exists it is supposed to contain a function named `<module>::init`.
+> Contrast this with `manifests/init.pp` which represents the module it is in. There is no such 
+> concept for functions. 
+
+### Defining functions in Manifests
+
+It is possible to define a Puppet Function in any manifest. Such functions will come into existence when the manifest in question is loaded for some reason other than calling the function (e.g. from 'manifests/site.pp' or when including a class).
+
+The following restrictions/rules/conventions apply on naming non-auto-loaded functions:
+
+* A function defined in a module **must** be qualified with the module's namespace
+* A function defined in an environment's main manifest **should** begin with the special namespace 'environment'
+  * *except* when patching of a function is required - then the name may shadow other functions defined in the same environment, or the modules in this environment. Functions provided by the puppet runtime cannot be shadowed. A shadowed function cannot be called.
+
+Note that the term "environment's main manifest" means logic loaded from the command line (`apply -e`), the Puppet setting `code`, the code loaded from the setting `manifest` (e.g. the `manifests/site.pp` file, or a directory of manifests).
+
+The use cases for using functions defined in manifests are:
+
+* Defining several helper functions that are used locally in a class/user defined type. (Although not yet provided in the language, these functions would typically be made `private` to the module).
+* For patching:
+  * To define a single word (non name-spaced) function (not recommended in general, useful for integrating code that needs such a function and where the original function's implementation is flawed/unwanted)
+  * To override/shadow functions in modules that are flawed/unwanted.
+  * To experiment during development
+ 
+> Note: In the current implementation of Puppet 4.3.x the naming restrictions on non-auto-loaded
+> functions are not enforced. They are expected to be enforced in some future release.
+
+[1]: parameter_scope.md

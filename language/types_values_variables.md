@@ -9,7 +9,12 @@ The Kinds of Types and Values
 ---
 There are two kinds of types in the Puppet Programming Language; *Puppet Types*, and the types of the underlying runtime "platform" language - the *Platform Types*.
 
-Many of the types in the type system are *Parameterized Types* which means that a *Base Type* can be further specialized. 
+Many of the types in the type system are *Parameterized Types* which means that a *Base Type* can be further specialized.
+
+When describing types, the term **assignability** (in different forms) is used to describe the relationship between two types such that
+a type T is assignable from a type T2 if all possible values having type T2 are also values of type T. This can also be expressed as
+"a type T2 is assignable to a type T", or "T accepts T2" (as a short form of "A variable typed T accepts an assignment of a value of
+type T2"). As an example we can say; "The type ´Numeric´ is assignable from the type ´Integer´".
 
 ### Platform Types
 
@@ -26,9 +31,11 @@ As an example, if there is a puppet extension written in Ruby with the name `Pup
 ### The Undef Type
 
 There is a special undefined/null/nil type - called `Undef`; the type of the expression `undef`.
-Values of the `Undef` type can always undergo a widening reference conversion to any other type. The reverse is however not true; only the value `undef` has the type `Undef`.
 
-A value of `Undef` type is assignable to any other *optional* type with the meaning *it is allowed to have no value*. This is achieved by using the type `Optional[T]` instead of just the type `T`, by using `Any` to accept anything, or using `Data` to accept a pre-defined set of data types (including `Undef`).
+A value of `Undef` type is assignable to any other *optional* type with the meaning *it is allowed to have no value*.
+This is achieved by using the type `Optional[T]` instead of just the type `T`, by using `Any` to accept anything,
+or using `Data` to accept a pre-defined set of data types (including `Undef`), or using a `Variant` where one of the
+accepted types accepts an `Undef` value.
 
 
 ### The Default Type
@@ -64,10 +71,13 @@ the conceptual categories **Data Types** e.g.:
 * `Tuple`; an `Array` where each slot is typed individually
 * `Struct`; a Hash where each entry is individually named and typed
 * `Optional`; either `Undef` or a specific type
+* `NotUndef`; a type that represents all types not assignable from the `Undef` type
 * `Variant`; one of a selection of types
 * `Enum`; an enumeration of strings
 * `Pattern`; an enumeration of regular expression patterns
 * `Any`; the parent type of all types
+* `Iterable`; a type that represents all types that allow iteration
+* `Iterator`; a special kind of lazy `Iterable` suitable for chaining
 
 (The term *abstract* denotes that instances of such a type are always an instance of some other
 *concrete* type).
@@ -90,14 +100,34 @@ Optional Typing
 ---
 Typing is optional. When something is not typed, it has the type `Any`.
 
+Type Aliases
+---
+It is possible to create type aliases in the Puppet Programming Language. An aliased type is
+indistinguishable from the original type.
+
+~~~
+type MyInteger = Integer
+~~~
+
+Recursive Types
+---
+It is possible to create type aliases for recursive types. An alias definition may refer to itself.
+
+~~~
+type IntegerTree = Array[Variant[Integer, IntegerTree]]
+~~~
+
+For more details see the type alias expression.
+
 The Type System
 ===============
 
 A type is denoted by an upper cased bare word; e.g. `Integer` (an integer value) optionally followed
 by one or more type parameters enclosed in square brackets `[]`, e.g. `Integer[1,10]` (integer values
-1 to 10 inclusive), or `Array[String[1]]` (an array of non empty strings). See the description of each type for the available type parameters.
+1 to 10 inclusive), or `Array[String[1]]` (an array of non empty strings). See the description of each
+type for the available type parameters.
 
-The type hierarchy is shown in the figure below. (A single capital letter denotes a 
+The type hierarchy is shown in the figure below. (A single capital letter denotes a
 reference to a type, lower case type parameters have special processing rules as shown
 in section specific to each type). Note that a type supporting parameters also may be referenced
 without any parameters, in which case type specific rules apply. Also note that the same type
@@ -118,6 +148,9 @@ may appear more than once in the hierarchy (e.g. a `Scalar` is both `Any` and `D
        |  |- Boolean
        |  |- Regexp[pattern_string]
        |
+       |- SemVer
+       |- SemVerRange
+       |
        |- Collection
        |  |- Array[T]
        |  |  |- Tuple[*types, from, to]
@@ -126,6 +159,17 @@ may appear more than once in the hierarchy (e.g. a `Scalar` is both `Any` and `D
        |
        |- Variant[*types]
        |- Optional[type]
+       |- NotUndef[type]
+       |
+       |- Iterator[type]
+       |- Iterable[type]
+       |  |- String
+       |  |- Array[type]
+       |  |- Hash[type]
+       |  |- Integer[from,to]
+       |  |- Type[Integer[from,to]]
+       |  |- Type[Enum[*strings]]
+       |  |- Iterator[type]
        |
        |- CatalogEntry
        |  |- Resource[type_name, title]
@@ -208,7 +252,7 @@ hash element key may not be `Undef`.
     Data ∪ Hash[Scalar, Data]   → Data
     Data ∪ Undef                → Data
     Data ∪ (T ∉ Data)           → Any
- 
+
 ### Scalar
 
 Represents the abstract notion of "value", its subtypes are `Numeric`, `String` (including subtypes
@@ -231,6 +275,35 @@ Represents the abstract notion of "number", its subtypes are `Integer`, and `Flo
     Numeric ∪ (T ∈ Scalar)     → Scalar
     Numeric ∪ (T ∉ Scalar)     → Any
 
+#### Numeric.new
+
+Since version 4.5.0
+
+A new `Integer` or `Float` can be created from `Integer`, `Float`, `Boolean` and
+`String` values.
+
+~~~ puppet
+
+Callable[Variant[Numeric, Boolean, String]]
+
+~~~
+
+* If the value has a decimal period, or if given in scientific notation
+  (e/E), the result is a `Float`, otherwise the value is an `Integer`.
+* The conversion from `String` always uses a radix based on the prefix of the string.
+* Conversion from Boolean results in 0 for `false` and 1 for `true`.
+
+Example Converting to Numeric
+
+~~~ puppet
+
+$a_number = Numeric(true)    # results in 1
+$a_number = Numeric("0xFF")  # results in 255
+$a_number = Numeric("010")   # results in 8
+$a_number = Numeric("3.14")  # results in 3.14 (a float)
+
+~~~
+
 ### Integer ([from, to])
 
 Represents a range of integral numeric value. The default is the range MIN INTEGER to MAX INTEGER.
@@ -242,9 +315,8 @@ and MAX INTEGER=2^63-1.
 values outside of this range, such values cannot correctly be represented in catalogs and
 Puppet db.**
 
-The Integer type can optionally be parameterized with `from`, `to` values to provide a range.
-The range can be *ascending* or *descending*. (The direction is only important when iterating
-over the set of instances as the range of values is the same if `from > to` as when `from < to`).
+The `Integer` type can optionally be parameterized with `from`, `to` values to provide a range.
+The range must be *ascending*.
 
 If `from` is unassigned, the default is MIN INTEGER, and if `to` is unassigned, the default is MAX INTEGER.
 
@@ -271,22 +343,21 @@ if the lower and upper bounds are equal.
      Integer[1,10] > Integer[1,10]  # => false (not a subset, they are equal)
      Integer[1,10] >= Integer[1,10] # => true (they are equal)
      Integer[1,10] == Integer[1,10] # => true (they are equal)
-     
+
 Testing value against range:
 
      $value =~ Integer[1,10]
-     
+
      $value ? { Integer[1,10] => true }
 
      case $value {
        Integer[1,10] : { true }
      }
-          
+
 Iterating over an integer range:
 
      Integer[1,5].each |$x| { notice $x } # => notices 1,2,3,4,5
-     Integer[5,1].each |$x| { notice $x } # => notices 5,4,3,2,1
-     
+
      Integer[0, default].each |$x| { notice $x } # error, unbound range (infinite)
 
 #### Type Algebra on Integer
@@ -297,6 +368,53 @@ Iterating over an integer range:
     Integer ∪ (T ∈ Scalar)          → Scalar
     Integer ∪ (T ∉ Scalar)          → Any
     Integer[a, b] ∪ Integer[c, d]   → Integer[min(a, c), max(b,d)]
+
+#### Integer.new
+
+Since version 4.5.0
+
+A new `Integer` can be created from `Integer`, `Float`, `Boolean`, and `String` values.
+For conversion `from` String it is possible to specify the radix.
+
+| Radix Name      | Base   | Prefixes    |
+| ---             | ---    | ---         |
+| binary          |  2     | `0b` `0B`   |
+| octal           |  8     | `0`         |
+| decimal         | 10     | *no prefix* |
+| hexadecimal     | 16     | `0x` `0X`   |
+
+Signature:
+
+~~~ puppet
+
+type Radix = Variant[Default, Integer[2,2], Integer[8,8], Integer[10,10], Integer[16,16]]
+type 'NamedArgs   = Struct[{from => Convertible, Optional[radix] => Radix}]'
+Callable[Variant[String, Numeric, Boolean] Radix, 1, 2]
+Callable[NamedArgs]
+
+~~~
+
+* When converting from `String` the default radix is 10
+* If radix is not specified or set to `default` an attempt is made to detect the radix by
+  matching the radix prefix against the start of the string.
+  Strings without such a prefix are decimal.
+* Conversion from `String` accepts an optional sign in the string.
+* When radix is 2, 8, or 16, the conversion accepts an optional leading corresponding radix prefix.
+* Conversion from `Boolean` results in 0 for `false` and 1 for `true`.
+* Radix is only applicable to `String` conversion, and is ignored for all others.
+* `Float` value fractions are truncated (no rounding)
+
+Example Converting to Integer
+
+~~~ puppet
+
+$a_number = Integer("0xFF", 16)  # results in 255
+$a_number = Numeric("010")       # results in 8
+$a_number = Numeric("010", 10)   # results in 10
+$a_number = Integer(true)        # results in 1
+$a_number = Numeric("0x10", 10)  # this is an error. Prefix and radix does not match.
+
+~~~
 
 ### Float ([from, to])
 
@@ -323,6 +441,18 @@ You can learn more about floating point than you ever want to know from these ar
     Float ∪ (T ∉ Scalar)        → Any
     Float[a, b] ∪ Float[c, d]   → Float[min(a, c), max(b,d)]
 
+#### Float.new
+
+Since version 4.5.0
+
+A new `Float` can be created from `Integer`, `Float`, `Boolean`, and `String` values.
+For conversion from `String` both float and integer formats are supported.
+
+* For an integer, the floating point fraction of .0 is added to the value.
+* A boolean `true` is converted to 1.0, and a `false` to 0.0
+* In `String` format, integer prefixes for hex and binary radix are understood (but not octal since
+  floating point in string format may start with a '0').
+
 ### String([from, to])
 
 Represents a sequence of Unicode characters up to a maximum length of 2^31-1 (the maximum
@@ -339,7 +469,7 @@ range type.
 
     'abc' =~ String[1]   # true, has more than one character
     'abc' =~ String[1,2] # false, has more than two characters
-    
+
     $size = Integer[1,2]
     'abc' =~ String[$size] # false, has more than 2 characters
 
@@ -350,8 +480,8 @@ when the type system is used from Ruby logic.
 Given the input:
 
      ['a', 'b', 'c']
-     
-The type is inferred to `Array[String]`, internally the String type also holds the values 
+
+The type is inferred to `Array[String]`, internally the String type also holds the values
 ['a', 'b', 'c']]`. This allows type calculations to assert:
 
      ['a', 'b', 'c'] =~ Array[Pattern['a-z']]  # true
@@ -376,6 +506,243 @@ only, it can not be used in the Puppet Programming Language.
     String ∪ (T ∈ Scalar)  → Scalar
     String ∪ (T ∉ Scalar)  → Any
 
+#### String.new
+
+Since version 4.5.0
+
+Conversion to String is the most comprehensive conversion as there are many
+use cases where a String representation is wanted. The defaults for the many options
+have been chosen with care to be the most basic "value in textual form" representation.
+
+A new String can be created from all other data types. The process is performed in
+several steps - first the type of the given value is inferred, then the resulting type
+is used to find the most significant format specified for that type. And finally,
+the found format is used to convert the given value.
+
+The mapping from type to format is referred to as the format map. This map
+allows different formatting depending on type.
+
+Example: Positive Integers in Hexadecimal prefixed with '0x', negative in Decimal
+
+~~~ puppet
+
+$format_map = { 
+  Integer[default, -1] => "%d",
+  Integer[0, default] => "%#x"
+}
+String("-1", $format_map)  # produces '-1'
+String("10", $format_map)  # produces '0xa'
+
+~~~
+
+A format is specified on the form:
+
+~~~
+
+%[Flags][Width][.Precision]Format
+
+~~~
+
+`Width` is the number of characters into which the value should be fitted. This allocated space is
+padded if value is shorter. By default it is space padded, and the flag 0 will cause padding with 0
+for numerical formats.
+
+`Precision` is the number of fractional digits to show for floating point, and the maximum characters
+included in a string format.
+
+Note that all data type supports the formats `s` and `p` with the meaning "default string representation" and
+"default programmatic string representation" (as an example, a String is quoted in 'p' format).
+
+##### Signatures of String conversion
+
+~~~ puppet
+
+type Format = Pattern[/^%([\s\+\-#0\[\{<\(\|]*)([1-9][0-9]*)?(?:\.([0-9]+))?([a-zA-Z])/]
+type ContainerFormat = Struct[{
+  format         => Optional[String],
+  separator      => Optional[String],
+  separator2     => Optional[String],
+  string_formats => Hash[Type, Format]
+  }]
+type TypeMap = Hash[Type, Variant[Format, ContainerFormat]]
+type Formats = Variant[Default, String[1], TypeMap]
+
+Callable[Any, Formats]
+
+~~~
+
+Where:
+* `separator` is the string used to separate entries in an array, or hash (extra space should not be included at
+  then end), defaults to `","`
+* `separator2` is the separator between key and value in a hash entry (space padding should be included as
+  wanted), defaults to `" => ".
+* `string_formats` is a type to format map for values contained in arrays and hashes - defaults to `{Any => "%p"}`. Note that
+  these nested formats are not applicable to containers which are always formatted as per the top level format specification.
+
+Example Simple Conversion to String (using defaults)
+
+~~~ puppet
+
+$str = String(10)      # produces '10'
+$str = String([10])    # produces '["10"]'
+
+~~~
+
+Example Simple Conversion to String specifying the format for the given value directly
+
+~~~ puppet
+
+$str = String(10, "%#x")    # produces '0x10'
+$str = String([10], "%(a")  # produces '("10")'
+
+~~~
+
+Example Specifying type for values contained in an array
+
+~~~ puppet
+
+$formats = { Array => {format => '%(a', string_formats => { Integer => '%#x' } }
+$str = String([1,2,3], $formats) # produces '(0x1, 0x2, 0x3)'
+
+~~~
+
+Given formats are merged with the default formats, and matching of values to convert against format is based on
+the specificity of the mapped type; for example, different formats can be used for short and long arrays.
+
+##### Integer to String
+
+| Format  | Integer Formats
+| ------  | ---------------
+| d       | Decimal, negative values produces leading '-'
+| x X     | Hexadecimal in lower or upper case. Uses ..f/..F for negative values unless + is also used. A `#` adds prefix 0x/0X.
+| o       | Octal. Uses ..0 for negative values unless ´+´ is also used. A `#` adds prefix 0.
+| b B     | Binary with prefix 'b' or 'B'. Uses ..1/..1 for negative values unless `+` is also used
+| c       | numeric value representing a Unicode value, result is a one unicode character string, quoted if alternative flag # is used
+| s       | same as d, or d in quotes if alternative flag # is used
+| p       | same as d
+| eEfgGaA | converts integer to float and formats using the floating point rules
+
+Defaults to `d`.
+
+Note that the notation `..0`, `..1`, `..f`, `..F` indicates that value is truncated at the number of known
+value bits and that the actual leftmost bits depends on the physical representation (8, 16, 32, 64 bits). This because
+negative values are in 2's complement format and have the highest order bit set to 1. Use the `+` flag to instead output
+as negative value.
+
+##### Float to String
+
+| Format  | Float formats
+| ------  | -------------
+| f       | floating point in non exponential notation
+| e E     | exponential notation with 'e' or 'E'
+| g G     | conditional exponential with 'e' or 'E' if exponent < -4 or >= the precision
+| a A     | hexadecimal exponential form, using 'x'/'X' as prefix and 'p'/'P' before exponent
+| s       | converted to string using format p, then applying string formatting rule, alternate form # quotes result
+| p       | f format with minimum significant number of fractional digits, prec has no effect
+| dxXobBc | converts float to integer and formats using the integer rules
+
+Defaults to `p`
+
+##### String to String
+
+| Format | String
+| ------ | ------
+| s      | unquoted string, verbatim output of control chars
+| p      | programmatic representation - strings are quoted, interior quotes and control chars are escaped
+| C      | each :: name segment capitalized, quoted if alternative flag # is used
+| c      | capitalized string, quoted if alternative flag # is used
+| d      | downcased string, quoted if alternative flag # is used
+| u      | upcased string, quoted if alternative flag # is used
+| t      | trims leading and trailing whitespace from the string, quoted if alternative flag # is used
+
+Defaults to `s` at top level and `p` inside array or hash.
+
+##### Boolean to String
+
+| Format    | Boolean Formats
+| ----      | -------------------   
+| t T       | 'true'/'false' or 'True'/'False' , first char if alternate form is used (i.e. 't'/'f' or 'T'/'F').
+| y Y       | 'yes'/'no', 'Yes'/'No', 'y'/'n' or 'Y'/'N' if alternative flag # is used
+| dxXobB    | numeric value 0/1 in accordance with the given format which must be valid integer format
+| eEfgGaA   | numeric value 0.0/1.0 in accordance with the given float format and flags
+| s         | 'true' / 'false'
+| p         | 'true' / 'false'
+
+##### Regexp to String
+
+| Format    | Regexp Formats (%/)
+| ----      | ------------------
+| s         | / / delimiters, alternate flag replaces / delimiters with quotes
+| p         | / / delimiters
+
+##### Undef to String
+
+| Format    | Undef formats
+| ------    | -------------
+| s         | empty string, or quoted empty string if alternative flag # is used
+| p         | 'undef', or quoted '"undef"' if alternative flag # is used
+| n         | 'nil', or 'null' if alternative flag # is used
+| dxXobB    | 'NaN'
+| eEfgGaA   | 'NaN'
+| v         | 'n/a'
+| V         | 'N/A'
+| u         | 'undef', or 'undefined' if alternative # flag is used
+
+##### Default value to String
+
+| Format    | Default formats
+| ------    | ---------------
+| d D       | 'default' or 'Default', alternative form # causes value to be quoted
+| s         | same as d
+| p         | same as d
+
+##### Array & Tuple to String
+
+| Format    | Array/Tuple Formats
+| ------    | -------------
+| a         | formats with `[ ]` delimiters and `,`, alternate form `#` indents nested arrays/hashes
+| s         | same as a
+| p         | same as a
+
+See "Flags" `<[({\|` for formatting of delimiters, and "Additional parameters for containers; Array and Hash" for
+more information about options.
+
+The alternate form flag `#` will cause indentation of nested array or hash containers. If width is also set
+it is taken as the maximum allowed length of a sequence of elements (not including delimiters). If this max length
+is exceeded, each element will be indented.
+
+##### Hash & Struct to String
+
+| Format    | Hash/Struct Formats
+| ------    | -------------
+| h         | formats with `{ }` delimiters, `,` element separator and ` => ` inner element separator unless overridden by flags 
+| s         | same as h
+| p         | same as h
+| a         | converts the hash to an array of [k,v] tuples and formats it using array rule(s)
+
+See "Flags" `<[({\|` for formatting of delimiters, and "Additional parameters for containers; Array and Hash" for
+more information about options.
+
+The alternate form flag `#` will format each hash key/value entry indented on a separate line.
+
+##### Type to String
+
+| Format    | Array/Tuple Formats
+| ------    | -------------
+| s         | The same as p, quoted if alternative flag # is used
+| p         | Outputs the type in string form as specified by the Puppet Language
+
+##### Flags
+
+| Flag     | Effect 
+| ------   | ------
+| (space)  | space instead of + for numeric output (- is shown), for containers skips delimiters
+| #        | alternate format; prefix 0x/0x, 0 (octal) and 0b/0B for binary, Floats force decimal '.'. For g/G keep trailing 0.
+| +        | show sign +/- depending on value's sign, changes x,X, o,b, B format to not use 2's complement form
+| -        | left justify the value in the given width
+| 0        | pad with 0 instead of space for widths larger than value
+| <[({\|   | defines an enclosing pair <> [] () {} or \| \| when used with a container type
+
 ### Enum[*strings]
 
 Represents all strings that are equal to one of the string type parameters given to the `Enum` type.
@@ -389,7 +756,8 @@ the size constraint.
 
 An `Enum` without any given parameters matches all other Enum, and thus matches all possible Strings.
 
-     
+When iterated over, an enum will present each unique value in lexiographical order.
+
 #### Type Algebra
 
 The commonality of two `Enum` types is the set operation enum | enum.
@@ -409,7 +777,7 @@ Example:
 
      Pattern['.*']
      Pattern[/^all of me$/]
-     
+
 #### Type Algebra
 
 The commonality of two Pattern types is the set operation pattern | pattern:
@@ -419,6 +787,29 @@ The commonality of two Pattern types is the set operation pattern | pattern:
 ### Boolean
 
 The types of the boolean expressions `true` and `false`.
+
+#### Boolean.new
+
+Since version 4.5.0
+
+Accepts a single value as argument:
+
+* Float 0.0 is `false`, all other float values are `true`
+* Integer 0 is `false`, all other integer values are `true`
+* Strings
+  * `true` if string is one of 'true', 'yes', or 'y' (case independent compare)
+  * `false` if string is one of 'false', 'no', or 'n' (case independent compare)
+* Boolean is already boolean and is simply returned
+
+Examples of converting to Boolean:
+
+~~~ puppet
+$b2 = Boolean('true')  # true
+$b2 = Boolean('false') # false
+$b1 = Boolean('YEs')   # true
+$b1 = Boolean(0)       # false
+
+~~~
 
 ### Regexp[pattern]
 
@@ -442,12 +833,14 @@ A `Regexp` `Type` is created by:
 See also Match Expression (`=~` and `!~`) for more usage of the `Regexp` type.
 
 The syntax of the Regular Expression is defined by Ruby's implementation. Puppet's regular
-expressions does not support `\A` and `\Z` and does not support options. If `\A` or `\Z` are used
-in the regular expression string, these are removed. If an attempt is made to specify options,
+expressions does not support options. If an attempt is made to specify options,
 this will result in an error (e.g. `/.*/m`).
 
 The result of `Regexp[pattern]` is a parameterized `Regexp` type that in certain operations
 can be used instead of a literal regular expression.
+
+If a non parameterized `Regexp` is used where a pattern is required, the pattern defaults to
+the empty pattern `//`.
 
 <table><tr><th>Note</th></tr>
 <tr><td>
@@ -466,18 +859,130 @@ can be used instead of a literal regular expression.
     Regexp[?]    ∪  (T ∈ Scalar)   → Scalar
     Regexp[?]    ∪  (T ∉ Scalar)   → Any
 
+### SemVer[version-ranges]
+
+Since Version 4.5.0
+
+Represents all [Semantic Versions](http://semver.org/) which can be narrowed to a single specific
+semantic version, or to a disjunct set of version ranges.
+
+An instance of this type describes a single version.
+
+The `SemVer` type is accompanied by the `SemVerRange` type which as a type represents all ranges
+and which's instances represent a contiguous version range.
+
+A `SemVer` type may be parameterized with one or more of:
+
+* SemVer instances
+* Strings representing single versions or ranges of versions
+* SemVerRange instances representing a contiguous version range
+
+An instance of `SemVer` can be created from a String, individual values, or a hash of individual values.
+
+A SemVer instance consists of up to 5 segments:
+
+* major version
+* minor version
+* patch (version)
+* prerelease tag
+* build tag
+
+Examples
+
+~~~ puppet
+
+$t = SemVer[SemVerRange('>=1.0.0 <2.0.0'), SemVerRange('>=3.0.0 <4.0.0')]
+notice(SemVer('1.2.3') =~ $t) # true
+notice(SemVer('2.3.4') =~ $t) # false
+notice(SemVer('3.4.5') =~ $t) # true
+
+~~~
+
+
+#### SemVer Type Algebra
+
+* When type is inferred, adjacent and overlapping version ranges will be merged.
+* When a parameterized SemVer is created, adjacent and overlapping version ranges will be normalized (merged)
+* A SemVer instance matches a SemVerType if it is enclosed in one of the types ranges
+
+#### SemVer.new
+
+Signatures:
+
+~~~
+type PositiveInteger = Integer[0,default]
+type SemVerQualifier = Pattern[/\A(?<part>[0-9A-Za-z-]+)(?:\.\g<part>)*\Z/]
+type SemVerString = String[1]
+type SemVerHash =Struct[{
+  major                =>PositiveInteger,
+  minor                =>PositiveInteger,
+  patch                =>PositiveInteger,
+  Optional[prerelease] =>SemVerQualifier,
+  Optional[build]      =>SemVerQualifier
+}]
+
+function SemVer.new(SemVerString $str)
+function SemVer.new(
+        PositiveInteger           $major
+        PositiveInteger           $minor
+        PositiveInteger           $patch
+        Optional[SemVerQualifier] $prerelease = undef
+        Optional[SemVerQualifier] $build = undef
+        )
+function SemVer.new(SemVerHash $hash_args)
+~~~
+
+### SemVerRange
+
+A SemVerRange represents all Semantic Version Ranges. New ranges an be constructed using `SemVerRange.new`.
+
+The string format of a SemVerRang is specified by the [SemVer Range Grammar](https://github.com/npm/node-semver#range-grammar).
+The logical or `||` operator is not supported in the Puppet Type System SemVerRange type.
+
+#### SemVerRange Type Algebra
+
+* A SemVerRange type matches all instances of SemVerRange
+* SemVerRange < Any
+
+#### SemVerRange.new
+
+Signatures:
+
+~~~ puppet
+
+type SemVerRangeString = String[1]
+type SemVerRangeHash = Struct[{
+  min                   => Variant[default, SemVer],
+  Optional[max]         => Variant[default, SemVer],
+  Optional[exclude_max] => Boolean
+}]
+
+function SemVerRange.new( SemVerRangeString $semver_range_string)
+
+function SemVerRange.new(
+           Variant[default,SemVer] $min
+           Variant[default,SemVer] $max
+           Optional[Boolean]       $exclude_max = undef
+         }
+
+function SemVerRange.new(SemVerRangeHash $semver_range_hash)
+~~~
 
 ### Array[V, from, to]
 
 `Array` represents an ordered collection of elements of type `V`, optionally constrained in
-size by the integer range parameters *from* and *to*.
- 
+size by the integer range parameters *from* and *to*. 
+
 The first index in an array instance is a non negative integer and starts with 0.
 (Operations in the Puppet Language allows negative values to be used to perform different calculations w.r.t index). See Array [] operation (TODO: REFERENCE TO THIS EXPRESSION SPEC).
 
 The type of `V` is unrestricted.
 
 When used without parameters, the default is `Array[Data]`.
+
+An empty array is denoted with `Array[0, 0]`.
+It is illegal to specify the element type for an empty array. An empty array is accepted by
+any typed arraay that allows *from* to be 0.
 
 #### Type Algebra on Array
 
@@ -487,9 +992,32 @@ When used without parameters, the default is `Array[Data]`.
     Array[R,a,b] ∪  Array[Q,c,d]  → Array[R ∪ Q, min(a,c), max(b,d)]
     Array[?]     ∪  Hash[?,?]     → Collection
 
+#### Array.new
+
+Since version 4.5.0
+
+When given a single value as argument:
+
+* A non empty `Hash` is converted to an array matching `Array[Tuple[Any,Any], 1]`
+* An empty `Hash` becomes an empty array
+* An `Array` is simply returned
+* An `Iterable[T]` is turned into an array of `T` instances
+
+When given a second Boolean argument
+* if `true`, a value that is not already an array is returned as a one element array
+* if `false`, (the default), converts the first argument as shown above.
+
+Example ensuring value is array
+
+~~~ puppet
+
+$arr = Array($value, true)
+
+~~~
+
 ### Hash[K, V, from, to]
 
-`Hash` represents an unordered collection of associations between a key (of `K` type), and
+`Hash` represents an ordered collection of associations between a key (of `K` type), and
 a value (of `V` type), optionally constrained in size by the integer range parameters *from* and
 *to*.
 
@@ -497,6 +1025,15 @@ The types of `K` and `V` are unrestricted.
 
 While the key is generally not restricted, it is recommended that `Undef` is not accepted
 as a key (not accepting `Undef` is the default, and default for hashes that conforms to the `Data` type).
+
+The hash maintains the order of the entries so that iteration over the hash yields the entries
+in the order they were inserted. When hashes are merged (using the `+` operator), the order of the keys
+in the constructed hash have the same order as the LHS side keys, and the RHS keys not present in the LHS
+are inserted at the end of the resulting hash in their RHS order.
+
+An empty hash is denoted with `Hash[0, 0]`.
+It is illegal to specify the key and/or element type for an empty hash.
+An empty hash is accepted by any typed hash that allows *from* to be 0. 
 
 #### Type Algebra on Hash
 
@@ -506,18 +1043,58 @@ as a key (not accepting `Undef` is the default, and default for hashes that conf
     Hash[?]       ∪  (T ∈ Collection)   → Collection
     Hash[?]       ∪  (T ∉ Collection)   → Any
 
+#### Hash.new
+
+Since version 4.5.0
+
+Accepts a single value as argument:
+
+* An empty `Array` becomes an empty Hash
+* An `Array` matching `Array[Tuple[Any,Any], 1]` is converted to a hash where each tuple describes a key/value entry
+* An `Array` with an even number of entries is interpreted as `[key1, val1, key2, val2, ...]`
+* An `Iterable` is turned into an `Array` and then converted to Hash as per the array rules
+* A `Hash` is simply returned
 
 ### Struct Type
 
-The `Struct` type fully specifies the content of a `Hash`. The type is parameterized with a hash where the keys must be non empty strings, and the values must be types.
+The `Struct` type fully specifies the content of a `Hash`. The type is parameterized with a hash where each key must be a type from which a non empty string can be derived, and the values must be types.
 
-Here is an example, where the hash must contain the keys mode and path, and mode must have a value that is one of the strings "read", "write", or "update", and the key path must have a `String` value that is at least 1 character in length.
+Each key should be either a literal `key`, `NotUndef[key]` or `Optional[key]`.
+
+A key in the form of a string literal will be converted into its corresponding `String` type. It becomes `Optional[key]` if the value type is assignable from `Undef`. This means that by default, keys are optional if their values are. An explicit `NotUndef` or `Optional` wrapper can be added to make the key behavior explicit.
+
+When a `Struct` has a `NotUndef` key it will only accept a hash where this key is included. This applies even if the value type is optional (assignable from `Undef`). Conversely, if it has an
+`Optional` key it will accept a hash where the key is excluded even if the value type doesn't accept `undef`.
+
+Example 1. The hash must contain the keys mode and path, and mode must have a value that is one of the strings "read", "write", or "update", and the key path must have a `String` value that is at least 1 character in length.
 
     Struct[{mode=>Enum[read, write, update], path=>String[1]}]
-    
-A `Struct` type is compatible with a `Hash` type both ways, given that the constraints they express are met. A `Struct` is a `Collection`, but its size is controlled by the specified named entries.
 
-`Struct` supports `Optional` values - this means that a matching hash may either have `undef` bound to a key, or that the key is missing. A hash that has keys not specified in the `Struct` will not match.
+
+Example 2. The key defaults to `Optional[article]` since `undef` is an instance of `Data`. An empty hash is hence an instance of this `Struct`.
+
+    Struct[{article=>Data}]
+
+
+Example 3. The key defaults to `NotUndef[article]` so a matching entry must be present in the hash and its value cannot be `undef`.
+
+    Struct[{article=>NotUndef[Data]}]
+
+
+Example 4. The 'article' entry must be present in the hash but the value can be `undef` since it is an instance of `Data`.
+
+    Struct[{NotUndef[article]=>Data}]
+
+
+Example 5. The 'article' entry is optional but when present its value cannot be `undef`.
+
+    Struct[{Optional[article]=>NotUndef[Data]}]
+
+
+A `Struct` type is compatible with a `Hash` type both ways, given that the constraints they express are met. A `Struct` is a `Collection`, but its size is controlled by the specified named entries
+such that the `from` size is determined by the number of required keys and the `to` size corresponds to the total number of entries.
+
+A hash that has keys not specified in the `Struct` will not match.
 
 An unparameterized `Struct` matches all structs and all hashes.
 
@@ -530,6 +1107,13 @@ An unparameterized `Struct` matches all structs and all hashes.
     Struct[?]            ∪  (T ∈ Collection)   → Collection
     Struct[?]            ∪  (T ∉ Collection)   → Any
 
+#### Struct.new
+
+Since version 4.5.0
+
+`Struct.new` works exactly as `Hash.new`, only that the constructed hash is
+asserted against the given struct type.
+
 ### Tuple Type
 
 The `Tuple` type fully specifies the content of an `Array`. It is to `Array` what `Struct` is to `Hash`, with entries identified by their position instead of by name. A variable number of optional and trailing entries can also be specified.
@@ -539,7 +1123,7 @@ The `Tuple` type fully specifies the content of an `Array`. It is to `Array` wha
     Tuple[T1, T2, 1, 3]             # A tuple with a variable number of T2 (0-3 inclusive)
     Tuple[T1, 5, 5]                 # A tuple with exactly 5 T1
     Tuple[T1, 5, 10]                # A tuple 5 to 10 T1
-    Tuple[T1, T1, T2, 1, 3]         # A tuple of one T1, two T1, or two T1 followed by T3
+    Tuple[T1, T1, T2, 1, 3]         # A tuple of one T1, two T1, or two T1 followed by one T2
 
 All entries in the `Tuple` (except the optional size constraint min/max count) must be a type and denotes that there must be an occurrence of this type at this position. The tuple can be modified such that the min and max occurrences of the given types in the type sequence can be specified. The specification is made with one or two integer values or the keyword `default`. The min/max works the same way as for an `Integer` range. This way, if optional entries are wanted in the tuple the min is set to a value lower than the number of given types, and if the last type should repeat the max is given as a value higher than the number of given types. As an example, a size constraint entered as `Tuple[T, 0, 1]` means `T` occurs 0 or 1 time. If the max is unspecified, it defaults to infinity (which may also be spelled out with the keyword default).
 
@@ -559,10 +1143,17 @@ The `Tuple` type is a subtype of `Collection`. Its size is specified by the give
     Tuple           ∪  Tuple           → Tuple
     Tuple[R, ...]   ∪  Tuple[S, ...]   → Tuple[R ∪ S, ...]
 
+#### Tuple.new
+
+Since version 4.5.0
+
+Conversion to a `Tuple` works exactly as conversion to an `Array` (Array.new), only that the constructed array is
+asserted against the given tuple type.
+
 
 ### Collection[to, from]
 
-A Collection is the common type for `Array` and `Hash` (and subtypes `Tuple` and `Struct`), it may optionally be parameterized with a size constraint (`from` a min size to a `max` size). The `to` and `from` parameters 
+A Collection is the common type for `Array` and `Hash` (and subtypes `Tuple` and `Struct`), it may optionally be parameterized with a size constraint (`from` a min size to a `max` size). The `to` and `from` parameters
 are the same as for an `Integer` range. The size constraint can also be specified with a
 single `Integer` range parameter.
 
@@ -571,7 +1162,7 @@ single `Integer` range parameter.
     Collection  ∪  Collection    → Collection
     Collection  ∪  Array         → Collection
     Collection  ∪  Hash          → Collection
-    
+
     [1,2,3]      =~ Collection[1,3]  # true, size >= 1 and <= 3
     {a=>1, b=>2} =~ Collection[3]    # false, size is < 3
 
@@ -591,7 +1182,7 @@ which is true if all the numbers in an array of numbers are between 1000 and 199
     Variant         ∪  Variant          → Variant
     Variant[*T]     ∪  Variant[*Q]      → Variant[*T | *Q]
     Variant[*T]     ∪  Q                → Variant[*T | Q]
-    
+
     Variant[Optional[T]] == Variant[T, Undef] == Optional[Variant[T]] == Optional[T]
 
 ### Optional[T]
@@ -599,11 +1190,90 @@ which is true if all the numbers in an array of numbers are between 1000 and 199
 The `Optional` type is parameterized with a single type. It represents the given type or
 Undef. An unparameterized `Optional` represents nothing.
 
+The parameter can be a literal string in which case it is converted into its corresponding
+`String` type.
+
 #### Type Algebra on Optional
 
     Optional[T]  ∪  T            → T
     Optional[T]  ∪  Undef        → Optional[T]
-    Optional[Q]  ∪  Optional[R]  → Optional[T ∪ R]
+    Optional[T]  ∪  Optional[R]  → Optional[T ∪ R]
+
+#### Optional[T].new
+
+Since version 4.5.0
+
+Calling `new` on an `Optional[T]` is the same as calling `new` on `T` and then asserting that the result is `T` or `undef`.
+
+### NotUndef[T]
+
+The `NotUndef` type is parameterized with a single type. It represents all types assignable
+to the given type except those that are assignable from the `Undef` type. An unparameterized
+`NotUndef` is the same as `NotUndef[Any]`.
+
+The parameter can be a literal string in which case it is converted into its corresponding
+`String` type.
+
+#### Type Algebra on NotUndef
+
+    NotUndef[T]  ∪  T            → NotUndef[T]
+    NotUndef[T]  ∪  Undef        → Variant[]
+    NotUndef[T]  ∪  NotUndef[R]  → NotUndef[T ∪ R]
+
+#### NotUndef[T].new
+
+Since version 4.5.0
+
+Calling `new` on a `NotUndef[T]` is the same as calling `new` on `T` and then asserting that the result is not `undef`.
+
+### Iterable[T]
+
+Since version 4.4.0.
+
+The `Iterable` type represents all data types that can be iterated; i.e. that the value is some kind of container of individual values. The `Iterable` type is abstract in that it does not specify if it represents a concrete data type (such as `Array`) that has storage in memory, of if it is an algorithmic construct like a transformation function (e.g the `step()` function).
+
+The `Iterable` type is of value when writing generic iterative functions. In the implementation of such functions it is almost always the type parameter `T` that is of interest, and often not even that, as the operation may be some shuffling around of abstract things that the function does not really care about. It is seldom the case that it matters if the source is an `Array`, a `Hash`, or some algorithmic transformation.
+
+The Iterable types are:
+
+* `String` => `Iterable[String]`; where each character in the string is produced as a string.
+* `Array[T]` => `Iterable[T]`; where each element from index `0`, to index `n` is produced
+* `Hash[K,V]` => `Iterable[Tuple[K,V]]`; - where each hash entry (key, value), in the order they were added to the hash, are produced. It is up to the iterative function to treat the values as a singe tuple, or as two separate values when yielding them to the next function in a chain of iterables.
+* `Integer[n,n]` => `Iterable[Integer[0,n-1]]`; represents a "times" iteration from `0` up to `n - 1`.
+* `Type[Integer[from, to]]` => `Iterable[Integer[from, to]`; represents the range of values `from -> to`, yielding each value in the range.
+* `Type[Enum[*strings]]` => `Iterable[Enum[*strings]]`; yields each of the enum strings in the order they were specified in the `Enum` type.
+* `Iterator[T]` => `Iterable[T]`; represents an algorithmic transformation of some source and yields a series of type `T` values.
+
+For a value to be considered `Iterable` it must represent a bounded sequence of values. As an example `Integer[1,default]` represents all numbers from 1 to positive infinity and it can not be iterated.
+
+### Iterator[T]
+
+Since version 4.4.0.
+
+The `Iterator` type is an `Iterable` that does not have a concrete backing data type holding a copy of the values it will produce when iterated over. It represents an algorithmic transformation of some source (which in turn can be algorithmic). When iterated it will produce values of type `T`.
+
+An Iterator may not be assigned to an attribute of a resource, and it may not be used as an argument to a version 3.x functions. To create a concrete value an Iterator must be "rolled out" by using a function at the end of a chain that produces a concrete value.
+
+Example 1; `step()` in combination with `reverse_each()`, and a `map()`
+
+~~~
+$array_of_numbers = [1, 2, 3]
+$result = $array_of_numbers.reverse_each.step(2).map |$x| { $x * 100 }
+
+~~~
+
+Given Example 1, the value of `$result` would be `[300, 200, 100]`.
+
+Note that, in each connection in the chain, there may either be a concrete value, the reverse_each could construct a new `Array` with the elements in reverse order, or it can produce an `Iterator`, that when a new value is pulled from the end of the chain (in the example by `map()`) will calculate which of the values is the next in reverse order, and produce that without requiring an intermediate `Array` to hold the values. View a chain of iterative functions like a pipe-line where values flow through the pipe. Contrast this with transport by tank truck where not a single drop will appear until the truck arrives with the full load.
+
+An Iterator can be transformed to an `Array` by using the unary Unfold Operator (a.k.a splat).
+
+~~~
+$a = *[1,2,3].reverse_each
+notice $a =~ Array
+~~~
+
+Will notice `true`.
 
 
 ### Catalog Entry
@@ -628,17 +1298,17 @@ The Resource type is parameterized by `type_name`, and optionally `title`(s).
 
 * The title type parameter is optional and multi valued. Each title is an `Expression` evaluating
   to a `String` representing the title of a resource.
-  
-* If no title is given, the result is a reference to the type itself; e.g. `Resource[File]`, 
-  `Resource['file']`, `Resource[file]` are all references to the puppet resource type called 
+
+* If no title is given, the result is a reference to the type itself; e.g. `Resource[File]`,
+  `Resource['file']`, `Resource[file]` are all references to the puppet resource type called
   `"File"`.
-  
+
 * When a single title is given, the result is a reference to the singleton instance of the
   resource uniquely identified by the title string.
-  
+
 * When multiple titles are given, the result is an `Array[Resource[T]]`; e.g.
   `Resource[File, 'a', 'b']`  produces the array `[Resource[File, 'a'], Resource[File, 'b']]`.
-  
+
 #### Shorthand Notation
 
 Any Qualified Reference that does not reference a known type is interpreted as a reference
@@ -655,7 +1325,7 @@ array of two references - `File['a']` and `File['b']`.
     Resource[RT, T] != Resource[RT, T2]
     Resource[RT]    == RT
     Resource[RT, T] == RT[T]
-    
+
     Resource        ∪  Resource            → Resource
     Resource[RT]    ∪  Resource[RT]        → Resource[RT]
     Resource[RT1]   ∪  Resource[RT2]       → Resource
@@ -663,7 +1333,7 @@ array of two references - `File['a']` and `File['b']`.
     Resource[RT,T1] ∪  Resource[RT, T2]    → Resource[RT]
     Resource[?]     ∪  (T ∈ CatalogEntry)  → CatalogEntry
     Resource[?]     ∪  (T ∉ CatalogEntry)  → Any
-    
+
 ### Class[*class_name]
 
 Represents a Puppet (Host) Class. The `Class` type is parameterized with the name of
@@ -688,12 +1358,12 @@ The type system does not treat (Host) Class inheritance as subtyping.
 The reason for this is that if the type system were to do this, then classes need to be loaded in order for type operations to correctly answer if a class inherits another. There is a suspicion
 that this may affect the result (logic may reference a class that should not be loaded because
 it is used as a condition to load classes that are not present. Loading a class may also have other
-side effects as it is not a pure load operation). 
+side effects as it is not a pure load operation).
 
 <table><tr><th>Note</th></tr>
 <tr><td>
   Further work is needed to make a final decision. If the decision is made to keep it the way
-  it is currently implemented, the user logic will need to check twice, or with a <tt>Variant</tt>   
+  it is currently implemented, the user logic will need to check twice, or with a <tt>Variant</tt>
   (is it the subclass or the superclass); this since Puppet only supports one level deep inheritance.
 </td></tr>
 </table>
@@ -732,7 +1402,7 @@ in error messages when communicating why a given set of arguments do not match a
 The signature of a `Callable` denotes the type and multiplicity of the arguments it accepts and consists of a sequence of parameters; a list of types, where the three last entries may optionally be min count, max count, and a `Callable` (which is taken as its block_type).
 
 * If neither min or max are specified the parameters must match exactly.
-* A min < size(params) means that the difference is optional. 
+* A min < size(params) means that the difference is optional.
 * If max > size(params) means that the last type repeats until the given max cap number of arguments
 * if max is literal `default`, the max value is unbound (+Infinity).
 * If no types and no min/max are given, the Callable describes any callable i.e. `Callable[0, default]` (i.e. no type constraint, and any number of parameters).
@@ -782,7 +1452,7 @@ Examples:
 
     Callable[String] ∪ Callable[Scalar]  → Callable[String]
     Callable[String] ∪ Callable[Numeric] → Callable
-    
+
     A ∈ Callable[String, Callable[String]]
     B ∈ Callable[Scalar, Callable[Scalar]]
     A ∪ B → Callable[String, Callable[String]]
@@ -804,7 +1474,7 @@ The operations available per type is specified in the section TODO REF TO OPERAT
 
 Variables
 ---
-A variable is a storage container for a value. Variables are immutable (once assigned they cannot be assigned to another value, and the value it is referring to is also immutable. Variables are also used to define parameters of defines, classes, lambdas (and functions) - the term *parameter* is 
+A variable is a storage container for a value. Variables are immutable (once assigned they cannot be assigned to another value, and the value it is referring to is also immutable. Variables are also used to define parameters of defines, classes, lambdas (and functions) - the term *parameter* is
 used to denote such variables.
 
 The type of a non parameter variable is determined by what is assigned to it.
@@ -819,25 +1489,25 @@ Variable names must conform to the following syntax:
      Variable
        : '$' (NumericVariable | NamedVariable )
        ;
-       
+
      NumericVariable
        : /0|([1-9][0-9]*)/
        ;
-       
+
      NamedVariable
        : /[a-z_]\w*/
        | /(::)?[a-z]\w*(::[a-z]\w*)*/
        ;
 
-* That is, a numeric variable must be a valid decimal number (a name that starts with 0 and has 
+* That is, a numeric variable must be a valid decimal number (a name that starts with 0 and has
   additional digits is also illegal).
-  
+
 * A named variable must start with a lower case letter a-z or '_' (underscore)
   and after that contain any word characters (a-z, A-Z, 0-9 or _). Specifically, a hyphen character
-  or a period are not allowed as they were in some earlier versions of the Puppet Programming 
+  or a period are not allowed as they were in some earlier versions of the Puppet Programming
   Language.
 
-* Also note that it is not allowed to use an upper case letter in the initial position of a name 
+* Also note that it is not allowed to use an upper case letter in the initial position of a name
   segment.
 * It is also not allowed to use an underscore in the initial position of a name segment
   in a fully qualified variable.
@@ -868,7 +1538,7 @@ All numeric variables are said to exist. If they have not been set by the last m
 the same scope, they evaluate to `undef`.
 
 Variables that have not been assigned, do not exist, and thus do not have a value. When
-strict variables feature is turned off, a reference to such a variable results in the value `undef`. 
+strict variables feature is turned off, a reference to such a variable results in the value `undef`.
 
 Conversions and Promotions
 ===
@@ -888,7 +1558,7 @@ Numeric Conversions
 
 * There are never any under or overflow when performing integer arithmetic. The implementation
   handles automatic conversion from 32 to 64 bit numbers to bignum.
-  
+
 * `Numeric` types are only converted to `String` when they are interpolated into a double quoted
   string, or when explicitly converted using a function such as `sprintf`. Interpolation converts
   the numeric value using a decimal (base 10) format.
@@ -901,12 +1571,12 @@ String to Numeric Conversion
 
 * Arithmetic operations are done on `Numeric` or `String` types - if an operand is not `Numeric` or a
   `String` that can be converted to `Numeric`, the operation will fail.
-  
+
 * Explicit `String` to `Numeric` conversion can be performed with the function `scanf()`.
 
 <table>
 <tr><th>Note</th></tr>
-<tr><td>  
+<tr><td>
   Versions of Puppet before 4.0 performed automatic conversion of String to Numeric if the LHS was
   Numeric, and the RHS a String (but not consistently for all operators). Versions of "future
   parser" before 3.4.7 performed String to Numeric conversion if Strings could successfully be
@@ -928,7 +1598,7 @@ the Boolean logic expressions `if`, `unless`, `and`, `or` and `!` (not):
 
 <table>
 <tr><th>Note</th></tr>
-<tr><td>  
+<tr><td>
   3x treats '' (empty string) as equivalent to <tt>undef</tt>.
 </tr></td>
 </table>
@@ -983,4 +1653,3 @@ A `Numeric` is turned into a `String` when it is interpolated. The result is in 
 
 Conversion of any other type to `String` is undefined. It will typically be the underlying
 runtime system's string representation of the object.
- 

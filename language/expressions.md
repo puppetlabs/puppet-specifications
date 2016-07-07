@@ -101,11 +101,12 @@ String interpolation can be performed two different ways:
 
 The expression part has the following rules:
 
-* Resource expressions; `class`, `define`, or `nodes` expressions; or function calls without parentheses are not allowed
+* `class`, `define`, or `node` expressions; or statement-like function calls
+  (only function name without parentheses) are not allowed.
 * Automatic conversion to a variable is performed if the expression has one of the forms:
   * `${<KEYWORD>}` - e.g. `${node}`, `${class}` becomes `${$node}`, `${$class}`
   * `${<QualifiedName>}` - e.g. `${var}` becomes `${$var}`
-  * `${<NUMBER>}` - e.g. `${0}` becomes `${$0}`
+  * `${<DECIMAL>}` - e.g. `${0}` becomes `${$0}`
 * Automatic conversion is also performed in the following cases but variables having the same name as 
   a keyword must be written with a preceding `$`:  
   * `${<AccessExpression>}` - e.g. `${var[key]}`, `${var[key][key]}` becomes `${$var[key]}`,
@@ -234,15 +235,15 @@ Operators
 
 * Performs a concatenate/merge if the LHS is an Array or Hash
 * Adds LHS and RHS numerically otherwise
-  * LHS and RHS are converted from String to Numeric (see [the section on Numeric Conversions][1] in Conversions and Promotions)
-  * Operation fails if LHS or RHS are not numeric or conversion failed
+  * Operation fails if LHS or RHS are not numeric
 * Is not commutative for non numeric/string operands ( `[1,2,3] + 3` is not the same as `3 + [1,2,3]`,
   and `[1,2,3] + [4,5,6]` is not the same as `[4,5,6] + [1,2,3]` )
   
 #### Addition
 
 Addition of integer values produces an integer result. If one of the operands is a `Float` the
-result is also a `Float`. Integral values does not overflow.
+result is also a `Float`. An implementation may raise an error if integral values overflow, but
+may never silently produce an incorrect value.
 
     1 + 1      # produces 2
     1.0 + 1.0  # produces 2.0
@@ -259,6 +260,9 @@ result is also a `Float`. Integral values does not overflow.
   * If the RHS of a merge is an `Array`, it is converted to a `Hash` (the array should be
     on the form `[key, value, key, value, ...]`, or `[[key, value], [key, value], ...]`
     * if the array does not have one of the expected forms and error is raised.
+  * The merged result retains the insertion order of the LHS's keys irrespective of if
+    the value has been modified or not. Additional merged keys from the RHS are inserted into
+    the result in their RHS order.
 
 Examples
 
@@ -286,7 +290,8 @@ Examples
 #### Subtraction
 
 Subtraction of integer values produces an integer result. If one of the operands is a `Float` the
-result is also a `Float`. Integral values does not underflow.
+result is also a `Float`. An implementation may raise an error if integral values underflow, but
+may never silently produce an incorrect value.
 
     10 - 1     # produces 9
     10.0 - 0.1 # produces 9.9
@@ -331,13 +336,19 @@ Examples:
   * Operation fails if LHS or RHS are not numeric or if conversion failed
 
 Multiplication of integer values produces an integer result. If one of the operands is a Float the
-result is also a Float. Integrals does not overflow.
+result is also a Float. An implementation may raise an error if integral values overflow, but
+may never silently produce an incorrect value.
 
 ### unary * operator (splat)
 
     UnarySplatExpression : '*' Expression<R> ;
     
 * Transforms the RHS Expression to an `Array` if not already an `Array`
+  * If the RHS evaluates to `undef` the result is an empty array in general and interpreted as
+  *nothing* when unfolded where a comma separated list of values is accepted.
+  * If the RHS is a `Iterator` it is unrolled into the produced `Array`.
+  * If the RHS is a `Hash` it is transformed to an `Array` of key-value arrays.
+  * Any other value is wrapped in an `Array`.
 * Unfolds the content of the RHS array (or just converted value) when applied in a context where a 
   comma separated list of values is accepted:
   * arguments to a call
@@ -351,6 +362,8 @@ Example:
     
     # same result as
     foo(1,2,3)
+
+Note that unfold of `*undef` in a case or select does not match anything, not even undef.
 
 ### / operator
 
@@ -473,12 +486,10 @@ Equality and Comparison Operators
 
 Tests if LHS is equal to RHS and produces a Boolean.
 
-* If LHS and RHS are convertable to `Numeric`, the equality checks is based on the `Numeric` value (see [the section on Numeric Conversions][1] in Conversions and Promotions)
-* If one of LHS or RHS is convertable to `Numeric`, but not the other, the result is `false`
-* String comparison is done case independently.
-  * **Case independence is only done for the /[A-Z]/ character range** as the rest of
-    the characters' status depends on Locale. [PUP-1800]
 * If the base type of LHS and RHS is different the result is `false`
+* String comparison is done case independently.
+  * **Case independence is only done for the /[a-zA-Z]/ character range** as the rest of
+    the characters' status depends on Locale. [PUP-1800]
 * Arrays are equal if they have the same size and each element is equal (with the semantics of
   the `==` operator)
 * Hashes are equal if they have the same size and each element is equal (with the semantics of
@@ -529,6 +540,13 @@ When the RHS is a `Type`:
 
 * the match is true if the LHS is an instance of the type
   * No match variables are set in this case.
+
+When the RHS is a `SemVerRange`
+
+* the match is true if the LHS is a `SemVer`, and the version is within the range
+* the match is true if the LHS is a `String` representing a SemVer, and the version is within the range
+* If the LHS is neither a `String` with a valid `SemVer` representation, nor a `SemVer` an error is raised.
+* otherwise the result is `false` (not in range).
 
 When the RHS is not a `Type`:
 
@@ -616,17 +634,16 @@ A comparison operator converts the result to a `Boolean`.
 
 #### Comparison Semantics per Type
 
-* If both LHS and RHS are convertible to `Numeric` the comparison is based on the numeric values (see [the section on Numeric Conversions][1] in Conversions and Promotions)
+* Both LHS and RHS must have the same type of an error is raised
 * Comparisons of strings is case independent
-  * **Case independence is only done for the /[A-Z]/ character range** as the rest of
+  * **Case independence is only done for the /[a-zA-Z]/ character range** as the rest of
     the characters' status depends on Locale. [PUP-1800]
-* All `Numeric` values are less than all `String` values
 * It is possible to compare:
   * `String` with `String`
   * `Numeric` with `Numeric` (or with strings in numeric form)
-  * `Numeric` with `String` (or vice versa), **here all numbers are less than all strings**
   * `Type` with `Type`
     * Here the smaller type is the more specific. See [The Type System], and example below.
+* SemVer instances can be compared.
 * It is not possible to compare other types (except for equality)
 
 [The Type System]: types_values_variables.md#the-type-system
@@ -647,7 +664,7 @@ When a search using the `in` operator is performed with a regular expression,
 the match variables `$0`-`$n` will contain the values from the first successful
 match. When matching against an `Array`, this will be the element of the
 `Array` with the lowest index, whose value matches the regular expression. When
-matching against a `Hash` the keys are searched in an undefined order.
+matching against a `Hash` the keys are searched in the order the keys were inserted.
 
 Syntax:
 
@@ -674,12 +691,13 @@ The following table shows the result of searching for a LHS of a particular type
 | LHS         | RHS       | Description |
 |------       |------     |------       |
 | `String`    | `String`    | searches for the LHS string as a substring in RHS (LHS and RHS downcased), `true` if a substring is found. Also see [PUP-1800] regarding case. |
-| `Number`    | `String`    | is only true if the RHS converted to number equals the number |
+| `String`    | `SemVerRange` | `true` if the SemVer version represented by the LHS String is in the range
 | `Regexp`    | `String`    | true if the string matches the Regexp (`=~`) |
 | `Type`      | `String`    | `false` |
 | *any other* | `String`    | `false` |
 | `Type`      | `Array`     | `true` if there is an element that is an instance of the given type |
 | `Regexp`    | `Array`     | `true` if there is an array element that matches the Regexp (`=~`). Non string elements are skipped.   |
+| `SemVer`    | `SemVerRange` | `true` if the version is in the range
 | *any other* | `Array`     | `true` if there is an array element equal (`==`) to the LHS |
 | *any*       | `Hash`      | `true` if the LHS `in` the array of hash keys is `true` |
 | *any*       | *any other* | `false` |
@@ -687,15 +705,21 @@ The following table shows the result of searching for a LHS of a particular type
 Assignment Operator
 ---
 
-The assignment operator assigns the result of the RHS to the L-Value produced by the LHS. An L-value is a name referring to a "slot" in the current scope (that can be referenced (typically by a 
-variable) to obtain the value).
+The assignment operator assigns the result of the RHS to one or more L-values produced by the LHS expression.
+An L-value is a name referring to a named "slot" in the current scope (that is, typically a variable).
 
 * A `$` variable produces an L-value name
-* Only a Simple Name is accepted
+* Only a Simple Name is accepted, it is not allowed to assign to something in another namespace
 * Numerical L-values are not allowed (numerical variables are read-only and set by side effect
   of matching with a regular expression).
 * Assignment is an R-value
 * The value of an assignment is the value of the RHS
+* An array of L-values forms a multi-assignment where several variables can be assigned at once from the given RHS source
+* In a multi-assignment the result depends on the type of the RHS:
+  * *Array* - each variable is assigned from the RHS array's index 0-n. It is an error if there are too few values.
+  * *Hash* - each variable is assigned the value from the corresponding key in the RHS hash. It is in an error if the key is not present.
+  * *Type[Class]* - each variable is assigned the value of the corresponding variable/parameter in the referenced class. The
+    class must have been added to the catalog, and the referenced variable must exist, but may have an `undef` value assigned.
 
 Assignment also takes place in parameter declarations of user defined resource types and
 classes. An alternate form of assignment also takes place when resource attributes are set.
@@ -712,8 +736,25 @@ result. Chained assignments are permitted.
 
 Examples:
 
+~~~puppet
+
     $a = 10
     $x = $y = 0
+
+    # from array
+    [$a, $b] = [1, 2]  # assigns 1 to $a, and 2 to $b
+
+    # from hash
+    [$a, $b] = { a => 10, b => 20, c => 30 }  # assigns 10 to $a, and 20 to $b
+
+    # from class
+    class mymodule::someclass::example($x = 100) {
+      $a = 10
+    }
+    include example
+    [$a, $x] = Class['mymodule::someclass::example']  # assigns 10 to $a, and 100 to $x
+
+~~~
 
 [ ] Access Operator
 ---
@@ -1231,14 +1272,24 @@ Examples:
     
 This shows that the left hand type can be specialized; an **open** `Resource` to a specific **typed** `Resource`, and a typed resource to a specific (titled) **Reference** resource (instance), and then further specialized to refer to a parameter of a referenced resource.
 
-* Note that lookup of a parameter that has no value will result in lookup of its current default 
-  value.
-* Evaluation of parameter lookup is evaluation order dependent and that resource instantiation is
-  lazily evaluated.
-* Note that meta parameters only include values for what has explicitly been assigned as they 
-  defaults are evaluated late, and may depend on other values.
-* Note that meta-parameters is an open ended concept where each meta-parameter defines its own
-  behavior.
+If a parameter is not explicitly set, a default value is returned if a user defined type's parameter has a default value expression, or if there is an already evaluated Resource Defaults expression that defines a default value for that type/parameter. In all other cases the result is `undef` for a parameter that is not explicitly set.
+
+* It is an error to attempt to get a value for a name that is not an attribute of the type
+* It is an error to attempt to get a value from a resource that is not instantiated (it may be 
+  virtual or exported and unrealized)
+* Note that Evaluation of parameter lookup is evaluation order dependent and that resource 
+  instantiation is lazily evaluated. (This means that a resource instantiation followed immediately
+  by a parameter access will not be able to get default values due to the lazy/
+  queuing behavior of resource evaluation. See [Modus Operandi].
+* Note that accessing a default value set via a Resource Defaults expression depends on evaluation 
+  order as the Resource Defaults expression must have been evaluated for it to have any effect. See 
+  [Modus Operandi].
+* Note that a collector expression with an override clause may modify attribute values of resources
+  and that overrides are evaluated late.
+  
+Due to the dependency on evaluation order and that late evaluating overrides and Resource Override expressions accessed resource parameter values may be different than what the value eventually ends up being in the produced catalog.
+
+[Modus Operandi]: modus-operandi.md
 
 #### Integer Type [ ]
 
@@ -1347,7 +1398,7 @@ see [Optional Type].
 
 * A single type can be given as parameter
 * It is an error if the list of parameters is empty
-      
+
 [Optional Type]: types_values_variables.md#optionalt
 
 #### Variant Type [ ]
@@ -1379,8 +1430,21 @@ see [Type].
 
 * A single type can be given as parameter
 * It is an error if the list of parameters is empty
-      
+
 [Type]: types_values_variables.md#typet
+
+#### Type SemVer [ ]
+
+Produces a new `SemVer` type that matches one or a (possibly disjunct) set of version ranges.
+For more information about the type see [SemVer].
+
+A SemVer type is constructed from one or more:
+
+* Strings - each in Semantic Version string form, which can represent a single versio or a range
+* An instance of SemVer
+* An instance of SemVerRange
+
+[SemVer]: types_values_variables.md#semverversion-ranges
 
 Function Calls
 ---
@@ -1389,52 +1453,54 @@ The Puppet Programming Language supports calling functions.
 Function calls come in three forms:
 
 * *statement* - arguments to the function does not require parentheses, may not appear in
-  expressions, have syntactical restrictions on their argument. Only a handful of explicitly
+  expressions, have syntactical restrictions on their arguments. Only a handful of explicitly
   listed functions can be called this way. Users can not add new statement type functions as
   their names are determined by the Puppet Parser.
-* *prefix* - function name is first, arguments are always given in parentheses
+* *prefix*
+  * function name is first, arguments are always given in parentheses.
+  * Type expression is first, arguments are always given in parentheses.
 * *infix* - uses '.' to apply a function to the first argument to the function. Additional
-  arguments are placed in parentheses after the function name. (e.g. $x.notice)
-  
+  arguments are placed in parentheses after the function name (for example, `$x.notice`, `$x.notice($y)`).
+
 Syntax:
 
     StatementStyleCall
       : QualifiedName Expression (',' Expression)* 
       ;
-      
+
     PrefixStyleCall
-      : QualifiedName arguments = ArgumentList LambdaExpression?
+      : (QualifiedName | Expression<Type>) arguments = ArgumentList LambdaExpression?
       ;
-      
+
     InfixStyleCall
        : Expression '.' QualifiedName ('(' Expression (',' Expression)* ','? ')')? LambdaExpression?
        ;
-    
+
     ArgumentList
       :  '(' args += Expression (',' args += Expression)* ','? ')'
       ;
-                  
+
     LambdaExpression
       : '|' ParameterList? '|' '{' Statements? '}'
       ;
-      
+
     ParameterList
       : ParameterDeclaration (',' ParameterDeclaration)* ','?
       ;
-      
+
     ParameterDeclaration
       : type= Expression<Type>?
         varag ?= '*'?
         name = VariableExpression ('=' default_value = Expression)?
       ;
-    
+
     VariableExpression : VARIABLE ;  # e.g. $x, $my_param
-      
+
 
 **General**:
 
 * In 4x the Qualified Name function name is not restricted to a *simple name* (in 3x all functions 
-  are in the same namespace).
+  are in the same namespace, and in 4.x they can be namespaced).
 * A function may be called using any of the three styles (statement style is restricted to a given 
   list of functions, see below) - there is no difference in
   evaluation between them - only syntactical differences, and the varying support for
@@ -1445,7 +1511,8 @@ Syntax:
   r-value and statement type, they all produce a value, and a function should produce
   Ruby nil (mapped to undef) if no other valid return value is suitable.
 * A function call is never an L-value (a function can not produce something that is assignable).
-  
+* A call to a Type is the same as calling the function `new` with that type as the first argument.
+
 **Parameters**
 
 * Parameters may be optionally typed by preceding them with a type expression
@@ -1465,7 +1532,7 @@ Syntax:
 * This stye cannot be used when the argument is a literal `Hash` because the expression is
   indistinguishable from a resource expression without title. **(PUP-979)**
 * A statement type call always produces `undef`.
-  
+
 Example:
 
     require 'myclass'
@@ -1484,11 +1551,11 @@ Functions that allow being called using statement style:
     info
     notice
     warning
-    error
+    err
 
     # stop execution
     fail
-    
+
     # raises an error as it is discontinued
     import
 
@@ -1518,9 +1585,9 @@ Examples:
     [1,2,3].reduce(10) |$memo, $x| { $memo + $x }                   # => 16
     'myclass'.require                                               # => undef
     [1,2,3].map |$x| { $x * 10 }.reduce |$memo, $x| { $memo + $x }  # => 60
-    
+
 **Lambda**:
-  
+
 * A Lambda is an unnamed function, it has an optional `ParameterList` that declares the name
   and an optional default value expression (if too few arguments are given when it is invoked).
 * Parameter declarations with default value expressions must come after parameter declarations 
@@ -1528,6 +1595,24 @@ Examples:
 * The parameter list is syntactically the same as the parameter list for a Resource Type definitions,
   and a Class definitions.
 * Evaluation of default value expressions take place in the scope where the lambda is declared.
+
+**Calling Types - new-operation**
+Since 4.5.0.
+
+Calling a type - for example:
+
+    Integer("0xFF")
+
+creates a new instance of the type and an assertion is made that the value is compliant with the type.
+An error is raised if the result is not compliant.
+
+    Integer[0,10]("0xFF")
+
+Would fail, since the result is not within the given range 0-10.
+
+The parameters are specific to each type - see the documentation per type.
+
+A call to a type is equivalent to calling the function `new` with the type as the first argument.
 
 **Function Call Semantics**
 
@@ -1638,20 +1723,35 @@ Syntax:
       
     Option
       : Expression<R>
+      | LambdaExpression
       | 'default'
       ;
 
 * the case_expression is evaluated first
-* options are evaluated in the order they are given; top-down, left to right until one option
-  matches.
-  * an option is evaluated before a match is performed
+* options are evaluated in the order they are given; top-down, with option propositions evaluated 
+  left to right until one proposition matches.
+  * each proposition is evaluated before a match is performed using the produced value
 * A match is computed as:
+  * if the option is a literal `default`, the option is skipped (this rule does not apply
+    recursively). **(PUP4520)**
   * if the option is a `Regexp` the value must be a string for the match to trigger
-  * if the option is a `Type` and the value is not, the option matches if the value is an instance of 
-    the type.
+  * if the option is a `Type` and the value is not, the option matches if the value is an
+    instance of the type.
+  * if the option is a `SemVerRange` the value matches using operator `=~` semantics (version in range)
+  * the option matches if the option and value both are of `Array` type, have the same
+    length, and all entries in the option match the corresponding entry in the value (using
+    the case matching rules recursively).
+  * the option matches if the option and the value are both of `Hash` type, and the
+    option key-value pairs match entries in the value hash by having identical keys
+    and matching value (using the case matching rules recursively).
+  * a literal `default` nested inside an Array or Hash always matches the corresponding entry.
+    Such a `default` is not considered to be the case expression's default entry.
+  * the option matches if it is a lambda expression and the call of this lambda expression with
+    result of the evaluated case_expression unfolded as arguments results in a value that
+    is neither `false` nor `undef`. **(PUP-4193)**
   * in all other cases, the option matches if the value is equal (using operator `==` semantics)
     to the option value.
-* If one of the options match, the associated `Statements` are evaluated
+* If one of the options match, the proposition's associated `Statements` are evaluated
   * remaining options in the same proposition are not evaluated
   * if the case_expression evaluated to literal `default` it will match the default option
     without first testing the remaining options.
@@ -1664,12 +1764,15 @@ Syntax:
 * When a match is made with a regular expressions, the numerical match variables are set as a side 
   effect. When the case expression has been evaluated, the previously set match variables are 
   restored. (**TODO: same comment for if etc**)
-* It is an error to have more than one option with `default` value. **(PUP-978)**
+* It is an error to have more than one option with a literal `default` value in the same case 
+  expression. **(PUP-978)**
 * An option producing a literal default does not count as the default entry. It will only be  
-  triggered if the `case_expression` itself is a literal `default`, and if there was no earlier 
-  literal default options. 
+  triggered if the `case_expression` itself is a literal `default`. 
 * An option that is an Unfold Expression (splat) transforms the given expression to individual
-  options.
+  options. A splatted `default` does not count as the default entry.
+* If no option matched in any proposition, the proposition that had a skipped default option
+  is selected **(PUP4520)**. If there is no such default entry, no option is selected and the
+  value of the case expression is `undef`.
 
   
 Examples:
@@ -1690,7 +1793,7 @@ Examples:
       }
     }
 
-    # example 1 - using cases an expression
+    # example 2 - using cases an expression
     notice case $name {
     
       'paul', 'ringo', 'george', 'john': { 
@@ -1713,6 +1816,18 @@ Examples:
         'out of range'
       }
     }
+    
+    # example 4 - using matching array
+    $x = [green, 2, $whatever]
+    case $x {
+      [/ee/, Integer[0,10], default] : {
+        notice 'this will be noticed'
+      }
+      default: {
+        notice 'this will not be noticed'
+      }
+    }
+
 
 **Option Support for Unfold/Splat**
 
@@ -1796,4 +1911,103 @@ Example:
 
 The Selector Expression supports unfold/splat the same way as in Case Expression.
 
+Definition Expressions
+---
+The Puppet Language has several definition expressions:
+
+* Function definition
+* User defined resource definition
+* Host Class definition
+* Type Alias definition
+
+The user defined resource definition and host class definition expressions are specified
+in [Catalog Expressions][2], and function definition in [Puppet Functions][3], and [Function API][4].
+
+### Type Alias Expression
+
+The Type Alias Expression makes it possible to assign a type definition to a type
+name, and use the new type name as a 100% equivalence to the assigned type.
+
+In this version of the specification, only the case of the initial letter in each name segment
+is significant; MyType is equivalent to MYTYPE, MytYPe, etc. This may change in a later release.
+
+The grammar is:
+
+```
+TypeAliasExpression
+  : 'type' QualifiedReference '=' Expression<Type>
+  ;
+```
+
+Example use:
+
+~~~
+type PositiveInts = Array[Integer[0, default]]
+$a = [1,2,3] ~= PositiveInts
+$b = Array[Integer[0, default]] == PositiveInts
+~~~
+
+Would set both `$a` and `$b` to `true`.
+
+Type references are autoloaded from the environment and modules. The autoloading rules are:
+
+* The name of the file must be in lower case.
+* No underscore `_` should be used to separate words in a camel cased name; the file for
+  `MyType` should be `mytype.pp`, not `my_type.pp`.
+* Each namespace segment maps to a directory path with the same name.
+* For a module, the `<module_root>/types` corresponds to the module's namespace.
+* For an environment, the `<env_root>/types` corresponds to the `Environment::` namespace
+* An autoloaded type alias `.pp` file may only contain a single type alias.
+  No other expressions are allowed (comments are).
+* The autoloaded type alias must use the full namespace on the left hand side, e.g.
+  `MyModule::MyType`, or `MyModule::Nested::MyType` for a nested namespace.
+
+
+Type references may be created in any manifest, but this should be avoided as they
+cannot be autoloaded and is affected by the order in which manifests are loaded and evaluated.
+This is mainly supported to enable writing small examples and experimentation.
+
+In general:
+* Type aliases are processed before the rest of the logic in the file.
+* All types are allowed on the RHS, even the alias being defined (this creates
+  a *self recursive type*).
+* Recursive types are supported in general, i.e. not only by direct recursion created by
+  using the alias being defined on the RHS.
+
+Example: Type Aliases are defined before evaluation takes place
+
+```
+function foo(MyType $x) {
+  notice $x
+}
+notice foo(42)
+
+type MyType = Integer[42,42]
+```
+
+Examples of recursive types:
+
+```
+type IntegerTree = Array[Variant[Integer, IntegerTree]]
+type Mix = Variant[Integer, String, MixedTree]
+type MixedTree = Array[Variant[Mix, MixedTree]]
+
+function integer_tree(IntegerTree $x) {
+  notice $x
+}
+integer_tree( [1, 2, [42, 4], [[[ 5 ]]] ] )
+
+function mixed(MixedTree $x) {
+  notice $x
+}
+mixed( [1, 2, [hello, 4], [[[ 5, deep ]]] ] )
+
+```
+
+Since 4.4.0
+
 [1]: types_values_variables.md#string-tofrom-numeric-conversions
+[2]: catalog-expressions.md
+[3]: puppet-functions.md
+[4]: func-api.md
+

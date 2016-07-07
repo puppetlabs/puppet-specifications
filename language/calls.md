@@ -11,7 +11,8 @@ These constructs constitute a call:
   called, this section includes calling/using lambda expressions.
 * **Template Call**, The functions `epp`, and `inline_epp` can pass arguments to template parameters; 
   thus performing a call to the template to produce text.
-* **Instantiation**, creation of resources, resource defaults, resource overrides, and collection.
+* **Resource Instantiation**, creation of resources, resource defaults, resource overrides, and collection.
+* **Instantiation**, creation of values (new objects), conversion of data types etc (Since 4.5.0).
 
 [1]: expressions.md#function-calls
 
@@ -40,7 +41,7 @@ Parameters are always specified in a Parameter List as shown in the following gr
     ParameterList
       : ParameterDeclaration (',' ParameterDeclaration)* ','?
       ;
-      
+
     ParameterDeclaration
       : type = Expression<Type>? 
         vararg ?= '*'?
@@ -105,12 +106,12 @@ parameters are named in this style. In resource creation, resource defaults, and
 overrides, language syntax associates argument names with values - e.g. in a resource expression:
 
     notify { 'mynotify': message => 'hello world' }
-    
+
 the argument `message` is associated with the value 'hello world'. When calling EPP, the arguments
 to the template are specified in a hash.
 
     epp('the_template', { x => 10, y => 20 })
-    
+
 In pass-by-name:
 
 * Only given values that are not `undef` counts as arguments with a value and these values

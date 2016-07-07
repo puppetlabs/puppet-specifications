@@ -3,21 +3,27 @@ Lexical Structure
 
 Unicode
 ---
-A Puppet Program consists of source text written in ASCII (character values encoded as 8-bit bytes
-with the values 0-127).
 
-<table><tr><th>Note</th></tr>
+<table><tr><th>Puppet Language keywords and punctuation uses only ASCII. Strings (single and double quoted), Heredoc text, and Comments can contain non ASCII:</th></tr>
+<tr><th>Since Puppet 4.4.0</th></tr>
 <tr><td>
-  The Puppet 4x implementation uses Ruby default encoding when reading Puppet source text files.
+  All Puppet source code is expected to be in UTF-8. Non Ascii characters must be in UTF-8 and
+  may appear in comments, single and double quoted strings, heredocs, and templates.
+  <br/>
+  <p>Byte order marks (BOM) are not allowed. If present an error is raised identifying the
+  kind of byte order mark.</p>
+</td></tr>
+<tr><th>Before Puppet 4.4.0</th></tr>
+<tr><td>
+  The implementation uses Ruby default encoding when reading
+  Puppet source text files.
   Thus, while the language itself does not make use of any non ASCII characters, it is possible
   to include other characters in strings given that the source file is written using the Ruby
   runtime environments default encoding and that a Ruby version is used that supports encodings.
-  <b>The only platform neutral way is to use Puppet 4x Unicode Escape mechanism \uXXXX.</b>
-</td></tr>
-<tr><th>Future Direction</th></tr>
-<tr><td>
-  In the future it may be possible to specify the encoding of all source files in a module
-  as well as for individual files.
+  For Puppet code running on runtimes before Puppet 4.4.0, the only platform neutral way to use non  
+  ASCII characters in the source is to use the Puppet 4x Unicode Escape mechanism \uXXXX.
+  <br/>
+  <p>Byte order marks (BOM) causes undefined behavior.</p>
 </td></tr>
 </table>
 
@@ -100,7 +106,7 @@ in octal and hexadecimal form. All numbers start with a digit.
 
 ```
 NUMBER
-  : HEX | OCTAL | DECIMAL
+  : HEX | OCTAL | DECIMAL | FLOAT
   ;
 
 HEX
@@ -112,6 +118,10 @@ OCTAL
   ;
 
 DECIMAL
+  : /[1-9][0-9]*/
+  ;
+
+FLOAT
   : /0?\d+(\.\d+)?([eE]-?\d+)?
   ;
 ```
@@ -182,15 +192,8 @@ expressions.
 | `\t`                | an ASCII TAB
 | `\s`                | an ASCII SPACE
 | `\uXXXX`            | a UNICODE character denoted by 4 hex digits i.e. /[0-9a-fA-F]{4}/
-| `\` *any other*     | a single `\` followed by *any other* (removes any special meaning from *any other*
-
-<table>
-<tr><th>Note</th></tr>
-<tr><td>
-  The handling of unicode characters in the <i>Supplementary Plane</i> U+10000 to U+10FFFF is
-  at present undefined.
-</td></tr>
-</table>
+| `\u{XXXX}`          | a UNICODE character denoted by 1-6 hex digits i.e. /[0-9a-fA-F]{1,6}/
+| `\` *any other*     | a single `\` followed by *any other* (removes any special meaning from *any other*)
 
 #### Double Quoted String Expression Interpolation
 
@@ -272,7 +275,7 @@ Examples:
     ::apache
     ::apache::port
 
-### Upper Case Bare Words / REF / Qualified Reference
+### Upper Case Bare Words / REF / QualifiedReference
 
 ```
 REF
@@ -349,11 +352,13 @@ keyword token is produced instead of a `NAME` token. Keywords are case sensitive
 | `define`
 | `else`
 | `elsif`
+| `function`
 | `if`
 | `in`
 | `inherits`
 | `node`
 | `or`
+| `type`
 | `unless`
 
 The semantics of these is described in [Expressions][1].
@@ -362,8 +367,6 @@ The following keywords are considered reserved for future use and should be avoi
 
 | Reserved Words
 | ---
-| `type`
-| `function`
 | `private`
 | `attr`
 
@@ -373,34 +376,39 @@ elements:
 | Reserved Names / Types
 | ---
 | `any, Any`
-| `hash, Hash`
 | `array, Array`
-| `integer, Integer`
-| `float, Float`
-| `collection, Collection`
-| `scalar, Scalar`
-| `resource, Resource`
-| `string, String`
-| `pattern, Pattern`
+| `attr, Attr`
 | `boolean, Boolean`
-| `class, Class`
-| `type, Type`
-| `runtime, Runtime`
-| `numeric, Numeric`
-| `data, Data`
 | `catalogentry, catalogEntry, CatalogEntry`
-| `enum, Enum`
-| `variant, Variant`
+| `class, Class`
+| `collection, Collection`
 | `data, Data`
+| `default, Default`
+| `enum, Enum`
+| `float, Float`
+| `hash, Hash`
+| `integer, Integer`
+| `numeric, Numeric`
+| `object, Object`
+| `optional, Optional`
+| `scalar, Scalar`
+| `pattern, Pattern`
+| `private, Private`
+| `resource, Resource`
+| `runtime, Runtime`
+| `semver, SemVer`
+| `semverrange, SemVerRange`
+| `string, String`
 | `struct, Struct`
 | `tuple, Tuple`
-| `optional, Optional`
+| `type, Type`
 | `undef, Undef`
-| `default, Default`
+| `variant, Variant`
 
-While the lower case names are perfectly fine to use (they have no special meaning) when
-using them as names of classes, or user defined defined resource types, the name clashes
-with the built in types (as the lower case name automatically gets an upper cased type reference).
+While the lower case names are perfectly fine to use unless they are also keywords (i.e. when they
+have no special meaning) they should not be  used as names of functions, classes, or user defined
+defined resource types as the name would clashes with the built in types. This occurs because lower
+case named definitions automatically get an upper cased type reference.
 
 
 Separators / Punctuation

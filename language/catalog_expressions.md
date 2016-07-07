@@ -17,7 +17,6 @@ This section focuses on the syntactic aspects of these expressions. There are ad
 
 The general loading and evaluation of Puppet logic is described in the section [Modus Operandi][1]. For the semantics for each type (e.g. `File`, `User`), please refer to the documentation available per resource type.
 
-[1]: modus-operandi.md
 
 ### Parameter List
 
@@ -37,7 +36,12 @@ The parameter list is common to several of the catalog expressions:
 * A *captures rest* (as allowed for functions) is not allowed in parameter lists for a
   catalog related expression.
 * The default value expression must evaluate to an instance of the specified type.
+* The default value expression may evaluate to undef if the parameter type allows it.
 * If a parameter type is not specified, the default is `Any`.
+* The default value expression may not assign to/create a new variable.
+
+See [Parameter Scope][2] for more information about default value expressions.
+
 
 ### Node Definition
 
@@ -156,7 +160,7 @@ A resource expression instantiates a resource and realizes it, or optionally doe
 realize it (*virtual*), and optionally exports (*exported*) it to a central store for inclusion
 elsewhere via *exported resource collection*.
 
-     # This syntax is common the different kinds of resource expressions
+     # This syntax is common to the different kinds of resource expressions
      # See the semantic rules for details.
      
      # A tree data structure to describe the allowed title expression types.
@@ -231,7 +235,8 @@ elsewhere via *exported resource collection*.
   conform to class naming rules.
 
 * The list of all titles (the `String[1]` or `Default` values of the `Tree`) from all
-  `TitleExpression`s in a single `ResourceExpression` must not contain the same title more than once.
+  `TitleExpression`s in a single `ResourceExpression` must not contain the same title more
+  than once.
 
 * The name of an attribute may be any keyword (except `true` or `false`), a simple name (a name
   not containing `::`). Names may not start with a digit. (Note that a future version of this 
@@ -255,8 +260,9 @@ elsewhere via *exported resource collection*.
   expression will use the attribute operations for this body as default values.
   
 * It is allowed to give a mix of `String` titles with the `default` title. The default title has
-  no effect on the created resources from the same title (it cannot, since the key/values are exactly 
-  the same), but defines the defaults for any additional bodies in the same resource expression.
+  no effect on the created resources from the same title (it cannot, since the key/values are 
+  exactly the same), but defines the defaults for any additional bodies in the same resource 
+  expression.
   
 * The effect of a *local default* does not extend beyond one resource expression.
 
@@ -274,15 +280,58 @@ All resources created by a resource expression are created with a status of eith
    1. The `AttributesFromHash` expression is evaluated. Each key of the resulting `Hash` is used as 
       the name of an attribute and the value for that key is the attribute's value.
 1. A resource is created for each title, except a resource with a title type of `Default`.
-   * The attributes of the resource are the evaluated default attributes overridden by the attributes 
-      from the title's `ResourceBody`. Note: an attribute with a value of `undef` is not handled 
-      specially as is done when deciding whether to use the default expression of a parameter.
+   * The attributes of the resource are the evaluated default attributes overridden by
+     the attributes from the title's `ResourceBody`. Note: an attribute with a value of `undef` is 
+     not handled specially as is done when deciding whether to use the default expression
+     of a parameter.
    * The set of attributes given is checked against the set of declared parameters for the 
      `type_name` (or the `title` in the case of a `class` type). It is an error if there is no 
      available type or if one of the evaluated attributes does not exist on the type.
+   * An attribute that evaluates to `undef` acts as if that attribute was not set and will
+     trigger the parameter's default expression (or automatic parameter lookup (if the resource
+     is a class)). Also see "Undef Parameters" below.
    * Virtual and exported resources are remembered for reference, and for future operations.
    * Regular resources are *realized* (placed in the catalog).
-1. The resource instance is lazily evaluated by placing it in a queue, as described in [Modus Operandi][1].
+1. The resource instance is lazily evaluated by placing it in a queue, as
+   described in [Modus Operandi][1].
+
+** Undef Parameter Values **
+As noted in "Order of Evaluation", an attribute operation that results in an undef value for a 
+parameter that has a default value expression is equivalent to not including an attribute operation for that name as a given undef triggers the default value expression for the parameter. If the resource is a class, it will also trigger the data binding service to supply the value. If the parameter does not have a default value expression (or value to lookup), a given `undef`, results in an `undef` parameter value, and a missing attribute operation results in an error (no value given, not even undef).
+
+This is illustrated in the table below. A `-` indicates missing as opposed to a given
+undef. These rules apply for classes since data binding lookup is not available for other
+resources.
+
+| default expression | lookup | given  | result
+| ---                | ---    | ---    | ---
+| 10                 | -      | -      | 10
+| 10                 | -      | 20     | 20
+| 10                 | -      | undef  | 10
+| 10                 | 30     | -      | 30
+| 10                 | 30     | 20     | 20
+| 10                 | 30     | undef  | 30
+| undef              | -      | -      | undef
+| undef              | -      | 20     | 20
+| undef              | -      | undef  | undef
+| undef              | 30     | -      | 30
+| undef              | 30     | 20     | 20
+| undef              | 30     | undef  | 30
+| -                  | -      | -      | **error**
+| -                  | -      | 20     | 20
+| -                  | -      | undef  | undef
+| -                  | 30     | -      | 30
+| -                  | 30     | 20     | 20
+| -                  | 30     | undef  | 30
+
+This means:
+
+* It is not possible to set an explicit `undef` if a value is bound via data binding.
+* A given explicit `undef` does not count as a missing value (if there is no default or value
+  to lookup).
+* Use a parameter type that does not accept `Undef` to ensure that value is never `undef`.
+* Use a default value of `undef` to equate missing value (and lookup) with a given `undef`.
+
 
 ### Resource Default Expression
 
@@ -311,17 +360,8 @@ entity that will be picked.
 </table>
 
     ResourceDefaultExpression
-      : type = QualifiedReference '{' DefaultAttributeOperations? '}'
+      : type = QualifiedReference '{' ResourceAttributes? '}'
       ;
-
-    DefaultAttributeOperations
-       : OverrideAttributeOperation (',' OverrideAttributeOperation)* ','?
-       ;
-       
-    DefaultAttributeOperation 
-       : name = SimpleName '=>' value = Expression
-       | name = SimpleName '+>' value = Expression
-       ;
      
 
 * The type must be a reference to an existing resource type (plugin or user defined). Only a 
@@ -337,6 +377,10 @@ entity that will be picked.
 * It is allowed to have multiple default expressions in the same scope provided they define
   different attributes.
 * All visible defaults are merged.
+* The use of `*` `=>` sets attributes from key/values in the RHS hash as if they had been 
+  individually given with `key => value`.
+
+Also see [Parameter Scope][2] for more information about default value expressions.
 
 ### Resource Override Expression
 
@@ -346,16 +390,7 @@ is declared in an inherited class when the override is evaluated in the scope of
 the derived class.
 
      ResourceOverrideExpression
-       : ResourceReferences '{' OverrideAttributeOperations '}'
-       ;
-
-    OverrideAttributeOperations
-       : OverrideAttributeOperation (',' OverrideAttributeOperation)* ','?
-       ;
-       
-    OverrideAttributeOperation 
-       : name = SimpleName '=>' value = Expression
-       | name = SimpleName '+>' value = Expression
+       : ResourceReferences '{' ResourceAttributes '}'
        ;
      
      ResourceReferences
@@ -376,6 +411,8 @@ the derived class.
     * If a value has been assigned, and it is not an array, the value is wrapped in an array
       before the new value is appended
     * If the resulting value is an array, it is also flattened (nested arrays are flattened out).
+  * The `*` `=>` sets attributes from key/values in the RHS hash as if they had been individually 
+      given with `key => value`
 * **Otherwise:**
   * The `=>` operators sets the value of the given attribute in all referenced resource instances
     provided that the attribute does not already have a value.
@@ -383,6 +420,9 @@ the derived class.
   * The `+>` operator raises and error (if there was a value it would append it and thus change
     the value; which is not allowed, and if there is no value, it is the same as `=>`, and
     this should have been used instead).
+  * The `*` `=>` sets attributes from key/values in the RHS hash as if they had been individually 
+    given with `key => value`
+  
     
 ** ResourceReferences **
 
@@ -524,7 +564,7 @@ same resource modify it once per query (and depends on the implementation's
 evaluation order).
 
     CollectorExpression
-       : QualifiedRefererence QueryPart ('{' OverrideAttributeOperations '}')?
+       : QualifiedRefererence QueryPart ('{' AttributeOperations '}')?
        ;
        
      QueryPart
@@ -552,6 +592,7 @@ It is worth noting that:
 * It is not possible to include general purpose expressions as values (as shown
   in the EBNF above).
 * It is not possible to use arrays and hashes as query values.
+* It is allowed to use `* => hash` as an attribute operation
 
 The semantics of the Query is implementation dependent. However any implementation must accommodate:
 
@@ -559,3 +600,6 @@ The semantics of the Query is implementation dependent. However any implementati
 * The collector when executing realizes all resources it finds and keeps track
   of what it has found so far (the specified operation; relationships, or
   resource attribute overrides) are only applied once for any given resource.
+
+[1]: modus-operandi.md
+[2]: parameter_scope.md

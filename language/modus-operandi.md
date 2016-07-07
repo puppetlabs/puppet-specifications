@@ -209,3 +209,61 @@ The 4x function API uses the 4x loaders which restrict the visibility by using t
 * A module without declared dependencies sees what is generally available, and all other modules
 * A module with declared dependencies has visibility into what is generally available and the modules
   on which it depends.
+
+### Auto Loading Details
+
+#### Roots for 3.x Loader
+
+The 3.x based autoloader will load from the following roots (in order):
+
+* The source location where gem are installed (as dictated by runtime configuration)
+* All modules from an environment's expanded module path (in the order resulting from expansion)
+* Puppet's `libdir` setting
+* The Ruby variable `$LOAD_PATH`
+
+#### Subdirectory per kind 3.x. Loader
+
+The loader appends `/manifests` to all `.pp` candidates, and `/lib/puppet` and a path fragment for the kind of thing being loaded for all entities being loaded that are `.rb` based. The path 
+fragments per kind are:
+
+* `/parser/functions` - for 3.x functions (`.rb` only)
+* `/type` - for 3.x (resource) types (`.rb` only)
+
+#### Roots for 4.x Loader
+
+The 4.x autoloader (loading 4.x functions only in the Puppet 4.x series), will load from the following roots (search order is determined by what is loaded, its name, and the closure of the instruction causing the load to take place):
+
+* The directory corresponding to an environment (`.pp` and `.rb`).
+* All modules from an environment's expanded module path in the order resulting from expansion (`.pp` and `.rb`).
+* The directory where puppet/lib/* is loaded from (`.rb` based load only)
+
+#### Subdirectories per type of function
+
+* for `.rb` functions the fragment `/functions` is added to `puppet/lib`
+* for `.pp` functions the fragment `/functions` is added to the root
+
+#### Name to filename transformation
+
+The fully qualified and absolute name of the searched entity is transformed to a path fragment where each name segment in lower case becomes a path segment.
+
+#### Search for a Name
+
+A search for an entity differs in the 3.x and 4.x API. In both cases no loading will take place if the named entity is already defined.
+
+In 3.x the search starts with the most specific path (all name segments expanded). If that does not yield an existing file the search continues by dropping the most specific part of the name. This search continues until an existing file is found. That file is then loaded (if not already loaded). After the load, the wanted named entity is expected to have been created. The operation fails if that is not the case.
+
+In 4.x the search is strictly confined to the most specific path (all name segments expanded). Search is also confined to the root denoted by the first name segment (module name), or lack thereof (searches environment).
+
+#### Recursive Loading of initial Manifest
+
+Puppet will automatically load either a single `.pp` file or recursively load `.pp` files as directed by the `manifest` setting. Whatever is loaded during this initial load will be defined and available irrespective of their given name spaces.
+
+#### Loadable Paths
+
+The overall set of  paths that will be searched are defined by the roots, the kind of searched entity, and files that are valid lower case representation of a name of the given kind. In addition to this set of paths, all `.pp` files appointed to by the `manifest` setting are loaded.
+
+Since all auto loadable entities must start each name segment with a letter a-z, and may be followed by letters a-z, the underscore character _, and digits 0-9; only file names matching the naming rule, and being contained in either a root, or a directory named with a name that match the naming rule will be eligible for loading.
+
+The name rule does not apply to files appointed (since or recursively) by the `manifest` setting.
+
+
