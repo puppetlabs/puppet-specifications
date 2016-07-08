@@ -47,6 +47,10 @@ The files annotated by an '*' indicate that they are created by package installa
         hiera.yaml                        # only if using deprecated default location
         modules
 
+    /etc/puppetlabs/facter *              # facter config root
+        facter.conf                       # primary facter config
+        conf.d/                           # config snippet directory
+
     /etc/puppetlabs/mcollective *
         client.cfg *
         facts.yaml *
@@ -78,6 +82,8 @@ The files annotated by an '*' indicate that they are created by package installa
 
     /opt/puppetlabs/facter *
         facts.d *                         # external facts directory (not pluginsync'ed)
+        cache/
+          cached_facts/                   # data for facts with TTLs is stored here
 
     /opt/puppetlabs/mcollective/
         plugins                           # user installed plugins
@@ -184,7 +190,12 @@ create a `puppet` user or group.
         modules *                             # user modulepath
 
     C:\ProgramData\PuppetLabs\facter *                                       same
+        etc *
+              facter.conf                     # facter's configuration file
+        conf.d *
         facts.d *                             # external facts directory (not pluginsync'ed)
+        cache *
+          cached_facts *                      # serialized fact resolution results
 
     C:\ProgramData\PuppetLabs\mcollective
         plugins *                             # user installed plugins
