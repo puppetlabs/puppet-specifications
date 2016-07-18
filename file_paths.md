@@ -11,6 +11,7 @@ This table specifies the file paths in a Puppet installation and the correspondi
 * [puppetdb](#puppetdb)
 * [puppetserver](#puppetserver)
 * [puppetmaster](#puppetmaster)
+* [razor-server](#razor-server)
 * [Notes](#notes)
 
 # puppet-agent (*nix)
@@ -420,6 +421,45 @@ The package will install a service named `puppetmaster`, create a
     /var/run/puppetlabs                   # :rundir                      /var/lib/puppet/run
         puppetmaster *                    # writeable by puppetmaster
             puppetmaster.pid
+
+# razor-server
+
+The package will install a service named `razor-server`, create a `razor`
+user and group, and run the service as the `razor` user.
+
+    /etc/puppetlabs/razor-server                                         /etc/razor
+        config.yaml
+        razor-torquebox.sh
+        shiro.ini
+    /opt/puppetlabs/bin
+        razor-admin                       -> /opt/puppetlabs/server/apps/razor-server/share/razor-server/bin/razor-binary-wrapper
+    /opt/puppetlabs/server/bin
+        razor-admin                       -> /opt/puppetlabs/server/apps/razor-server/share/razor-server/bin/razor-binary-wrapper
+    /opt/puppetlabs/server/apps/razor-server
+        bin
+            jruby                         -> /opt/puppetlabs/server/apps/razor-server/share/torquebox/jruby/bin/jruby
+        sbin
+            torquebox                     -> /opt/puppetlabs/server/apps/razor-server/share/torquebox/jruby/bin/torquebox
+        share
+            razor-server                                                 /opt/razor
+                bin
+                    razor-admin
+                    razor-binary-wrapper
+                brokers
+                lib
+                razor-server.env                                         /usr/share/razor-server/razor-server.env
+                shiro.ini
+                vendor
+            torquebox                                                    /opt/razor-torquebox
+                jboss
+                jruby
+        var/razor                                                        /var/lib/razor
+    /opt/puppetlabs/server/data/razor-server
+        repo                                                             /var/lib/razor/repo-store
+    /var/log/puppetlabs/razor-server                                     /var/log/razor-server
+    /var/run/puppetlabs/razor-server                                     /run/razor-server
+
+
 
 # Notes
 
