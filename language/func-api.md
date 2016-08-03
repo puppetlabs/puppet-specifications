@@ -337,31 +337,33 @@ The Function class reserves the following method names:
 * `loader`
 * `call_function`
 
-**NOTE** The API for this is still being designed.
-
 #### closure_scope
 
-Returns the scope where the function was defined.
+Returns the scope where the function was defined. This is the scope a function should
+use if it needs to lookup top-scope variables like `$facts`. This scope does not provide
+access to the local scope the call originates from.
 
 #### loader
 
 Returns the loader that loaded the function. Further loading will be done from the perspective
 of this loader.
 
-#### call_function(function_name, *args)
+#### call_function(function_name, args, &block)
 
 Calls the function named `function_name` (the name is given without any prefix (3x prefixes
-names with `function_`, 4x does not), and a variable number of arguments.
+names with `function_`, 4x does not), and an array containing the arguments.
 
 If you want to pass a block, you can either give a regular Ruby block, or pass on the `Proc` that
 was given to the function.
 
-    def my_function1(a, &block)
-      call_function('my_other_function', &block)
+    def my_function1(a, b, &block)
+      # passing given Proc
+      call_function('my_other_function', [a, b], &block)
     end
 
     def my_function2(a, &block)
-      call_function('my_other_function') { |x| ... }
+      # using a Ruby block
+      call_function('my_other_function', [a, b]) { |x| ... }
     end
 
 ### Function Documentation
@@ -401,11 +403,11 @@ to manipulate the catalog being produced).
   
 ### Manual Handling
 
-The intention is that typical functions should only require the features that Function
+The intention is that typical functions should only require the features that `Function`
 supports. Internal / system functions may require support for additional features, and
 for that purpose there is an `InternalFunction` base class. 
 
-As the API is being defined, there may be the need to create a custom
+As the API for internal functions is being defined, there may be the need to create a custom
 base class to experiment with features. If this is needed, there are two main
 extension points, the *initialization*, and the *call method*.
 
@@ -413,7 +415,7 @@ extension points, the *initialization*, and the *call method*.
 
 #### call_method(scope, *args, &block)
 
-A Function can implement `call(scope, *args, &block)`, perform additional checks etc, and either relay to the super version, or rewrite the array with given arguments and call:
+A Function can implement `call(scope, args, &block)`, perform additional checks etc, and either relay to the super version, or rewrite the array with given arguments and call:
 
     self.class.dispatcher.dispatch(self, scope, args, &block)
 
