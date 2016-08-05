@@ -37,6 +37,9 @@ It is not uncommon that 80% of the logic in  function consists of argument type 
 is when there is no checking at all (because it is a chore to write) leading to mysterious
 and sometimes spectacular failures.
 
+For autoloading information see [Autoloading][1].
+
+
 The 4x API
 ---
 In the 4x API there is support for type checking, and the
@@ -51,6 +54,8 @@ other parts of the system has the opportunity to ask for helper object to be inj
 these purposes. This makes general purpose functions free of agent/master concerns and
 it is easy to determine if a function will work in a particular context or not based on
 its declared needs in terms of access to other parts of the system/services.
+
+For autoloading information see [Autoloading][1].
 
 ### Creating a Function
 
@@ -539,3 +544,33 @@ called directly from Ruby, then the default applies, if called from the puppet l
 the injected value is used. This may be ideal for unit testing the function since it
 can be tested without using injection and with default for available checkers.
 
+Autoloading
+---
+Functions are autoloaded from files as shown in the table below. The reference `<root>` in the
+shown paths is either the root of the environment (the environment's directory), or the root of a module. The notation `<module name>` means the name of the module without the author part, and `<function_name>` means the leaf name of the function (without name spaces).
+
+| API        | in       | namespace support     | allows top-scope | path |
+| ---        | ---      | ------------------    | ---------------- | --- |
+| 3.x Ruby   | module   | Not supported         | Yes (always top scope) | `<root>/lib/puppet/parser/functions/<function_name>.rb` |
+|            | env      | Not supported         | -   | - 
+| 4.x Ruby   | module   | Yes `<module name>::` | Yes | `<root>/lib/puppet/functions/<module name>/<function_name>.rb` |
+|            | env      | Yes `environment::`   | Yes | `<root>/lib/puppet/functions/environment/<function_name>.rb` `<root>/lib/puppet/functions/<function_name>.rb` |
+| 4.x Puppet | module   | Yes `<module name>::` | No  | `<root>/functions/<function_name>.pp` |
+|            | env      | Yes `environment::`   | No  | `<root>/functions/<function_name>.pp` |
+|            | manifest | Yes (any namspace)    | Yes | in any manifest |
+
+For 3.x note that only top scope, non namespaced functions can be defined. (The 3.x function API should not be used).
+
+The 4.x namespaces allows namespaced functions to be created. When creating 4.x functions in Ruby it is possible to create both namespaced and top scope functions. Creating top scoped functions should be avoided as much as possible and considered to be reserved for functions included in the Puppet runtime.
+
+Since the 4.x Ruby API allows functions to define top scope functions (both in the environment's file tree, and in module's file trees), the path to a namespaced function must always include the name of the module (or the fixed name `environment` for the (any) environment's namesapce) as the top directory `<root>/lib/puppet/functions` is for top scoped functions.
+
+For the 4.x Puppet API it is not possible to autoload top scoped functions. It is however
+possible to create top scoped functions by defining them in a manifest that is guaranteed to be loaded first (typically site.pp). This mechanism can be used to override/patch and delegate function calls as a version migration aid. 
+
+Manifest loaded functions can define functions in any namespace. This should only be used for special cases (migration / patching).
+
+Nested namespaces are suppoted in the 4.x API for both Ruby and Puppet. The paths to the `.rb` or `.pp` files containing such functions should have each additional namespace in a nested directory. As an example the function `environment::testing::env_func()` should be placed in `<root>/lib/puppet/functions/environment/testing/env_func.rb` (Ruby API), or `<root>/functions/testing/env_func.pp` (Puppet API) - note the difference that the Ruby API path includes the `environment` directory since the Ruby API allows top scope functions while the Puppet API does not.
+
+
+[1]: #autoloading
