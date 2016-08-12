@@ -7,7 +7,7 @@ Grammar
 ---
 
     FunctionDefinition
-      : 'function' parameters = ParameterList? '{' statements += statements '}'
+      : 'function' name = NAME parameters = ParameterList? ReturnType? '{' statements += statements '}'
       ;
       
     ParameterList
@@ -15,8 +15,12 @@ Grammar
       ;
       
     Parameter
-     : type=Expression<Type>? captures_rest='*'? name=QualifiedName ('=' value = Expression)?
-     ;
+      : type=Expression<Type>? captures_rest='*'? name=QualifiedName ('=' value = Expression)?
+      ;
+    
+    ReturnType
+      : '>>' Expression<Type>
+      ;
      
 The `Parameter` definition is the same as for Lambda.
 
@@ -35,14 +39,17 @@ The `Parameter` definition is the same as for Lambda.
   of each captured element, or an Array Type that may cap the number or entries as well as specifying
   the element type. As a consequence, to capture a sequence of `Array[T]`, this must be specified as
   `Array[Array[T]]`.
-  
+* Since 4.7.0 it is possible to specify the expected return type of the function. When it is specified an
+  automatic type assertion will be made against the value produced by the function.
+
+
 Discussion:
 
 The above rules for `captures_rest` are motivated by the thought that the most common use is
 not to pass multiple arrays, and it is more convenient to write `foo(String *$rest)` then to have to write `foo(Array[String] *$rest)`, since the `*` already implies `Array`. The consequence is when using that shorthand notation is that an array of arrays must be written `Array[Array[T]]` - which is expected to be far more uncommon, than either capping the list
 (e.g. `foo(Array[String,1,10] *$rest)`, or passing a variable number of arrays.
 
-See [Parameter Scope][1] for more information about scopig rules an variable access in a default value expression.
+See [Parameter Scope][1] for more information about scoping rules an variable access in a default value expression.
 
 Lambda Support
 ---
