@@ -234,9 +234,26 @@ Types are specified in string form with the syntax of the types as they are used
 Puppet Programming Language. Only literal values may be used for the type parameter
 expressions (e.g. '`Integer[$min_allowed + 1, $max_allowed]`' cannot be used as a type).
 
+#### Returned Type
+
+Since Puppet 4.7.0 it is possible to specify the expected return type. This is done in the dispatcher by calling `return_type` with the type as a puppet type system string.
+
+    Puppet::Functions.create_function(:min) do
+      dispatch :min do
+        param 'Numeric', :a
+        param 'Numeric', :b
+        return_type 'Numeric'
+      end
+    # ...
+    end
+    
+* The return type is asserted when the function returns a value.
+* If a return type is not specified it defaults to `Any`.
+
 ### Block/Lambda Support
 
 #### Defining the Block Parameter
+
 The signature supports a special block parameter that can accept a block of code / lambda given
 to a function. If this block parameter is not defined, the function
 will not accept a call where a lambda is given. To make it possible to pass a block to the method
