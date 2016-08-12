@@ -1401,6 +1401,10 @@ in error messages when communicating why a given set of arguments do not match a
 
 The signature of a `Callable` denotes the type and multiplicity of the arguments it accepts and consists of a sequence of parameters; a list of types, where the three last entries may optionally be min count, max count, and a `Callable` (which is taken as its block_type).
 
+Since Puppet 4.7.0 a `Callable` can optionally describe a return type. When return type is something other than `Any`,
+the signature consists of an array of parameters, followed by the return type such that `Callable[[Integer, 2, 2], Float]` is a
+callable that takes two `Integer` parameters, and produces/returns a `Float`.
+
 * If neither min or max are specified the parameters must match exactly.
 * A min < size(params) means that the difference is optional.
 * If max > size(params) means that the last type repeats until the given max cap number of arguments
@@ -1421,7 +1425,7 @@ argument being a `Numeric`, `Float`, or an `Integer`, but not with a `Scalar`, o
 
 This also means that generality works the opposite way; `Callable[String] ∪ Callable[Scalar]` yields `Callable[String]` - since both can be called with a `String`, but not with any `Scalar`.
 
-Internally the `Callable` is represented by a `Tuple`, and an optional `Callable` (block). Type algebra is performed on these individually.
+Internally the `Callable` is represented by a `Tuple`, and an optional `Callable` (block). Type algebra is performed on these individually. Since Puppet 4.7.0, the calculation also involves the return type.
 
     Callable         ∪  Callable                         → Callable[0,default]
     Callable[?]      ∪  T (T ∉ Callable)                 → Any
@@ -1446,7 +1450,6 @@ In general:
     Callable[*S, B]  ∪  Callable[*T, C]    → Callable[*(S ∪ T), B ∪ C]
 
 Here `*S`, `*T` denotes, the syntax of the `Tuple` parameters expanded.
-
 
 Examples:
 
