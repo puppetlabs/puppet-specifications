@@ -1481,7 +1481,7 @@ Syntax:
       ;
 
     LambdaExpression
-      : '|' ParameterList? '|' '{' Statements? '}'
+      : '|' ParameterList? '|' ReturnType? '{' Statements? '}'
       ;
 
     ParameterList
@@ -1496,6 +1496,9 @@ Syntax:
 
     VariableExpression : VARIABLE ;  # e.g. $x, $my_param
 
+    ReturnType
+      : '>>' Expression<Type>
+      ;
 
 **General**:
 
@@ -1529,7 +1532,7 @@ Syntax:
   arguments requires use of one of the other two styles.
 * A function implementation may invoke the lambda that is given to it, but it may not use it after 
   the function has returned (and it may not return the lambda).
-* This stye cannot be used when the argument is a literal `Hash` because the expression is
+* This style cannot be used when the argument is a literal `Hash` because the expression is
   indistinguishable from a resource expression without title. **(PUP-979)**
 * A statement type call always produces `undef`.
 
@@ -1595,6 +1598,8 @@ Examples:
 * The parameter list is syntactically the same as the parameter list for a Resource Type definitions,
   and a Class definitions.
 * Evaluation of default value expressions take place in the scope where the lambda is declared.
+* Since 4.7.0 it is possible to specify the expected return type of a lambda. An automatic type assertion will be made
+  when the lambda has a specified return type.
 
 **Calling Types - new-operation**
 Since 4.5.0.
