@@ -7,7 +7,7 @@ Grammar
 ---
 
     FunctionDefinition
-      : 'function' name = NAME parameters = ParameterList? ReturnType? '{' statements += statements '}'
+      : 'function' name = NAME parameters = ParameterList? return_type = ReturnType? '{' statements += statements '}'
       ;
       
     ParameterList
