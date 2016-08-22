@@ -89,6 +89,8 @@ and **Platform Types**:
 * `Runtime`; the type of runtime (non Puppet) types
 * `Undef`; the "no value" type
 * `Default`; the "default value" type
+* `Sensitive`; a type that represents a data type that have "clear text" restrictions
+
 
 All types (Platform and Puppet) are organized into one *Type System*.
 
@@ -186,6 +188,7 @@ may appear more than once in the hierarchy (e.g. a `Scalar` is both `Any` and `D
        |- Type[T]
        |- Runtime[runtime_name, class_name]
        |- Default
+       |- Sensitive[T]
 
 In addition to these types, a Qualified Reference that does not represent any of the other types is an alias for `Resource[the_qualified_reference]` (e.g. `File` is shorthand notation for `Resource[File]` / `Resource[file]`).
 
@@ -1470,6 +1473,57 @@ produced. This change will be made if the distinction has practical value.
 </table>
 
 [3]: http://en.wikipedia.org/wiki/Covariance_and_contravariance_(computer_science)#Function_types
+
+### Sensitive[T]
+
+The `Sensitive` type describes a value that is (as implied by the name) sensitive with respect to disclosure.
+At runtime, values that are sensitive can be wrapped in an instance of the Sensitive runtime type using `Sensitive.new`.
+When a sensitive value is processed (for example logged), its value is changed so its string form is the string `"redacted"`.
+
+When matching a `Sensitive[T]` against sensitive values the inferred type of a value is always generalized to not
+disclose sensitive information. As an example, disclosing the length of a String gives away too much information.
+Therefore, when using the Sensitive data type, it is only meaningful to use the basic concrete data types.
+
+It is possible to unwrap an instance of Sensitive data type to obtain the clear text value. When doing so utmost care
+should be taken to not disclose the value in clear text (it should not be logged). The function `unwrap` performs unwrapping.
+
+    $secret = Sensitive(42)
+    $processed = $secret.unwrap |$sensitive| { $sensitive * 2 }
+    notice $processed  # notices 84
+
+In general, care should be taken to also not disclose derived information (as in the example above).
+
+<table>
+<tr><th>Note</th></tr>
+<tr><td>
+  The Sensitive data type is the first data type in an expected family of data types to be used to handle
+  sensitive/secret data. It expected that future versions also will have support for Encrypted data. In its current
+  form, the Sensitive data type maintains the wrapped value in clear text. It is therefore only an aid to ensure that
+  sensitive values are not inadvertently disclosed.
+</tr></td>
+</table>
+
+#### Type Algebra on Sensitive[T]
+
+* A `Sensitive[T]` is assignable to `Sensitive[T2]` if `T` is assignable to `T2`.
+* Nothing besides Sensitive is assignable to Sensitive.
+* The relationship between two `Sensitive` types is based on their type parameter.
+
+#### Sensitive.new
+
+Creates a new instance of the Sensitive type. Optionally, a type parameter can be given that asserts that the given value is of the expected data type.
+
+    $x = Sensitive.new('say friend')
+    $x = Sensitive('password')
+    $x = Sensitive[String].new('secret')
+
+#### Operations on Sensitive values
+
+There is no automatic unwrapping of sensitive values. As a consequence it is not possible to perform operations on sensitive values other than interpolating it as a String. When such interpolation takes place, the value is shown as `"[redacted]"`.
+
+#### Use of Sensitive values in Resources
+
+Sensitive values can be used in resources. It is not allowed to use a sensitive value as a resource title.
 
 Operations per Type
 ---
