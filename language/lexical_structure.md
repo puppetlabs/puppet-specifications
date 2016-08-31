@@ -248,16 +248,30 @@ when appearing after `')'`, `']'`, `'|>>'`, `'|>'`, `NAME`, `REF`, `STRING`, `BO
 There is one ambiguity in that a Regular Expression must be allowed to appear after a `'}'` (end of a case expression option and start of a new). This clashes with constructs where `'}'` is the end of an expression that produces an *R-value* and where it is possible to divide the result. In the event the program logic required several divisions (e.g. `...} /<expr>/<expr>` the source must place the
 second `'/'` on a new line to avoid `/<expr>/` to be recognized as a regular expression (or alternatively compute a single divisor to avoid the repeated division).
 
-
-Identifiers
+Bare Words, Names and References
 ---
-Identifiers are *bare words* (a bare word is an unquoted sequence of letters and the underscore
-(`_`) character). The meaning of a bare word is context specific and is described in the language grammar; it may be interpreted as a string/symbol, or be a name/identifier.
+A *bare word* (`WORD`) is an unquoted sequence of letters and the underscore (`_`) character and intermixed
+hyphens `-` optionally starting with `::` and divided into multiple name-space segments starting with `::`.
+Each bare word segment must start with a lower case letter `a`-`z` or underscore `_`. A bare word may not end with
+a hyphen (`-`) or with a name-space separator (`::`). A bare word may not contain single `:` characters.
 
-There are two main kinds of identifiers depending on if the sequence starts with a lower or upper case letter.
+A "bare word" that complies with the more restrictive rule `/(::)?[a-z]\w*(::[a-z]\w*)*/` is taken as a `NAME`.
+The term `QualifiedName` is used to denote a `NAME` with name-space `::` separators.
 
-Identifiers may be qualified with a *name-space*. The name-space separator is `::` and it may also be
-used first in the name to *anchor* the name in the root/global namespace. Each segment of a qualified identifier must follow the same format, all segments must start with a letter of the same case.
+In some contexts there is a difference between a `NAME` and a `WORD` (a `WORD` is for example not acceptable as
+the name of named elements like a function or a class). In general, when used as values both `WORD` and `NAME` evaluate
+to the bare word string.
+
+A sequence that starts with an upper case letter is a reference to a **type** and is never interpreted as a `WORD` or a `NAME`.
+The term `QualifiedReference` is used to denote such upper case sequences. In some contexts a `QualifiedReference` may
+be used to name an element (for example when creating a type alias as in `type MyType = SomeOtherType`). In general, a
+`QualifiedReference` is a reference to an existing data type like `Integer` or resource type like `File`.
+
+A character sequence may be divided into *name-space* segments. The name-space separator is `::` and it may also be
+used first in the name to *anchor* the name in the root/global name-space.
+Each name-space segment must follow the same format; all segments must start with a letter of the same case (where an underscore (`_`) is considered to be lower case).
+
+While a `WORD` may contain name space separators (`::`) the result is simply a string and any interpretation of the `::` as name space separators is up to the user of such a string.
 
 Keywords can not be used as identifiers (names) of elements, but may be used as names of attributes/properties.
 
@@ -267,15 +281,35 @@ Keywords can not be used as identifiers (names) of elements, but may be used as 
 NAME
   : /(::)?[a-z]\w*(::[a-z]\w*)*/
   ;
+
+WORD
+  : /((?:::){0,1}(?:[a-z_](?:[\w-]*[\w])?))+/
+  ;
+
 ```
 
-Examples:
+NAME Examples:
 
     apache::port
     ::apache
     ::apache::port
 
-### Upper Case Bare Words / REF / QualifiedReference
+WORD Examples:
+
+    bare_word_string
+    this-is-a-bare-word-string
+    _bare_word
+    _foo_
+    _Bare-word-as-it-starts-with-underscore
+
+Examples of non bare words:
+
+    NotBareWord_IsATypeReference
+    can-not-end-with-hyphen-
+    not::OK
+    -can-not-start-with-hyphen
+
+### Upper Case Bare Words / REF / QualifiedReference / TypeReference
 
 ```
 REF
