@@ -50,10 +50,21 @@ the conceptual categories **Data Types** e.g.:
 *  `Integer`
 *  `Float`
 *  `Boolean`
-*  `Regexp`
 *  `String`
 *  `Array`
 *  `Hash`
+*  `Undef`
+
+**Scalar Types** e.g.:
+*  `Integer`
+*  `Float`
+*  `Boolean`
+*  `String`
+*  `Regexp`
+*  `SemVer`
+*  `SemVerRange`
+*  `Timespan`
+*  `Timestamp`
 
 **Catalog Types** e.g.:
 
@@ -142,16 +153,17 @@ may appear more than once in the hierarchy (e.g. a `Scalar` is both `Any` and `D
        |  |     |- (Integer with range inside another Integer)
        |  |  |- Float[from, to]
        |  |     |- (Float with range inside another Float)
-       |  |
        |  |- String[from, to]
        |  |  |- Enum[*strings]
        |  |  |- Pattern[*patterns]
        |  |
        |  |- Boolean
        |  |- Regexp[pattern_string]
-       |
-       |- SemVer
-       |- SemVerRange
+       |  |- SemVer
+       |  |- SemVerRange
+       |  |- Timespan
+       |  |- Timestamp
+       |  |
        |
        |- Collection
        |  |- Array[T]
@@ -179,9 +191,13 @@ may appear more than once in the hierarchy (e.g. a `Scalar` is both `Any` and `D
        |
        |- Undef
        |- Data
-       |  |- Scalar
+       |  |- Boolean
+       |  |- Numeric
+       |  |- String
        |  |- Array[Data]
-       |  |- Hash[Scalar, Data]
+       |  |- Hash[Boolean, Data]
+       |  |- Hash[Numeric, Data]
+       |  |- Hash[String, Data]
        |  |- Undef
        |
        |- Callable[signature...]
@@ -250,9 +266,13 @@ hash element key may not be `Undef`.
 #### Type Algebra on Data
 
     Data ∪ Data                 → Data
-    Data ∪ Scalar               → Data
+    Data ∪ Boolean              → Data
+    Data ∪ Numeric              → Data
+    Data ∪ String               → Data
     Data ∪ Array[Data]          → Data
-    Data ∪ Hash[Scalar, Data]   → Data
+    Data ∪ Hash[Boolean, Data]  → Data
+    Data ∪ Hash[Numeric, Data]  → Data
+    Data ∪ Hash[String, Data]   → Data
     Data ∪ Undef                → Data
     Data ∪ (T ∉ Data)           → Any
 
@@ -269,7 +289,7 @@ Represents the abstract notion of "value", its subtypes are `Numeric`, `String` 
 
 ### Numeric
 
-Represents the abstract notion of "number", its subtypes are `Integer`, and `Float`.
+Represents the abstract notion of "number", its subtypes are `Integer` and `Float`.
 
 #### Type Algebra on Numeric
 
@@ -427,7 +447,7 @@ A float is an *inexact* real number using the native architecture's double preci
 point representation. In contrast to `Integer`, operations on `Float` can cause the result to be negative or positive *Infinity* (i.e. it loses precision to the point where there is no value digits left). This is treated as an error in the Puppet Programming Language (it can be observed by dividing a floating point value with 0).
 
 A `Float` range behaves as an `Integer` range and accepts both integer, and float values when
-specifying the range. It is not however possible to iterate over a `Float` range.
+specifying the range. It is however, not possible to iterate over a `Float` range.
 
 You can learn more about floating point than you ever want to know from these articles:
 
@@ -455,6 +475,337 @@ For conversion from `String` both float and integer formats are supported.
 * A boolean `true` is converted to 1.0, and a `false` to 0.0
 * In `String` format, integer prefixes for hex and binary radix are understood (but not octal since
   floating point in string format may start with a '0').
+
+### Timespan ([from, to])
+
+Since version 4.8.0
+
+Represents a range of timespan values. The default is the range +/- Infinity.
+
+A timespan is an duration, measured in seconds, with nanosecond precision.
+
+A `Timespan` range behaves as an `Integer` range and accepts integer, float, or timespan values when
+specifying the range. It is however, not possible to iterate over a `Timespan` range.
+
+#### Type Algebra on Timespan
+
+    Timespan ∪ Timespan            → Timespan
+    Timespan ∪ Numeric             → Scalar
+    Timespan ∪ (T ∈ Scalar)        → Scalar
+    Timespan ∪ (T ∉ Scalar)        → Any
+    Timespan[a, b] ∪ Timespan[c, d]   → Timespan[min(a, c), max(b,d)]
+
+#### Timespan.new
+
+A new `Timespan` can be created from `Integer`, `Float`, `String`, and `Hash` values. Several variants of the constructor are provided.
+
+##### Timespan from seconds
+
+When a Float is used, the decimal part represents fractions of a second.
+
+```puppet
+function Timespan.new(
+  Variant[Float, Integer] $value
+)
+```
+
+##### Timespan from days, hours, mintues, seconds, and fractions of a second
+
+The arguments can be passed separately in which case the first four; days, hours, minutes, and seconds are mandatory and the rest are optional.
+All values may overflow and/or be negative. The internal 128-bit nanosecond integer is calculated as:
+
+```
+(((((days * 24 + hours) * 60 + minutes) * 60 + seconds) * 1000 + milliseconds) * 1000 + microseconds) * 1000 + nanoseconds
+```
+
+```puppet
+function Timespan.new(
+  Integer $days, Integer $hours, Integer $minutes, Integer $seconds,
+  Integer $milliseconds = 0, Integer $microseconds = 0, Integer $nanoseconds = 0
+)
+```
+
+or, all arguments can be passed as a `Hash`, in which case all entries are optional:
+
+```puppet
+function Timespan.new(
+  Struct[{
+    Optional[negative] => Boolean,
+    Optional[days] => Integer,
+    Optional[hours] => Integer,
+    Optional[minutes] => Integer,
+    Optional[seconds] => Integer,
+    Optional[milliseconds] => Integer,
+    Optional[microseconds] => Integer,
+    Optional[nanoseconds] => Integer
+  }] $hash
+)
+```
+
+##### Timespan from String and format directive patterns
+
+The first argument is parsed using the format optionally passed as a string or array of strings. When an array is used, an attempt
+will be made to parse the string using the first entry and then with each entry in succession until parsing succeeds. If the second
+argument is omitted, an array of default formats will be used.
+
+It's an error if no format was able to parse the given string.
+
+```puppet
+function Timespan.new(
+  String $string, Variant[String[2],Array[String[2]], 1] $format = <default format>)
+)
+```
+
+the arguments may also be passed as a `Hash`:
+
+```puppet
+function Timespan.new(
+  Struct[{
+    string => String[1],
+    Optional[format] => Variant[String[2],Array[String[2]], 1]
+  }] $hash
+)
+```
+
+The directive consists of a percent (%) character, zero or more flags, optional minimum field width and
+a conversion specifier as follows:
+```
+%[Flags][Width]Conversion
+```
+
+###### Flags:
+
+| Flag  | Meaning
+| ----  | ---------------
+| -     | Don't pad numerical output
+| _     | Use spaces for padding
+| 0     | Use zeros for padding
+
+###### Format directives:
+
+| Format | Meaning |
+| ------ | ------- |
+| D | Number of Days |
+| H | Hour of the day, 24-hour clock |
+| M | Minute of the hour (00..59) |
+| S | Second of the minute (00..59) |
+| L | Millisecond of the second (000..999) |
+| N | Fractional seconds digits |
+
+The format directive that represents the highest magnitude in the format will be allowed to
+overflow. I.e. if no "%D" is used but a "%H" is present, then the hours may be more than 23.
+
+The default array contains the following patterns:
+
+```
+['%D-%H:%M:%S.%-N', '%H:%M:%S.%-N', '%M:%S.%-N', '%S.%-N', '%D-%H:%M:%S', '%H:%M:%S', '%D-%H:%M', '%S']
+```
+
+Examples - Converting to Timespan
+
+```puppet
+$duration = Timespan(13.5)       # 13 seconds and 500 milliseconds
+$duration = Timespan({days=>4})  # 4 days
+$duration = Timespan(4, 0, 0, 2) # 4 days and 2 seconds
+$duration = Timespan('13:20')    # 13 hours and 20 minutes (using default pattern)
+$duration = Timespan('10:03.5', '%M:%S.%L') # 10 minutes, 3 seconds, and 5 milliseconds
+$duration = Timespan('10:03.5', '%M:%S.%N') # 10 minutes, 3 seconds, and 5 nanoseconds
+```
+
+### Timestamp ([from, to])
+
+Since version 4.8.0
+
+Represents a range of timestamp values. The default is the range +/- Infinity.
+
+A timestamp is an moment in time, measured in seconds since epoch (1970-01-01 00:00:00 UTC), with nanosecond precision.
+
+A `Timestamp` range behaves as an `Integer` range and accepts integer, float, or timestamp values when
+specifying the range. It is however, not possible to iterate over a `Timestamp` range.
+
+#### Type Algebra on Timestamp
+
+    Timestamp ∪ Timestamp           → Timestamp
+    Timestamp ∪ Numeric             → Scalar
+    Timestamp ∪ (T ∈ Scalar)        → Scalar
+    Timestamp ∪ (T ∉ Scalar)        → Any
+    Timestamp[a, b] ∪ Timestamp[c, d]   → Timestamp[min(a, c), max(b,d)]
+
+#### Timestamp.new
+
+A new `Timestamp` can be created from `Integer`, `Float`, `String`, and `Hash` values. Several variants of the constructor are provided.
+
+##### Timestamp from seconds since epoch (1970-01-01 00:00:00 UTC)
+
+Without arguments, a Timestamp that represents the current time is created.
+
+```puppet
+function Timestamp.new()
+```
+
+When a Float is used, the decimal part represents fractions of a second.
+
+```puppet
+function Timestamp.new(
+  Variant[Float, Integer] $value
+)
+```
+
+##### Timestamp from String and patterns consisting of format directives
+
+The first argument is parsed using the format optionally passed as a string or array of strings. When an array is used, an attempt
+will be made to parse the string using the first entry and then with each entry in succession until parsing succeeds. If the second
+argument is omitted, an array of default formats will be used.
+
+It's an error if no format was able to parse the given string.
+
+```puppet
+function Timestamp.new(
+  String $string, Variant[String[2],Array[String[2]], 1] $format = <default format>)
+)
+```
+
+the arguments may also be passed as a `Hash`:
+
+```puppet
+function Timestamp.new(
+  Struct[{
+    string => String[1],
+    Optional[format] => Variant[String[2],Array[String[2]], 1]
+  }] $hash
+)
+```
+
+The directive consists of a percent (%) character, zero or more flags, optional minimum field width and
+a conversion specifier as follows:
+```
+%[Flags][Width]Conversion
+```
+
+###### Flags:
+
+| Flag  | Meaning
+| ----  | ---------------
+| -     | Don't pad numerical output
+| _     | Use spaces for padding
+| 0     | Use zeros for padding
+| #     | Change names to upper-case or change case of am/pm
+| ^     | Use uppercase
+| :     | Use colons for %z
+
+###### Format directives (names and padding can be altered using flags):
+
+*Date (Year, Month, Day):*
+
+| Format | Meaning |
+| ------ | ------- |
+| Y | Year with century, zero-padded to at least 4 digits |
+| C | year / 100 (rounded down such as 20 in 2009) |
+| y | year % 100 (00..99) |
+| m | Month of the year, zero-padded (01..12) |
+| B | The full month name ("January") |
+| b | The abbreviated month name ("Jan") |
+| h | Equivalent to %b |
+| d | Day of the month, zero-padded (01..31) |
+| e | Day of the month, blank-padded ( 1..31) |
+| j | Day of the year (001..366) |
+
+*Time (Hour, Minute, Second, Subsecond):*
+
+| Format | Meaning |
+| ------ | ------- |
+| H | Hour of the day, 24-hour clock, zero-padded (00..23) |
+| k | Hour of the day, 24-hour clock, blank-padded ( 0..23) |
+| I | Hour of the day, 12-hour clock, zero-padded (01..12) |
+| l | Hour of the day, 12-hour clock, blank-padded ( 1..12) |
+| P | Meridian indicator, lowercase ("am" or "pm") |
+| p | Meridian indicator, uppercase ("AM" or "PM") |
+| M | Minute of the hour (00..59) |
+| S | Second of the minute (00..60) |
+| L | Millisecond of the second (000..999). Digits under millisecond are truncated to not produce 1000 |
+| N | Fractional seconds digits, default is 9 digits (nanosecond). Digits under a specified width are truncated to avoid carry up |
+
+*Time (Hour, Minute, Second, Subsecond):*
+
+| Format | Meaning |
+| ------ | ------- |
+| z   | Time zone as hour and minute offset from UTC (e.g. +0900) |
+| :z  | hour and minute offset from UTC with a colon (e.g. +09:00) |
+| ::z | hour, minute and second offset from UTC (e.g. +09:00:00) |
+| Z   | Abbreviated time zone name or similar information.  (OS dependent) |
+
+*Weekday:*
+
+| Format | Meaning |
+| ------ | ------- |
+| A | The full weekday name ("Sunday") |
+| a | The abbreviated name ("Sun") |
+| u | Day of the week (Monday is 1, 1..7) |
+| w | Day of the week (Sunday is 0, 0..6) |
+
+*ISO 8601 week-based year and week number:*
+
+The first week of YYYY starts with a Monday and includes YYYY-01-04.
+The days in the year before the first week are in the last week of
+the previous year.
+
+| Format | Meaning |
+| ------ | ------- |
+| G | The week-based year |
+| g | The last 2 digits of the week-based year (00..99) |
+| V | Week number of the week-based year (01..53) |
+
+*Week number:*
+
+The first week of YYYY that starts with a Sunday or Monday (according to %U
+or %W). The days in the year before the first week are in week 0.
+
+| Format | Meaning |
+| ------ | ------- |
+| U | Week number of the year. The week starts with Sunday. (00..53) |
+| W | Week number of the year. The week starts with Monday. (00..53) |
+
+*Seconds since the Epoch:*
+
+| Format | Meaning |
+| s | Number of seconds since 1970-01-01 00:00:00 UTC. |
+
+*Literal string:*
+
+| Format | Meaning |
+| ------ | ------- |
+| n | Newline character (\n) |
+| t | Tab character (\t) |
+| % | Literal "%" character |
+
+*Combination:*
+
+| Format | Meaning |
+| ------ | ------- |
+| c | date and time (%a %b %e %T %Y) |
+| D | Date (%m/%d/%y) |
+| F | The ISO 8601 date format (%Y-%m-%d) |
+| v | VMS date (%e-%^b-%4Y) |
+| x | Same as %D |
+| X | Same as %T |
+| r | 12-hour time (%I:%M:%S %p) |
+| R | 24-hour time (%H:%M) |
+| T | 24-hour time (%H:%M:%S) |
+
+The default array contains the following patterns:
+
+```
+['%FT%T.%L %Z', '%FT%T %Z', '%F %Z', '%FT%T.L', '%FT%T', '%F']
+```
+
+Examples - Converting to Timestamp
+
+```puppet
+$ts = Timestamp(1473150899)                              # 2016-09-06 08:34:59 UTC
+$ts = Timestamp({string=>'2015', format=>'%Y'})          # 2015-01-01 00:00:00.000 UTC
+$ts = Timestamp('Wed Aug 24 12:13:14 2016', '%c')        # 2016-08-24 12:13:14 UTC
+$ts = Timestamp('Wed Aug 24 12:13:14 2016 PDT', '%c %Z') # 2016-08-24 19:13:14.000 UTC
+```
 
 ### String([from, to])
 
@@ -645,6 +996,42 @@ as negative value.
 | dxXobBc | converts float to integer and formats using the integer rules
 
 Defaults to `p`
+
+##### Timespan to String
+
+| Format  | Timespan formats
+| ----    | ------------------
+| s       | formats according to the timespan format string '%D-%H:%M:%S' 
+| p       | programmatic representation - "Timespan(<quoted string>)" where <quoted string> is the result of using '%s' 
+| dxXobB  | converts timespan to integer representing seconds and formats using the integer rules
+| eEfgGaA | converts timespan to float representing seconds and fractions of second and formats using the floating point rules
+
+A Timespan can also be formatted using the Puppet function `strftime()` and the format directives listed under **Timespan.new** 
+
+##### Timestamp to String
+
+| Format  | Timestamp formats
+| ----    | ------------------
+| s       | formats according to the timestamp format string '%FT%T.%L %Z' 
+| p       | programmatic representation - "Timestamp(<quoted string>)" where <quoted string> is the result of using '%s' 
+| dxXobB  | converts timestamp to integer representing seconds since epoch and formats using the integer rules
+| eEfgGaA | converts timestamp to float representing seconds since epoch and fractions of second and formats using the floating point rules
+
+A Timestamp can also be formatted using the Puppet function `strftime()` and the format directives listed under **Timestamp.new**
+
+##### SemVer to String
+
+| Format  | SemVer formats
+| ----    | ------------------
+| s       | \<major\>.\<minor\>.\<patch\>\[-\<prerelease\>\]\[+\<build\>\]
+| p       | programmatic representation - "SemVer(<quoted string>)" where <quoted string> is the result of using '%s' 
+
+##### SemVerRange to String
+
+| Format  | SemVerRange formats
+| ----    | ------------------
+| s       | formatted according to [semver range specification](https://github.com/npm/node-semver)
+| p       | programmatic representation - "SemVerRange(<quoted string>)" where <quoted string> is the result of using '%s' 
 
 ##### String to String
 
