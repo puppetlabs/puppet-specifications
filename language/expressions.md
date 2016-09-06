@@ -248,6 +248,29 @@ may never silently produce an incorrect value.
     1 + 1      # produces 2
     1.0 + 1.0  # produces 2.0
 
+##### Timestamps and Timespans
+
+Timestamps and Timespans are Numbers and can participate in most arithmetic operations. 
+
+*<small>T = Timestamp, D = Timespan (Duration), I = Integer (seconds), and F = Float (seconds with fraction)</small>*
+
+    T + T is illegal
+    T + D = T
+    T + I = T
+    T + F = T
+    D + T = T
+    D + D = D
+    D + I = D
+    D + F = D
+    I + T = T
+    F + T = T
+    I + D = D
+    F + D = D
+
+Illegal operations:
+
+    T + T
+
 #### Concatenation / Merge
 
 * When LHS is an `Array`
@@ -295,6 +318,26 @@ may never silently produce an incorrect value.
 
     10 - 1     # produces 9
     10.0 - 0.1 # produces 9.9
+    
+The following applies when a Timestamp or Timespan is involved:
+
+*<small>T = Timestamp, D = Timespan (Duration), I = Integer (seconds), and F = Float (seconds with fraction)</small>*
+
+    T - T = D
+    T - D = T
+    T - I = T
+    T - F = T
+    D - D = D
+    D - I = D
+    D - F = D
+    I - D = D
+    F - D = D
+
+Illegal operations:
+
+    D - T
+    I - T
+    F - T
 
 #### Delete
 
@@ -339,6 +382,21 @@ Multiplication of integer values produces an integer result. If one of the opera
 result is also a Float. An implementation may raise an error if integral values overflow, but
 may never silently produce an incorrect value.
 
+The following applies when a Timestamp or Timespan is involved:
+
+*<small>T = Timestamp, D = Timespan (Duration), I = Integer, and F = Float</small>*
+
+    D * I = D
+    D * F = D
+    I * D = D
+    F * D = D
+
+Illegal operations:
+
+    T * <any>
+    <any> * T
+    D * D
+
 ### unary * operator (splat)
 
     UnarySplatExpression : '*' Expression<R> ;
@@ -377,6 +435,21 @@ Note that unfold of `*undef` in a case or select does not match anything, not ev
 Division of integer values produces an integer result (without rounding).
 If one of the operands is a `Float` the result is also a `Float`.
 
+The following applies when a Timestamp or Timespan is involved:
+
+*<small>T = Timestamp, D = Timespan (Duration), I = Integer, and F = Float</small>*
+
+    D / D = F
+    D / I = F
+    D / F = F
+
+Illegal operations:
+
+    T / <any>
+    <any> / T
+    I / D
+    F / D
+
 ### % (modulo) operator
 
      ModuloExpression : Expression<R> '%' Expression<R> ;
@@ -387,6 +460,21 @@ If one of the operands is a `Float` the result is also a `Float`.
   * Modulo by 0 is an error
   
 Note that `%` is not supported for `Float` (an error is raised) as this creates very confusing results.
+
+The following applies when a Timestamp or Timespan is involved:
+
+*<small>T = Timestamp, D = Timespan (Duration), I = Integer, and F = Float</small>*
+
+    D % I = I (seconds)
+    I % D = F (seconds and fractions of second)
+
+Illegal operations:
+
+    T % <any>
+    <any> % T
+    D % D
+    F % D
+    D % F
 
 ### << operator
 
@@ -634,16 +722,17 @@ A comparison operator converts the result to a `Boolean`.
 
 #### Comparison Semantics per Type
 
-* Both LHS and RHS must have the same type of an error is raised
 * Comparisons of strings is case independent
   * **Case independence is only done for the /[a-zA-Z]/ character range** as the rest of
     the characters' status depends on Locale. [PUP-1800]
 * It is possible to compare:
   * `String` with `String`
-  * `Numeric` with `Numeric` (or with strings in numeric form)
+  * `Numeric` with `Numeric` with some limitations:
+    * `Timespan` can only be compared to `Timespan`, `Integer` or `Float`
+    * `Timestamp` can only be compared to `Timestamp`, `Integer` or `Float`
   * `Type` with `Type`
     * Here the smaller type is the more specific. See [The Type System], and example below.
-* SemVer instances can be compared.
+* `SemVer` instances can be compared.
 * It is not possible to compare other types (except for equality)
 
 [The Type System]: types_values_variables.md#the-type-system
@@ -1367,7 +1456,7 @@ Signature:
   as `to`. If only an exact value of `default` is given this is the same as
   `Float[default, default]`,
   which again is the same as just `Float` (i.e. all floating point values in the range +/- Infinity).
-* The `from` value may be greater than than the `to` value.
+* The `from` value may be greater than the `to` value.
 * The range values may be negative.
 
 Examples:
@@ -1382,6 +1471,98 @@ Examples:
 <table><tr><th>Note</th></tr>
 <tr><td>
   It is not possible to enumerate a `Float` range.
+</td></tr>
+</table>
+
+#### Timespan Type [ ]
+
+Produces a new `Timespan` type with a range. A `Timespan` type has the default range -Infinity to +Infinity.
+A `Timespan` range where one or both ends is Infinity is said to be an *open range*, else it is a
+*closed range*. The set of values in the range is inclusive of the given values.
+
+Signature:
+
+    TimespanTypeAccess
+      : Expression<Type<Timespan>> '[' exact = TimespanRangeValue ']'
+      | Expression<Type<Timespan>> '[' from = TimespanRangeValue ',' to = TimespanRangeValue ']'
+      ;
+      
+    TimespanRangeValue
+      : Expression<Timespan>
+      | Expression<Initializer[Timespan]>
+      | Expression<String>
+      | Expression<Integer>
+      | Expression<Float>
+      | 'default'
+      ;  
+
+* Accepts one or two keys
+* Keys must evaluate to a `Timespan`, an `Initializer[Timespan]`, a `String`, a `Float`, an `Integer`, or to literal `default`
+* A key that evaluates to `Initializer[Timespan]`, a `String`, a `Float`, or an `Integer`, will be coerced into a `Timespan` instance
+* A value of default means -Infinity if given as the value of `from`, and +Infinity if given
+  as `to`. If only an exact value of `default` is given this is the same as
+  `Timespan[default, default]`,
+  which again is the same as just `Timespan` (i.e. all floating point values in the range +/- Infinity).
+* The `from` value may be greater than the `to` value.
+* The range values may be negative.
+
+Examples:
+
+    Timespan[2]                        # a timespan of 2 seconds
+    Timespan[77.3]                     # a timespan of 1 minute, 17 seconds, and 300 milliseconds
+    Timespan[{hour => 1}, {hour => 2}] # a timespan between 1 and two hours
+    Timespan['1-00:00:00', '2-00:00:00'] # a timespan between 1 and 2 days
+    Timespan[Timespan('11', '%H'), Timespan('12', '%H')]              # a timespan between 11 and 12 hours
+    Timespan['1-00:00:00', Timespan({days => 2, nano-seconds => -1})] # a timespan between 1 and up to (but not including) 2 days
+
+<table><tr><th>Note</th></tr>
+<tr><td>
+  It is not possible to enumerate a `Timespan` range.
+</td></tr>
+</table>
+
+#### Timestamp Type [ ]
+
+Produces a new `Timestamp` type with a range. A `Timestamp` type has the default range -Infinity to +Infinity.
+A `Timestamp` range where one or both ends is Infinity is said to be an *open range*, else it is a
+*closed range*. The set of values in the range is inclusive of the given values.
+
+Signature:
+
+    TimestampTypeAccess
+      : Expression<Type<Timestamp>> '[' exact = TimestampRangeValue ']'
+      | Expression<Type<Timestamp>> '[' from = TimestampRangeValue ',' to = TimestampRangeValue ']'
+      ;
+      
+    TimestampRangeValue
+      : Expression<Timestamp>
+      | Expression<Initializer[Timestamp]>
+      | Expression<String>
+      | Expression<Integer>
+      | Expression<Float>
+      | 'default'
+      ;  
+
+* Accepts one or two keys
+* Keys must evaluate to a `Timestamp`, an `Initializer[Timestamp]`, a `String`, a `Float`, an `Integer`, or to literal `default`
+* A key that evaluates to `Initializer[Timestamp]`, a `String`, a `Float`, or an `Integer`, will be coerced into a `Timestamp` instance
+* A value of default means -Infinity if given as the value of `from`, and +Infinity if given
+  as `to`. If only an exact value of `default` is given this is the same as
+  `Timestamp[default, default]`,
+  which again is the same as just `Timestamp` (i.e. all floating point values in the range +/- Infinity).
+* The `from` value may be greater than the `to` value.
+* The range values may be negative.
+
+Examples:
+
+    Timestamp['2000-01-01T00:00:00.000', :default] # a timestamp in the 21st century or later
+    Timestamp['1-00:00:00', '2-00:00:00'] # a timespan between 1 and 2 days
+    Timestamp[Timestamp('11', '%H'), Timestamp('12', '%H')]              # a timespan between 11 and 12 hours
+    Timestamp['1-00:00:00', Timestamp({days => 2, nano-seconds => -1})] # a timespan between 1 and up to (but not including) 2 days
+
+<table><tr><th>Note</th></tr>
+<tr><td>
+  It is not possible to enumerate a `Timestamp` range.
 </td></tr>
 </table>
 
