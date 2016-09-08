@@ -434,6 +434,8 @@ elements:
 | `semverrange, SemVerRange`
 | `string, String`
 | `struct, Struct`
+| `timespan, Timespan`
+| `timestamp, Timestamp`
 | `tuple, Tuple`
 | `type, Type`
 | `undef, Undef`
