@@ -1002,7 +1002,7 @@ Defaults to `p`
 | Format  | Timespan formats
 | ----    | ------------------
 | s       | formats according to the timespan format string '%D-%H:%M:%S' 
-| p       | programmatic representation - "Timespan(<quoted string>)" where <quoted string> is the result of using '%s' 
+| p       | programmatic representation - "Timespan(<quoted string>)" where <quoted string> is the result of using '%s' within quotes 
 | dxXobB  | converts timespan to integer representing seconds and formats using the integer rules
 | eEfgGaA | converts timespan to float representing seconds and fractions of second and formats using the floating point rules
 
@@ -1013,7 +1013,7 @@ A Timespan can also be formatted using the Puppet function `strftime()` and the 
 | Format  | Timestamp formats
 | ----    | ------------------
 | s       | formats according to the timestamp format string '%FT%T.%L %Z' 
-| p       | programmatic representation - "Timestamp(<quoted string>)" where <quoted string> is the result of using '%s' 
+| p       | programmatic representation - "Timestamp(<quoted string>)" where <quoted string> is the result of using '%s' within quotes 
 | dxXobB  | converts timestamp to integer representing seconds since epoch and formats using the integer rules
 | eEfgGaA | converts timestamp to float representing seconds since epoch and fractions of second and formats using the floating point rules
 
@@ -1024,14 +1024,14 @@ A Timestamp can also be formatted using the Puppet function `strftime()` and the
 | Format  | SemVer formats
 | ----    | ------------------
 | s       | \<major\>.\<minor\>.\<patch\>\[-\<prerelease\>\]\[+\<build\>\]
-| p       | programmatic representation - "SemVer(<quoted string>)" where <quoted string> is the result of using '%s' 
+| p       | programmatic representation - "SemVer(<quoted string>)" where <quoted string> is the result of using '%s' within quotes 
 
 ##### SemVerRange to String
 
 | Format  | SemVerRange formats
 | ----    | ------------------
 | s       | formatted according to [semver range specification](https://github.com/npm/node-semver)
-| p       | programmatic representation - "SemVerRange(<quoted string>)" where <quoted string> is the result of using '%s' 
+| p       | programmatic representation - "SemVerRange(<quoted string>)" where <quoted string> is the result of using '%s' within quotes 
 
 ##### String to String
 
