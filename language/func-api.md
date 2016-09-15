@@ -422,7 +422,25 @@ to manipulate the catalog being produced).
 
 * The anonymous Function class defines all methods on the class, an instance of this function class
   represents the functions closure.
-  
+
+### Access to Stacktrace
+
+Some functions need access to the call stack in order to be able to issue a specific error message, or to associate file and line information with produced data (as is the case with the `create_resources` function).
+
+This is done by using the PuppetStack object available since Puppet 4.6.0.
+
+The PuppetStack contains an array of all file/line locations in a nested call structure, where the
+innermost nested call appears first. Thus the immediate caller location of a function is found at index 0.
+
+The PuppetStack only contains location in .pp source. The corresponding information is also available in the Ruby stacktrace and shows up in logged exceptions. This is of value when a function calls another using `call_function` and the called function is implemented in Ruby.
+
+To get the immediate caller:
+
+````
+stacktrace = Puppet::Pops::PuppetStack.stacktrace()
+file, line = stacktrace[0]
+````
+
 ### Manual Handling
 
 The intention is that typical functions should only require the features that `Function`
