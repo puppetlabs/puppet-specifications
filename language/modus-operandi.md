@@ -47,12 +47,13 @@ have a directory with its content*
 
 ### Environment Manifests
 
-The manifests in the environment are placed in its `manifests` subdirectory. For the Environment
-these are processed in alphabetical sequence. This is logically equivalent to concatenating
-all of the files in alphabetical order into one single file.
+The manifests in the environment are placed in its `manifests` subdirectory. The `--manifest` settings
+can either reference a single `.pp` file, or to a directory (typically the <environment>/manifests directory).
+When a single file is referenced, only that manifest is used. If referencing a directory, the entire directory structure under this
+directory (inclusive) is recursively processed in alpha numerical order given by sorting the list of all paths.
+This is logically equivalent to concatenating all of the files in alphabetical order into one single file.
 
-*TODO: Does this happen before or after the ENC and plugins have given a chance to affect
-the result*
+International characters in file names should be avoided as the resulting order is platform specific (undefined) for characters outside of the ASCII range. The sort is currently not affected by the Locale, but may be in the future.
 
 ### At the end of the Boot Phase
 
