@@ -140,7 +140,8 @@ The files annotated by an '*' indicate that they are created by package installa
         spool *                            # directory containing results of pxp-agent modules
 
     /var/log/puppetlabs *
-        mcollective.log
+        mcollective
+            mcollective.log
         puppet *                          # :logdir                      /var/lib/puppet/log
             puppet.log                    # not enabled by default
         pxp-agent *
