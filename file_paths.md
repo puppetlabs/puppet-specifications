@@ -145,6 +145,7 @@ The files annotated by an '*' indicate that they are created by package installa
             puppet.log                    # not enabled by default
         pxp-agent *
             pxp-agent.log                 # enabled by default
+            pxp-access.log                # not enabled by default
 
     /var/run/puppetlabs *                 # :rundir                      /var/lib/puppet/run
         agent.pid                         # :pidfile
@@ -240,6 +241,7 @@ create a `puppet` user or group.
         var *
             log *
                 pxp-agent.log                 # enabled by default
+                pxp-access.log                # not enabled by default
             spool *                           # directory containing results of pxp-agent modules
             run *
 
