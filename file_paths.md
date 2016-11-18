@@ -131,6 +131,11 @@ The files annotated by an '*' indicate that they are created by package installa
             augeas *
             man *
             vim *
+            locale
+                <lang_COUNTRY>
+                    LC_MESSAGES
+                        <project>.mo *    # One directory for each supported locale,
+                                          # containing the MO files for each project.
         ssl *
         VERSION                           # puppet-agent package version
 
@@ -292,6 +297,7 @@ create a `puppet` user or group.
             puppet *                          # ruby bin wrapper
         lib *
             puppet.rb *
+        locale *
 
     C:\Program Files\Puppet Labs\Puppet\pxp-agent *
         bin *
