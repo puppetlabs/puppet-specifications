@@ -298,6 +298,10 @@ create a `puppet` user or group.
         lib *
             puppet.rb *
         locale *
+            <lang_COUNTRY>
+                LC_MESSAGES
+                    <project>.mo              # One directory for each supported locale,
+                                              # containing the MO files for each project.
 
     C:\Program Files\Puppet Labs\Puppet\pxp-agent *
         bin *
