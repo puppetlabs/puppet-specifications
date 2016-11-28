@@ -136,6 +136,7 @@ The files annotated by an '*' indicate that they are created by package installa
                     LC_MESSAGES
                         <project>.mo *    # One directory for each supported locale,
                                           # containing the MO files for each project.
+                                          # Example for English: /opt/puppetlabs/puppet/share/locale/en_US/LC_MESSAGES/puppet.mo
         ssl *
         VERSION                           # puppet-agent package version
 
@@ -302,6 +303,7 @@ create a `puppet` user or group.
                 LC_MESSAGES
                     <project>.mo              # One directory for each supported locale,
                                               # containing the MO files for each project.
+                                              # Example for English: C:\Program Files\Puppet Labs\Puppet\puppet\locale\en_US\LC_MESSAGES\puppet.mo
 
     C:\Program Files\Puppet Labs\Puppet\pxp-agent *
         bin *
