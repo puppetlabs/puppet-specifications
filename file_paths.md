@@ -131,12 +131,14 @@ The files annotated by an '*' indicate that they are created by package installa
             augeas *
             man *
             vim *
-            locale
-                <lang_COUNTRY>
-                    LC_MESSAGES
+            locale *
+                config.yaml *             # configuration file used by the gettext-setup gem
+                <lang_COUNTRY> *
+                    LC_MESSAGES *
                         <project>.mo *    # One directory for each supported locale,
                                           # containing the MO files for each project.
-                                          # Example for English: /opt/puppetlabs/puppet/share/locale/en_US/LC_MESSAGES/puppet.mo
+                                          # Example for English:
+                                          # /opt/puppetlabs/puppet/share/locale/en_US/LC_MESSAGES/puppet.mo
         ssl *
         VERSION                           # puppet-agent package version
 
@@ -298,12 +300,14 @@ create a `puppet` user or group.
             puppet *                          # ruby bin wrapper
         lib *
             puppet.rb *
-        locale *
-            <lang_COUNTRY>
-                LC_MESSAGES
-                    <project>.mo              # One directory for each supported locale,
+        share *
+            locale *
+                config.yaml *                 # configuration file used by the gettext-setup gem
+                <lang_COUNTRY> *
+                    LC_MESSAGES\<project>.mo *# One directory for each supported locale,
                                               # containing the MO files for each project.
-                                              # Example for English: C:\Program Files\Puppet Labs\Puppet\puppet\locale\en_US\LC_MESSAGES\puppet.mo
+                                              # Example for English:
+                                              # C:\Program Files\Puppet Labs\Puppet\puppet\locale\en_US\LC_MESSAGES\puppet.mo
 
     C:\Program Files\Puppet Labs\Puppet\pxp-agent *
         bin *
