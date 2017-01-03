@@ -2142,7 +2142,8 @@ Type references are autoloaded from the environment and modules. The autoloading
   `MyType` should be `mytype.pp`, not `my_type.pp`.
 * Each namespace segment maps to a directory path with the same name.
 * For a module, the `<module_root>/types` corresponds to the module's namespace.
-* For an environment, the `<env_root>/types` corresponds to the `Environment::` namespace
+* For an environment, the `<env_root>/types` corresponds to the global namespace.
+* For an environment, it is recommended to always use the `Environment::` namespace under `<env_root>/types/environment`.
 * An autoloaded type alias `.pp` file may only contain a single type alias.
   No other expressions are allowed (comments are).
 * The autoloaded type alias must use the full namespace on the left hand side, e.g.
