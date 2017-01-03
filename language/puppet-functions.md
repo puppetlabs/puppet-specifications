@@ -64,7 +64,7 @@ Function Definition - Scope & Autoloading
 
 Namespaced Puppet Functions are auto loaded from modules and the environment when located under <module-root>/functions or <environment-root>/functions respectively. 
 
-Auto loaded puppet functions are always namespaced; in a module using the module name, and in an environment by using the special name `environment` (i.e. not the *name* of the environment since that typically changes as code is being developed, tested, put into production and then maintained, etc.).
+Auto loaded puppet functions should always be namespaced; in a module, it's required to use the module name. In an environment, it's highly recommended to use the special name `environment` (i.e. not the *name* of the environment since that typically changes as code is being developed, tested, put into production and then maintained, etc.).
 
 The name of the .pp file must match the simple (non namespaced name part) of the function. Thus, a function **'testmodule::min'** in module 'testmodule' is located like this:
 
@@ -82,8 +82,9 @@ And a function **'environment::min'** in a 'production' environment like this:
 
     production
       |- functions
-         | min.pp
-         
+         |- environment
+            | min.pp
+
 With the following contents in `min.pp` (note use of namespace 'environment'):
 
     function environment::min($a, $b) {
@@ -97,11 +98,34 @@ Nested name spaces are allowed in both modules and the environment - e.g. a func
          |- math
             | min.pp
 
+
 With the following contents in `min.pp` (note use of full namespace):
 
     function testmodule::math::min($a, $b) {
       # ...
     }
+
+And a a function **'environment::math::min'** would be located like this:
+
+    production
+      |- functions
+         |- environment
+            |- math
+               | min.pp
+
+With the following contents in `min.pp` (note use of full namespace):
+
+    function environment::math::min($a, $b) {
+      # ...
+    }
+
+In an environment, it is only possible to declare functions in the global namespace (not recommended) or in the special namespace 'environment'. Functions
+added in other namespaces will not be found. E.g. declaring function **'someother::min'** like this will not make it visible to the auto loader:
+
+    production
+      |- functions
+         |- someother
+            | min.pp
 
 Rules:
 
