@@ -285,6 +285,7 @@ In all the examples, the result would be:
 
 ```
 $a = 10
+$b = 10
 ```
 
 This works the same way for `class`, with the additional rules when there is a value bound to `$a` in data binding:
