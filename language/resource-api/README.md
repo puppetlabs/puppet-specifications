@@ -39,6 +39,7 @@ Details in no particular order:
 ** Generating more resource instances for the catalog during compilation (e.g. file#recurse or concat) becomes impossible with a pure data-driven Type. There is still space in the API to add server-side code. 
 ** Some resources (e.g. file, ssh_authorized_keys, concat) cannot or should not be prefetched. While it might not be convenient, a provider could always return nothing on the `get()` and do a more customized enforce motion in the `set()`.
 ** With current puppet versions, only "native" data types will be supported, as type aliases do not get pluginsynced. Yet.
+** With current puppet versions, `puppet resource` can't load the data types, and therefore will not be able to take full advantage of this. Yet.
 
 * There is some convenient infrastructure (e.g. parsedfile) that needs porting over to this model.
 
