@@ -28,6 +28,7 @@ Puppet::SimpleResource.define(
 )
 
 Puppet::SimpleResource.implement('iis_application_pool') do
+  # hiding all the nasty bits
   require 'puppet/provider/iis_powershell'
   include Puppet::Provider::IIS_PowerShell
 

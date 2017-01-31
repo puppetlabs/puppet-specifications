@@ -1,4 +1,4 @@
-Draft replacement for types and providers
+Draft for new type and provider API
 
 Hi *,
 
