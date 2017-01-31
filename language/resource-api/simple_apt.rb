@@ -147,7 +147,7 @@ Puppet::SimpleResource.implement('apt_key') do
         type:        key_type,
         created:     Time.at(pub_split[5].to_i),
         expiry:      expiry,
-        expired:     expiry && Time.now >= expiry,
+        expired:     !!(expiry && Time.now >= expiry),
     }
   end
 

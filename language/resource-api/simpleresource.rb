@@ -1,22 +1,22 @@
 Puppet::SimpleResource.define(
-    name: 'iis_application_pool',
-    docs: 'Manage an IIS application pool through a powershell proxy.',
+    name:       'iis_application_pool',
+    docs:       'Manage an IIS application pool through a powershell proxy.',
     attributes: {
-        ensure: {
+        ensure:                {
             type: 'Enum[present, absent]',
             docs: 'Whether this ApplicationPool should be present or absent on the target system.'
         },
-        name: {
-            type: 'String',
-            docs: 'The name of the ApplicationPool.',
+        name:                  {
+            type:    'String',
+            docs:    'The name of the ApplicationPool.',
             namevar: true,
         },
-        state: {
-            type: 'Enum[running, stopped]',
-            docs: 'The state of the ApplicationPool.',
+        state:                 {
+            type:    'Enum[running, stopped]',
+            docs:    'The state of the ApplicationPool.',
             default: 'running',
         },
-        managedpipelinemode: {
+        managedpipelinemode:   {
             type: 'String',
             docs: 'The managedPipelineMode of the ApplicationPool.',
         },
@@ -25,20 +25,23 @@ Puppet::SimpleResource.define(
             docs: 'The managedRuntimeVersion of the ApplicationPool.',
         },
     }
-) do
+)
 
+Puppet::SimpleResource.implement('iis_application_pool') do
   require 'puppet/provider/iis_powershell'
   include Puppet::Provider::IIS_PowerShell
 
   def get
-    result = run('fetch_application_pools.ps1', logger) # call out to powershell to talk to the API
+    # call out to PowerShell to talk to the API
+    result = run('fetch_application_pools.ps1', logger)
 
     # returns an array of hashes with data according to the schema above
     JSON.parse(result)
   end
 
-  def set(goals, noop = false)
-    result = run('enforce_application_pools.ps1', goals, logger, noop) # call out to powershell to talk to the API
+  def set(current_state, target_state, noop = false)
+    # call out to PowerShell to talk to the API
+    result = run('enforce_application_pools.ps1', JSON.generate(current_state), JSON.generate(target_state), logger, noop)
 
     # returns an array of hashes with status data from the changes
     JSON.parse(result)
