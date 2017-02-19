@@ -184,6 +184,23 @@ def set(current_state, target_state, noop = false)
   end
 end
 
+def set(current_state, target_state, noop = false)
+  existing_keys = Hash[current_state.collect { |k| [k[:name], k] }]
+  target_state.each do |resource|
+    # additional validation for this resource goes here
+
+    current = existing_keys[resource[:name]]
+    if current && resource[:ensure].to_s == 'absent'
+      # delete the resource
+    elsif current && resource[:ensure].to_s == 'present'
+      # update the resource
+    elsif !current && resource[:ensure].to_s == 'present'
+      # create the resource
+    end
+  end
+end
+
+
 def create(key, noop = false)
   logger.creating(key[:name]) do |logger|
     if key[:source].nil? and key[:content].nil?

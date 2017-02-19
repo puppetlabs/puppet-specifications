@@ -41,17 +41,17 @@ Puppet::SimpleResource.define(
             docs: 'Additional options to pass to apt-key\'s --keyserver-options.',
         },
         fingerprint: {
-            type:      'String',
+            type:      'String[40, 40]',
             docs:      'The 40-digit hexadecimal fingerprint of the specified GPG key.',
             read_only: true,
         },
         long:        {
-            type:      'String',
+            type:      'String[16, 16]',
             docs:      'The 16-digit hexadecimal id of the specified GPG key.',
             read_only: true,
         },
         short:       {
-            type:      'String',
+            type:      'String[8, 8]',
             docs:      'The 8-digit hexadecimal id of the specified GPG key.',
             read_only: true,
         },
@@ -66,7 +66,7 @@ Puppet::SimpleResource.define(
             read_only: true,
         },
         size:        {
-            type:      'String',
+            type:      'Integer',
             docs:      'The key size, usually a multiple of 1024.',
             read_only: true,
         },
@@ -97,7 +97,7 @@ Puppet::SimpleResource.implement('apt_key') do
     pub_line   = nil
     fpr_line   = nil
 
-    key_output.split("\n").collect do |line|
+    kv_pairs = key_output.split("\n").collect do |line|
       if line.start_with?('pub')
         pub_line = line
       elsif line.start_with?('fpr')
@@ -106,7 +106,7 @@ Puppet::SimpleResource.implement('apt_key') do
 
       next unless (pub_line and fpr_line)
 
-      result   = key_line_to_hash(pub_line, fpr_line)
+      result   = key_line_to_kv_pair(pub_line, fpr_line)
 
       # reset everything
       pub_line = nil
@@ -114,9 +114,11 @@ Puppet::SimpleResource.implement('apt_key') do
 
       result
     end.compact!
+
+    Hash[kv_pairs]
   end
 
-  def self.key_line_to_hash(pub_line, fpr_line)
+  def self.key_line_to_kv_pair(pub_line, fpr_line)
     pub_split = pub_line.split(':')
     fpr_split = fpr_line.split(':')
 
@@ -137,77 +139,79 @@ Puppet::SimpleResource.implement('apt_key') do
     fingerprint = fpr_split.last
     expiry      = pub_split[6].empty? ? nil : Time.at(pub_split[6].to_i)
 
-    {
-        name:        fingerprint,
-        ensure:      'present',
-        fingerprint: fingerprint,
-        long:        fingerprint[-16..-1], # last 16 characters of fingerprint
-        short:       fingerprint[-8..-1], # last 8 characters of fingerprint
-        size:        pub_split[2],
-        type:        key_type,
-        created:     Time.at(pub_split[5].to_i),
-        expiry:      expiry,
-        expired:     !!(expiry && Time.now >= expiry),
-    }
+    [
+        fingerprint,
+        {
+            ensure:      'present',
+            id:          fingerprint,
+            fingerprint: fingerprint,
+            long:        fingerprint[-16..-1], # last 16 characters of fingerprint
+            short:       fingerprint[-8..-1], # last 8 characters of fingerprint
+            size:        pub_split[2].to_i,
+            type:        key_type,
+            created:     Time.at(pub_split[5].to_i),
+            expiry:      expiry,
+            expired:     !!(expiry && Time.now >= expiry),
+        }
+    ]
   end
 
   def set(current_state, target_state, noop = false)
-    existing_keys = Hash[current_state.collect { |k| [k[:name], k] }]
-    target_state.each do |key|
-      logger.warning(key[:name], 'The id should be a full fingerprint (40 characters) to avoid collision attacks, see the README for details.') if key[:name].length < 40
-      if key[:source] and key[:content]
-        logger.fail(key[:name], 'The properties content and source are mutually exclusive')
+    target_state.each do |title, resource|
+      logger.warning(title, 'The id should be a full fingerprint (40 characters) to avoid collision attacks, see the README for details.') if title.length < 40
+      if resource[:source] and resource[:content]
+        logger.fail(title, 'The properties content and source are mutually exclusive')
         next
       end
 
-      current = existing_keys[k[:name]]
-      if current && key[:ensure].to_s == 'absent'
-        logger.deleting(key[:name]) do
+      current = current_state[title]
+      if current && resource[:ensure].to_s == 'absent'
+        logger.deleting(title) do
           begin
-            apt_key('del', key[:short], noop: noop)
-            r = execute(["#{command(:apt_key)} list | grep '/#{resource.provider.short}\s'"], :failonfail => false)
+            apt_key('del', resource[:short], noop: noop)
+            r = execute(["#{command(:apt_key)} list | grep '/#{resource[:short]}\s'"], :failonfail => false)
           end while r.exitstatus == 0
         end
-      elsif current && key[:ensure].to_s == 'present'
+      elsif current && resource[:ensure].to_s == 'present'
         # No updating implemented
         # update(key, noop: noop)
-      elsif !current && key[:ensure].to_s == 'present'
-        create(key, noop: noop)
+      elsif !current && resource[:ensure].to_s == 'present'
+        create(title, resource, noop: noop)
       end
     end
   end
 
-  def create(key, noop = false)
-    logger.creating(key[:name]) do |logger|
-      if key[:source].nil? and key[:content].nil?
+  def create(title, resource, noop = false)
+    logger.creating(title) do |logger|
+      if resource[:source].nil? and resource[:content].nil?
         # Breaking up the command like this is needed because it blows up
         # if --recv-keys isn't the last argument.
-        args = ['adv', '--keyserver', key[:server]]
-        if key[:options]
-          args.push('--keyserver-options', key[:options])
+        args = ['adv', '--keyserver', resource[:server]]
+        if resource[:options]
+          args.push('--keyserver-options', resource[:options])
         end
-        args.push('--recv-keys', key[:id])
+        args.push('--recv-keys', resource[:id])
         apt_key(*args, noop: noop)
-      elsif key[:content]
-        temp_key_file(key[:content], logger) do |key_file|
+      elsif resource[:content]
+        temp_key_file(resource[:content], logger) do |key_file|
           apt_key('add', key_file, noop: noop)
         end
-      elsif key[:source]
-        key_file = source_to_file(key[:source])
+      elsif resource[:source]
+        key_file = source_to_file(resource[:source])
         apt_key('add', key_file.path, noop: noop)
         # In case we really screwed up, better safe than sorry.
       else
-        logger.fail("an unexpected condition occurred while trying to add the key: #{key[:id]} (content: #{key[:content].inspect}, source: #{key[:source].inspect})")
+        logger.fail("an unexpected condition occurred while trying to add the key: #{title} (content: #{resource[:content].inspect}, source: #{resource[:source].inspect})")
       end
     end
   end
 
   # This method writes out the specified contents to a temporary file and
   # confirms that the fingerprint from the file, matches the long key that is in the manifest
-  def temp_key_file(key, logger)
+  def temp_key_file(resource, logger)
     file = Tempfile.new('apt_key')
     begin
-      file.write key[:content]
+      file.write resource[:content]
       file.close
       if name.size == 40
         if File.executable? command(:gpg)
@@ -215,7 +219,7 @@ Puppet::SimpleResource.implement('apt_key') do
           extracted_key = extracted_key.chomp
 
           unless extracted_key.match(/^#{name}$/)
-            logger.fail("The id in your manifest #{key[:name]} and the fingerprint from content/source do not match. Please check there is not an error in the id or check the content/source is legitimate.")
+            logger.fail("The id in your manifest #{resource[:id]} and the fingerprint from content/source do not match. Please check there is not an error in the id or check the content/source is legitimate.")
           end
         else
           logger.warning('/usr/bin/gpg cannot be found for verification of the id.')

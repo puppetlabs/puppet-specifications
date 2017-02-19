@@ -1,3 +1,260 @@
+# Resource API
+
+A *resource* is the basic thing that is managed by puppet. Each resource has a set of attributes describing its current state. Some of the attributes can be changed throughout the life-time of the resource, some attributes only report back, but cannot be changed (see `read_only`)others can only be set once during initial creation (see `init_only`). To gather information about those resources, and to enact changes in the real world, puppet requires a piece of code to *implement* this interaction. The implementation can have parameters that influence its mode of operation (see `operational_parameters`). To describe all these parts to the infrastructure, and the consumers, the resource *Definition* (f.k.a. 'type') contains definitions for all of them. The *Implementation* (f.k.a. 'provider') contains code to *get* and *set* the system state.
+
+# Resource Definition
+
+```ruby
+Puppet::ResourceDefinition.register(
+    name: 'apt_key',
+    docs: <<-EOS,
+      This type provides Puppet with the capabilities to manage GPG keys needed
+      by apt to perform package validation. Apt has it's own GPG keyring that can
+      be manipulated through the `apt-key` command.
+
+      apt_key { '6F6B15509CF8E59E6E469F327F438280EF8D349F':
+        source => 'http://apt.puppetlabs.com/pubkey.gpg'
+      }
+
+      **Autorequires**:
+      If Puppet is given the location of a key file which looks like an absolute
+      path this type will autorequire that file.
+    EOS
+    attributes:   {
+        ensure:      {
+            type: 'Enum[present, absent]',
+            docs: 'Whether this apt key should be present or absent on the target system.'
+        },
+        id:          {
+            type:    'Variant[Pattern[/\A(0x)?[0-9a-fA-F]{8}\Z/], Pattern[/\A(0x)?[0-9a-fA-F]{16}\Z/], Pattern[/\A(0x)?[0-9a-fA-F]{40}\Z/]]',
+            docs:    'The ID of the key you want to manage.',
+            namevar: true,
+        },
+        # ...
+        created:     {
+            type:      'String',
+            docs:      'Date the key was created, in ISO format.',
+            read_only: true,
+        },
+    },
+    autorequires: {
+        file:    '$source', # will evaluate to the value of the `source` attribute
+        package: 'apt',
+    },
+)
+```
+
+The `Puppet::ResourceDefinition.register(options)` function takes a Hash with the following top-level keys:
+
+* `name`: the name of the resource. For autoloading to work, the whole function call needs to go into `lib/puppet/type/<name>.rb`.
+* `docs`: a doc string that describes the overall working of the type, gives examples, and explains pre-requisites as well as known issues.
+* `attributes`: an hash mapping attribute names to their details. Each attribute is described by a hash containing the puppet 4 data `type`, a `docs` string, and whether the attribute is the `namevar`, `read_only`, and/or `init_only`.
+* `operational_parameters`: a hash mapping parameter names to puppet data `type`s and `docs` strings.
+* `autorequires`, `autobefore`, `autosubscribe`, and `autonotify`: a Hash mapping resource types to titles. Currently the titles must either be constants, or, if the value starts with a dollar sign, a reference to the value of an attribute.
+
+# Resource Implementation
+
+At runtime the current and intended system states for a single resource instance are always represented as ruby Hashes of the resource's attributes, and applicable operational parameters.
+
+The two fundamental operations to manage resources are reading and writing system state. These operations are implemented in the `ResourceImplementation` as `get` and `set`:
+ 
+```ruby
+Puppet::ResourceImplementation.register('apt_key') do
+  def get
+    [
+      'title': {
+        name: 'title',
+        # ...
+      },
+    ]
+  end
+  
+  def set(current_state, target_state, noop: false)
+    target_state.each do |title, resource|
+      # ...
+    end
+  end
+end
+```
+
+The `get` method returns a Hash of all resources currently available, keyed by their title. If the `get` method raises an exception, the implementation is marked as unavailable during the current run, and all resources of its type will fail. The error message will be reported to the user.
+
+The `set` method updates resources to the state defined in `target_state`. For convenience, `current_state` contains the last available system state from a prior `get` call. When `noop` is set to true, the implementation must not change the system state, but only report what it would change.
+ 
+
+# Runtime Environment
+
+The primary runtime environment for the implementation is the puppet agent, a long-running daemon process. The implementation can also be used in the puppet apply command, a one-shot version of the agent, or the puppet resource command, a short-lived CLI process for listing or managing a single resource type. Other callers who want to access the implementation will have to emulate those environments. In any case the registered block will be surfaced in a clean class which will be instantiated once for each transaction. The implementation can define any number of helper methods to support itself. To allow for a transaction to set up the prerequisites for an implementation, and use it immediately, the provider is instantiated as late as possible. A transaction will usually call `get` once, and may call set any number of times to effect change. The host object can be used to cache ephemeral state during execution. The implementation should not try to cache state beyond the transaction, to avoid interfering with the agent daemon. In many other cases caching beyond the transaction won't help anyways, as the hosting process will only manage a single transaction.
+
+## Utilities
+
+The runtime environment provides some utilities to make the implementation's life easier, and provide a uniform experience for its users.
+
+### Commands
+
+To use CLI commands in a safe and comfortable manner, the implementation can use the `commands` method to access shell commands. You can either use a full path, or a bare command name. In the latter case puppet will use the system PATH setting to search for the command. If the commands are not available, an error will be raised and the resources will fail in this run. The commands are aware of whether noop is in effect or not, and will skip the actual execution if necessary. 
+
+```ruby
+Puppet::ResourceImplementation.register('apt_key') do
+  commands apt_key: '/usr/bin/apt-key'
+  commands gpg: 'gpg'
+```
+
+This will create methods called `apt_get`, and `gpg`, which will take CLI arguments without any escaping, and run them in a safe environment (clean working directory, clean environment). For example to call `apt-key` to delete a specific key by id:
+ 
+```ruby
+apt_key 'del', key_id
+```
+
+By default the stdout of the command is logged to debug, while the stderr is logged to warning. To access the stdout in the implementation, use the command name with `_lines` appended, and process it through the returned [Enumerable](http://ruby-doc.org/core/Enumerable.html) line-by-line. For example, to process the list of all apt keys:
+
+```ruby
+apt_key_lines(%w{adv --list-keys --with-colons --fingerprint --fixed-list-mode}).collect do |line|
+  # process each line here, and return a result
+end
+```
+
+> Note: the output of the command is streamed through the Enumerable. If the implementation requires the exit value of the command before processing, or wants to cache the output, use `to_a` to read the complete stream in one go.
+
+If the command returns a non-zero exit code, an error is signalled to puppet. If this happens during `get`, all managed resources of this type will fail. If this happens during a `set`, all resources that have been scheduled for processing in this call, but not yet have been marked as a success will be marked as failed. To avoid this behaviour, call the `try_` prefix variant. In this (hypothetical) example, `apt-key` signals already deleted keys with an exit code of `1`, which is OK when the implementation is trying to delete the key:
+
+```ruby
+try_apt_key 'del', key_id
+
+if [0, 1].contains $?.exitstatus
+  # success, or already deleted
+else
+  # fail
+end
+```
+
+The exit code is signalled through the ruby standard variable `$?` as a [`Process::Status` object](https://ruby-doc.org/core/Process/Status.html)
+
+### Logging and Reporting
+
+The implementation needs to signal changes, successes and failures to the runtime environment. The `logger` provides a structured way to do so.
+
+#### General messages
+
+To provide feedback about the overall operation of the implementation, the logger provides the usual set of [loglevel](https://docs.puppet.com/puppet/latest/metaparameter.html#loglevel) methods that take a string, and pass that up to puppet's logging infrastructure:
+
+```ruby
+logger.warning("Unexpected state detected, continuing in degraded mode.")
+```
+
+will result in the following message:
+
+```text
+Warning: apt_key: Unexpected state detected, continuing in degraded mode.
+```
+
+* debug: detailed messages to understand everything that is happening at runtime; only shown on request
+* info: high level progress messages; especially useful before long-running operations, or before operations that can fail, to provide context to interactive users
+* notice: use this loglevel to indicate state changes and similar events of notice from the regular operations of the implementation
+* warning: signal error conditions that do not (yet) prohibit execution of the main part of the implementation; for example deprecation warnings, temporary errors.
+* err: signal error conditions that have caused normal operations to fail
+* critical/alert/emerg: should not be used by resource implementations
+ 
+See [wikipedia](https://en.wikipedia.org/wiki/Syslog#Severity_level) and [RFC424](https://tools.ietf.org/html/rfc5424) for more details.
+
+#### Logging contexts
+
+Most of an implementation's messages are expected to be relative to a specific resource instance, and a specific operation on that instance. For example, to report the change of an attribute:
+
+```ruby
+logger.attribute_changed(title:, attribute:, old_value:, new_value:, message: "Changed #{attribute} from #{old_value.inspect} to #{newvalue.inspect}")
+```
+
+To enable detailed logging without repeating key arguments, and provide consistent error logging, the logger provides *logging context* methods that capture the current action and resource instance. 
+ 
+```ruby
+logger.updating(title: title) do
+  if key_not_found
+    logger.warning('Original key not found') 
+  end
+  
+  # Update the key by calling CLI tool
+  apt_key(...)
+  
+  logger.attribute_changed(
+    attribute: 'content', 
+    old_value: nil,
+    new_value: content_hash, 
+    message: "Created with content hash #{content_hash}")
+end
+```
+
+will result in the following messages (of course, with the `#{}` sequences replaced by the true values):
+
+```text
+Debug: Apt_key[#{title}]: Started updating
+Warning: Apt_key[#{title}]: Updating: Original key not found
+Debug: Apt_key[#{title}]: Executing 'apt-key ...'
+Debug: Apt_key[#{title}]: Successfully executed 'apt-key ...'
+Notice: Apt_key[#{title}]: Updating content: Created with content hash #{content_hash}
+Notice: Apt_key[#{title}]: Successfully updated
+# TODO: update messages to match current log message formats for resource messages
+```
+
+In the case of an exception escaping the block, the error is logged appropriately:
+
+```text
+Debug: Apt_key[#{title}]: Started updating
+Warning: Apt_key[#{title}]: Updating: Original key not found
+Error: Apt_key[#{title}]: Updating failed: #{exception message}
+# TODO: update messages to match current log message formats for resource messages
+```
+
+Logging contexts process all exceptions. [`StandardError`s](https://ruby-doc.org/core/StandardError.html) are assumed to be regular failures in handling a resources, and they are swallowed after logging. Everything else is assumed to be a fatal application-level issue, and is passed up the stack, ending execution. See the [ruby documentation](https://ruby-doc.org/core/Exception.html) for details on which exceptions are not `StandardError`s.
+
+The equivalent long-hand form with manual error handling:
+
+```ruby
+logger.updating(title: title)
+begin
+  if key_not_found
+    logger.warning(title: title, message: 'Original key not found')
+  end
+
+  # Update the key by calling CLI tool
+  try_apt_key(...)
+
+  if $?.exitstatus != 0
+    logger.error(title: title, "Failed executing apt-key #{...}")
+  else
+    logger.attribute_changed(
+      title:     title,
+      attribute: 'content',
+      old_value: nil,
+      new_value: content_hash,
+      message:   "Created with content hash #{content_hash}")
+  end
+  logger.changed(title: title)
+rescue StandardError => e
+  logger.error(title: title, exception: e, message: 'Updating failed')
+  raise unless e.is_a? StandardError
+end
+```
+
+This example is only for demonstration purposes. In the normal course of operations, implementations should always use the utility functions.
+
+#### Logging reference
+
+The following action/context methods are available:
+
+* `creating(title:, message: 'Creating', &block)`
+* `updating(title:, message: 'Updating', &block)`
+* `deleting(title:, message: 'Deleting', &block)`
+* `attribute_changed(title:, attribute:, old_value:, new_value:, message: nil)`
+
+* `created(title:, message: 'Created')`
+* `updated(title:, message: 'Updated')`
+* `deleted(title:, message: 'Deleted')`
+
+* `fail(title:, message:)` - abort the current context with an error
+
+# Earlier notes
+
 Draft for new type and provider API
 
 Hi *,
