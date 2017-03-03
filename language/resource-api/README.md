@@ -1,6 +1,6 @@
 # Resource API
 
-A *resource* is the basic thing that is managed by puppet. Each resource has a set of attributes describing its current state. Some of the attributes can be changed throughout the life-time of the resource, some attributes only report back, but cannot be changed (see `read_only`)others can only be set once during initial creation (see `init_only`). To gather information about those resources, and to enact changes in the real world, puppet requires a piece of code to *implement* this interaction. The implementation can have parameters that influence its mode of operation (see `operational_parameters`). To describe all these parts to the infrastructure, and the consumers, the resource *Definition* (f.k.a. 'type') contains definitions for all of them. The *Implementation* (f.k.a. 'provider') contains code to *get* and *set* the system state.
+A *resource* is the basic thing that is managed by puppet. Each resource has a set of attributes describing its current state. Some of the attributes can be changed throughout the life-time of the resource, some attributes only report back, but cannot be changed (see `read_only`) others can only be set once during initial creation (see `init_only`). To gather information about those resources, and to enact changes in the real world, puppet requires a piece of code to *implement* this interaction. The implementation can have parameters that influence its mode of operation (see `parameter`). To describe all these parts to the infrastructure, and the consumers, the resource *Definition* (f.k.a. 'type') contains definitions for all of them. The *Implementation* (f.k.a. 'provider') contains code to *get* and *set* the system state.
 
 # Resource Definition
 
@@ -48,8 +48,11 @@ The `Puppet::ResourceDefinition.register(options)` function takes a Hash with th
 
 * `name`: the name of the resource. For autoloading to work, the whole function call needs to go into `lib/puppet/type/<name>.rb`.
 * `docs`: a doc string that describes the overall working of the type, gives examples, and explains pre-requisites as well as known issues.
-* `attributes`: an hash mapping attribute names to their details. Each attribute is described by a hash containing the puppet 4 data `type`, a `docs` string, and whether the attribute is the `namevar`, `read_only`, and/or `init_only`.
-* `operational_parameters`: a hash mapping parameter names to puppet data `type`s and `docs` strings.
+* `attributes`: an hash mapping attribute names to their details. Each attribute is described by a hash containing the puppet 4 data `type`, a `docs` string, and whether the attribute is the `namevar`, `read_only`, `init_only`, or a `parameter`.
+  * `namevar`: marks an attribute as part of the "primary key", or "identity" of the resource. A given set of namevar values needs to distinctively identify a instance.
+  * `init_only`: this attribute can only be set during creation of the resource. Its value will be reported going forward, but trying to change it later will lead to an error. For example, the base image for a VM, or the UID of a user.
+  * `read_only`: values for this attribute will be returned by `get()`, but `set()` is not able to change them. Values for this should never be specified in a manifest. For example the checksum of a file, or the MAC address of a network interface.
+  * `parameter`: these attributes influence how the implementation behaves, and cannot be read from the target system. For example, the target file on inifile, or credentials to access an API.
 * `autorequires`, `autobefore`, `autosubscribe`, and `autonotify`: a Hash mapping resource types to titles. Currently the titles must either be constants, or, if the value starts with a dollar sign, a reference to the value of an attribute.
 
 # Resource Implementation
@@ -84,7 +87,7 @@ The `set` method updates resources to the state defined in `target_state`. For c
 
 # Runtime Environment
 
-The primary runtime environment for the implementation is the puppet agent, a long-running daemon process. The implementation can also be used in the puppet apply command, a one-shot version of the agent, or the puppet resource command, a short-lived CLI process for listing or managing a single resource type. Other callers who want to access the implementation will have to emulate those environments. In any case the registered block will be surfaced in a clean class which will be instantiated once for each transaction. The implementation can define any number of helper methods to support itself. To allow for a transaction to set up the prerequisites for an implementation, and use it immediately, the provider is instantiated as late as possible. A transaction will usually call `get` once, and may call set any number of times to effect change. The host object can be used to cache ephemeral state during execution. The implementation should not try to cache state beyond the transaction, to avoid interfering with the agent daemon. In many other cases caching beyond the transaction won't help anyways, as the hosting process will only manage a single transaction.
+The primary runtime environment for the implementation is the puppet agent, a long-running daemon process. The implementation can also be used in the puppet apply command, a one-shot version of the agent, or the puppet resource command, a short-lived CLI process for listing or managing a single resource type. Other callers who want to access the implementation will have to emulate those environments. In any case the registered block will be surfaced in a clean class which will be instantiated once for each transaction. The implementation can define any number of helper methods to support itself. To allow for a transaction to set up the prerequisites for an implementation, and use it immediately, the provider is instantiated as late as possible. A transaction will usually call `get` once, and may call set any number of times to effect change. The object instance hosting the `get` and `set` methods can be used to cache ephemeral state during execution. The implementation should not try to cache state beyond the transaction, to avoid interfering with the agent daemon. In many other cases caching beyond the transaction won't help anyways, as the hosting process will only manage a single transaction.
 
 ## Utilities
 
@@ -92,7 +95,7 @@ The runtime environment provides some utilities to make the implementation's lif
 
 ### Commands
 
-To use CLI commands in a safe and comfortable manner, the implementation can use the `commands` method to access shell commands. You can either use a full path, or a bare command name. In the latter case puppet will use the system PATH setting to search for the command. If the commands are not available, an error will be raised and the resources will fail in this run. The commands are aware of whether noop is in effect or not, and will skip the actual execution if necessary. 
+To use CLI commands in a safe and comfortable manner, the implementation can use the `commands` method to access shell commands. You can either use a full path, or a bare command name. In the latter case puppet will use the system PATH setting to search for the command. If the commands are not available, an error will be raised and the resources will fail in this run. The commands are aware of whether noop is in effect or not, and will signal success while skipping the real execution if necessary. 
 
 ```ruby
 Puppet::ResourceImplementation.register('apt_key') do
@@ -100,10 +103,16 @@ Puppet::ResourceImplementation.register('apt_key') do
   commands gpg: 'gpg'
 ```
 
-This will create methods called `apt_get`, and `gpg`, which will take CLI arguments without any escaping, and run them in a safe environment (clean working directory, clean environment). For example to call `apt-key` to delete a specific key by id:
+This will create methods called `apt_get`, and `gpg`, which will take CLI arguments in an array, and execute the command directly without any shell processing in a safe environment (clean working directory, clean environment). For example to call `apt-key` to delete a specific key by id:
  
 ```ruby
 apt_key 'del', key_id
+```
+
+To pass additional environment variables through to the command, pass a hash of them as `env:`:
+
+```ruby
+apt_key 'del', key_id, env: { 'LC_ALL': 'C' }
 ```
 
 By default the stdout of the command is logged to debug, while the stderr is logged to warning. To access the stdout in the implementation, use the command name with `_lines` appended, and process it through the returned [Enumerable](http://ruby-doc.org/core/Enumerable.html) line-by-line. For example, to process the list of all apt keys:
@@ -129,6 +138,8 @@ end
 ```
 
 The exit code is signalled through the ruby standard variable `$?` as a [`Process::Status` object](https://ruby-doc.org/core/Process/Status.html)
+
+<!-- TODO: add a set `run_command` or `execute` methods that provide the same functionality without hardcoding the binary path -->
 
 ### Logging and Reporting
 
@@ -252,6 +263,66 @@ The following action/context methods are available:
 * `deleted(title:, message: 'Deleted')`
 
 * `fail(title:, message:)` - abort the current context with an error
+
+# Known Limitations
+
+This API is not a full replacement for the power of 3.x style types and providers. Here is a (incomplete) list of missing pieces and thoughts on how to go about solving these. In the end, the goal of the new Resource API is not to be a complete replacement of prior art, but a cleaner way to get good results for the majority of simple cases.
+
+## Multiple implementations
+
+The previous version of this API allowed multiple implementations for the same resource type. This leads to the following problems:
+
+* attribute sprawl
+* missing features
+* convoluted implementations
+
+puppet DSL already can address this:
+
+```puppet
+define package (
+  Ensure $ensure,
+  Enum[apt, rpm] $provider, # have a hiera 5 dynamic binding to a function choosing a sensible default for the current system
+  Optional[String] $source  = undef,
+  Optional[String] $version = undef,
+  Optional[Hash] $options   = { },
+) {
+  case $provider {
+    apt: {
+      package_apt { $title:
+        ensure          => $ensure,
+        source          => $source,
+        version         => $version,
+        *               => $options,
+      }
+    }
+    rpm: {
+      package_rpm { $title:
+        ensure => $ensure,
+        source => $source,
+        *      => $options,
+      }
+      if defined($version) { fail("RPM doesn't support \$version") }
+      # ...
+    }
+  }
+}
+```
+
+## Composite namevars
+
+The current API does not provide a way to specify composite namevars. [`title_patterns`](https://github.com/puppetlabs/puppet-specifications/blob/master/language/resource_types.md#title-patterns) are already very data driven, and will be easy to add at a later point.
+
+## Puppet 4 data types
+
+Currently anywhere "puppet 4 data types" are mentioned, only the built-in types are usable. This is because the type information is required on the agent, but puppet doesn't make it available yet. This work is tracked in [PUP-7197](https://tickets.puppetlabs.com/browse/PUP-7197), but even once that is implemented, modules will have to wait until the functionality is widely available, before being able to rely on that.
+
+## Resources that can't be enumerated
+
+Some resources, like files, cannot (or should not) be completely enumerated each time puppet runs. In some cases, the runtime environment knows that it doesn't require all resource instances. The current API does not provide a way to support those use-cases. An easy way forward would be to add a `find(title)` method that would return data for a single resource instance. A more involved solution my leverage PQL, but would require a much more sophisticated implementation. This also interacts with composite namevars.
+
+## Catalog access
+
+There is no way to access the catalog from the implementation. Several existing types rely on this to implement advanced functionality. Some of those use-cases would be better suited to be implemented as "external" catalog transformations, instead of munging the catalog from within the compilation process.  
 
 # Earlier notes
 
