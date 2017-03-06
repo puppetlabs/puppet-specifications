@@ -60,20 +60,22 @@ The `Puppet::ResourceDefinition.register(options)` function takes a Hash with th
 At runtime the current and intended system states for a single resource instance are always represented as ruby Hashes of the resource's attributes, and applicable operational parameters.
 
 The two fundamental operations to manage resources are reading and writing system state. These operations are implemented in the `ResourceImplementation` as `get` and `set`:
- 
+
 ```ruby
 Puppet::ResourceImplementation.register('apt_key') do
   def get
-    [
+    {
       'title': {
         name: 'title',
         # ...
       },
-    ]
+    }
   end
-  
-  def set(current_state, target_state, noop: false)
-    target_state.each do |title, resource|
+
+  def set(changes, noop: false)
+    changes.each do |title, change|
+      current = change.has_key? :current ? change[:current] : get_single(title)
+      target = change[:target]
       # ...
     end
   end
@@ -82,8 +84,8 @@ end
 
 The `get` method returns a Hash of all resources currently available, keyed by their title. If the `get` method raises an exception, the implementation is marked as unavailable during the current run, and all resources of its type will fail. The error message will be reported to the user.
 
-The `set` method updates resources to the state defined in `target_state`. For convenience, `current_state` contains the last available system state from a prior `get` call. When `noop` is set to true, the implementation must not change the system state, but only report what it would change.
- 
+The `set` method updates resources to a new state. The `changes` parameter gets passed an a hash of change requests, keyed by resource title. Each value is another hash with a `:target` key, and an optional `:current` key. Those values will be of the same shape as those returned by `get`. After the `set`, all resources should be in the state defined by the `:target` value. For convenience, `:current` may contain the last available system state from a prior `get` call. If the `:current` value is `nil`, the resources was not found by `get`. If there is no `:current` key, the runtime did not have a cached state available. When `noop` is set to true, the implementation must not change the system state, but only report what it would change. The `set` method should always return `nil`. Any progress signalling should be done through the logging utilities described below. Should the `set` method throw an exception, all resources that should change in this call, and haven't already been marked with a definite state, will be marked as failed.
+
 
 # Runtime Environment
 
@@ -95,7 +97,7 @@ The runtime environment provides some utilities to make the implementation's lif
 
 ### Commands
 
-To use CLI commands in a safe and comfortable manner, the implementation can use the `commands` method to access shell commands. You can either use a full path, or a bare command name. In the latter case puppet will use the system PATH setting to search for the command. If the commands are not available, an error will be raised and the resources will fail in this run. The commands are aware of whether noop is in effect or not, and will signal success while skipping the real execution if necessary. 
+To use CLI commands in a safe and comfortable manner, the implementation can use the `commands` method to access shell commands. You can either use a full path, or a bare command name. In the latter case puppet will use the system PATH setting to search for the command. If the commands are not available, an error will be raised and the resources will fail in this run. The commands are aware of whether noop is in effect or not, and will signal success while skipping the real execution if necessary.
 
 ```ruby
 Puppet::ResourceImplementation.register('apt_key') do
@@ -104,7 +106,7 @@ Puppet::ResourceImplementation.register('apt_key') do
 ```
 
 This will create methods called `apt_get`, and `gpg`, which will take CLI arguments in an array, and execute the command directly without any shell processing in a safe environment (clean working directory, clean environment). For example to call `apt-key` to delete a specific key by id:
- 
+
 ```ruby
 apt_key 'del', key_id
 ```
@@ -165,7 +167,7 @@ Warning: apt_key: Unexpected state detected, continuing in degraded mode.
 * warning: signal error conditions that do not (yet) prohibit execution of the main part of the implementation; for example deprecation warnings, temporary errors.
 * err: signal error conditions that have caused normal operations to fail
 * critical/alert/emerg: should not be used by resource implementations
- 
+
 See [wikipedia](https://en.wikipedia.org/wiki/Syslog#Severity_level) and [RFC424](https://tools.ietf.org/html/rfc5424) for more details.
 
 #### Logging contexts
@@ -176,21 +178,21 @@ Most of an implementation's messages are expected to be relative to a specific r
 logger.attribute_changed(title:, attribute:, old_value:, new_value:, message: "Changed #{attribute} from #{old_value.inspect} to #{newvalue.inspect}")
 ```
 
-To enable detailed logging without repeating key arguments, and provide consistent error logging, the logger provides *logging context* methods that capture the current action and resource instance. 
- 
+To enable detailed logging without repeating key arguments, and provide consistent error logging, the logger provides *logging context* methods that capture the current action and resource instance.
+
 ```ruby
 logger.updating(title: title) do
   if key_not_found
-    logger.warning('Original key not found') 
+    logger.warning('Original key not found')
   end
-  
+
   # Update the key by calling CLI tool
   apt_key(...)
-  
+
   logger.attribute_changed(
-    attribute: 'content', 
+    attribute: 'content',
     old_value: nil,
-    new_value: content_hash, 
+    new_value: content_hash,
     message: "Created with content hash #{content_hash}")
 end
 ```
@@ -253,14 +255,15 @@ This example is only for demonstration purposes. In the normal course of operati
 
 The following action/context methods are available:
 
-* `creating(title:, message: 'Creating', &block)`
-* `updating(title:, message: 'Updating', &block)`
-* `deleting(title:, message: 'Deleting', &block)`
-* `attribute_changed(title:, attribute:, old_value:, new_value:, message: nil)`
+* `creating(title, message: 'Creating', &block)`
+* `updating(title, message: 'Updating', &block)`
+* `deleting(title, message: 'Deleting', &block)`
+* `attribute_changed(title, attribute, old_value:, new_value:, message: nil)`
 
-* `created(title:, message: 'Created')`
-* `updated(title:, message: 'Updated')`
-* `deleted(title:, message: 'Deleted')`
+* `created(title, message: 'Created')`
+* `updated(title, message: 'Updated')`
+* `deleted(title, message: 'Deleted')`
+* `unchanged(title, message: 'Unchanged')`: the resource did not require a change
 
 * `fail(title:, message:)` - abort the current context with an error
 
@@ -322,30 +325,33 @@ Some resources, like files, cannot (or should not) be completely enumerated each
 
 ## Catalog access
 
-There is no way to access the catalog from the implementation. Several existing types rely on this to implement advanced functionality. Some of those use-cases would be better suited to be implemented as "external" catalog transformations, instead of munging the catalog from within the compilation process.  
+There is no way to access the catalog from the implementation. Several existing types rely on this to implement advanced functionality. Some of those use-cases would be better suited to be implemented as "external" catalog transformations, instead of munging the catalog from within the compilation process.
+
+## Logging for unmanaged instances
+
+The implementation could provide log messages for resource instances that were not passed into the `set` call. In the current implementation those will be reported to the log, but will not cause the same resource-based reporting as a managed resource. How this is handeled in the future might change drastically.
+
 
 # Earlier notes
 
-Draft for new type and provider API
-
-Hi *,
+## Draft for new type and provider API
 
 The type and provider API has been the bane of my existence since I [started writing native resources](https://github.com/DavidS/puppet-mysql-old/commit/d33c7aa10e3a4bd9e97e947c471ee3ed36e9d1e2). Now, finally, we'll do something about it. I'm currently working on designing a nicer API for types and providers. My primary goals are to provide a smooth and simple ruby developer experience for both scripters and coders. Secondary goals were to eliminate server side code, and make puppet 4 data types available. Currently this is completely aspirational (i.e. no real code has been written), but early private feedback was encouraging.
 
-To showcase my vision, this [gist](https://gist.github.com/DavidS/430330ae43ba4b51fe34bd27ddbe4bc7) has the [apt_key type](https://github.com/puppetlabs/puppetlabs-apt/blob/master/lib/puppet/type/apt_key.rb) and [provider](https://github.com/puppetlabs/puppetlabs-apt/blob/master/lib/puppet/provider/apt_key/apt_key.rb) ported over to my proposal. The second example there is a more long-term teaser on what would become possible with such an API. 
+To showcase my vision, this [gist](https://gist.github.com/DavidS/430330ae43ba4b51fe34bd27ddbe4bc7) has the [apt_key type](https://github.com/puppetlabs/puppetlabs-apt/blob/master/lib/puppet/type/apt_key.rb) and [provider](https://github.com/puppetlabs/puppetlabs-apt/blob/master/lib/puppet/provider/apt_key/apt_key.rb) ported over to my proposal. The second example there is a more long-term teaser on what would become possible with such an API.
 
-The new API, like the existing, has two parts: the implementation that interacts with the actual resources, a.k.a. the provider, and information about what the implementation is all about. Due to the different usage patterns of the two parts, they need to be passed to puppet in two different calls: 
+The new API, like the existing, has two parts: the implementation that interacts with the actual resources, a.k.a. the provider, and information about what the implementation is all about. Due to the different usage patterns of the two parts, they need to be passed to puppet in two different calls:
 
 The `Puppet::SimpleResource.implement()` call receives the `current_state = get()` and `set(current_state, target_state, noop)` methods. `get` returns a list of discovered resources, while `set` takes the target state and enforces those goals on the subject. There is only a single (ruby) object throughout an agent run, that can easily do caching and what ever else is required for a good functioning of the provider. The state descriptions passed around are simple lists of key/value hashes describing resources. This will allow the implementation wide latitude in how to organise itself for simplicity and efficiency.  
 
-The `Puppet::SimpleResource.define()` call provides a data-only description of the Type. This is all that is needed on the server side to compile a manifest. Thanks to puppet 4 data type checking, this will already be much more strict (with less effort) than possible with the current APIs, while providing more automatically readable documentation about the meaning of the attributes. 
-  
+The `Puppet::SimpleResource.define()` call provides a data-only description of the Type. This is all that is needed on the server side to compile a manifest. Thanks to puppet 4 data type checking, this will already be much more strict (with less effort) than possible with the current APIs, while providing more automatically readable documentation about the meaning of the attributes.
+
 
 Details in no particular order:
 
 * All of this should fit on any unmodified puppet4 installation. It is completely additive and optional. Currently.
 
-* The Type definition 
+* The Type definition
   * It is data-only.
   * Refers to puppet data types.
   * No code runs on the server.
@@ -373,9 +379,9 @@ Details in no particular order:
   * the `logger` is the primary way of reporting back information to the log, and the report.
   * results can be streamed for immediate feedback
   * block-based constructs allow detailed logging with little code ("Started X", "X: Doing Something", "X: Success|Failure", with one or two calls, and only one reference to X)
-  
+
 * Obviously this is not sufficient to cover everything existing types and providers are able to do. For the first iteration we are choosing simplicity over functionality.
-  * Generating more resource instances for the catalog during compilation (e.g. file#recurse or concat) becomes impossible with a pure data-driven Type. There is still space in the API to add server-side code. 
+  * Generating more resource instances for the catalog during compilation (e.g. file#recurse or concat) becomes impossible with a pure data-driven Type. There is still space in the API to add server-side code.
   * Some resources (e.g. file, ssh_authorized_keys, concat) cannot or should not be prefetched. While it might not be convenient, a provider could always return nothing on the `get()` and do a more customized enforce motion in the `set()`.
   * With current puppet versions, only "native" data types will be supported, as type aliases do not get pluginsynced. Yet.
   * With current puppet versions, `puppet resource` can't load the data types, and therefore will not be able to take full advantage of this. Yet.
@@ -389,4 +395,3 @@ What do you think about this?
 
 
 Cheers, David
-
