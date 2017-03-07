@@ -170,15 +170,24 @@ Warning: apt_key: Unexpected state detected, continuing in degraded mode.
 
 See [wikipedia](https://en.wikipedia.org/wiki/Syslog#Severity_level) and [RFC424](https://tools.ietf.org/html/rfc5424) for more details.
 
-#### Logging contexts
+#### Signalling resource status
 
-Most of an implementation's messages are expected to be relative to a specific resource instance, and a specific operation on that instance. For example, to report the change of an attribute:
+In many simple cases, an implementation can pass off the real work to a external tool, detailed logging happens there, and reporting back to puppet only requires acknowledging those changes. In these situations, signalling can be as easy as this:
 
-```ruby
-logger.attribute_changed(title:, attribute:, old_value:, new_value:, message: "Changed #{attribute} from #{old_value.inspect} to #{newvalue.inspect}")
+```
+apt_key action, key_id
+logger.processed(key_id, is, should)
 ```
 
-To enable detailed logging without repeating key arguments, and provide consistent error logging, the logger provides *logging context* methods that capture the current action and resource instance.
+This will report all changes from `is` to `should`, using default messages.
+
+Implementations that want to have more control over the logging throughout the processing can use the more specific `created(title)`, `updated(title)`, `deleted(title)`, `unchanged(title)` methods for that. To report the change of an attribute, the `logger` provides a `attribute_changed(title, attribute, old_value, new_value)` method.
+
+> Note: Implementations making use of those primitive functions need to take care to
+
+#### Logging contexts
+
+Most of those messages are expected to be relative to a specific resource instance, and a specific operation on that instance. To enable detailed logging without repeating key arguments, and provide consistent error logging, the logger provides *logging context* methods that capture the current action and resource instance.
 
 ```ruby
 logger.updating(title: title) do
@@ -258,14 +267,19 @@ The following action/context methods are available:
 * `creating(title, message: 'Creating', &block)`
 * `updating(title, message: 'Updating', &block)`
 * `deleting(title, message: 'Deleting', &block)`
-* `attribute_changed(title, attribute, old_value:, new_value:, message: nil)`
+* `attribute_changed(attribute, old_value:, new_value:, message: nil)`: default to the title from the context
 
 * `created(title, message: 'Created')`
 * `updated(title, message: 'Updated')`
 * `deleted(title, message: 'Deleted')`
-* `unchanged(title, message: 'Unchanged')`: the resource did not require a change
+* `unchanged(title, message: 'Unchanged')`: the resource did not require a change - emit no logging
+* `processed(title, is, should)`: the resource has been processed - emit default logging for the resource and each attribute
+* `failed(title:, message:)`: the resource has not been updated successfully
+* `attribute_changed(title, attribute, old_value:, new_value:, message: nil)`
 
-* `fail(title:, message:)` - abort the current context with an error
+* `fail(message:)`: abort the current context with an error
+
+`title` can be a single identifier for a resource instance, or an array of values, if the following block batch-processes multiple resources in one pass. If that processing is not atomic, implementations should instead use the non-block forms of logging, and provide accurate status reporting on the individual parts of update operations.
 
 # Known Limitations
 
