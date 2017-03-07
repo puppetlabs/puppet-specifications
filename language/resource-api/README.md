@@ -198,10 +198,7 @@ logger.updating(title: title) do
   # Update the key by calling CLI tool
   apt_key(...)
 
-  logger.attribute_changed(
-    attribute: 'content',
-    old_value: nil,
-    new_value: content_hash,
+  logger.attribute_changed('content', nil, content_hash,
     message: "Created with content hash #{content_hash}")
 end
 ```
@@ -213,7 +210,7 @@ Debug: Apt_key[#{title}]: Started updating
 Warning: Apt_key[#{title}]: Updating: Original key not found
 Debug: Apt_key[#{title}]: Executing 'apt-key ...'
 Debug: Apt_key[#{title}]: Successfully executed 'apt-key ...'
-Notice: Apt_key[#{title}]: Updating content: Created with content hash #{content_hash}
+Notice: Apt_key[#{title}]: Updating content: Created with content hash { a: hash }
 Notice: Apt_key[#{title}]: Successfully updated
 # TODO: update messages to match current log message formats for resource messages
 ```
@@ -223,7 +220,7 @@ In the case of an exception escaping the block, the error is logged appropriatel
 ```text
 Debug: Apt_key[#{title}]: Started updating
 Warning: Apt_key[#{title}]: Updating: Original key not found
-Error: Apt_key[#{title}]: Updating failed: #{exception message}
+Error: Apt_key[#{title}]: Updating failed: Something went wrong
 # TODO: update messages to match current log message formats for resource messages
 ```
 
@@ -244,12 +241,8 @@ begin
   if $?.exitstatus != 0
     logger.error(title: title, "Failed executing apt-key #{...}")
   else
-    logger.attribute_changed(
-      title:     title,
-      attribute: 'content',
-      old_value: nil,
-      new_value: content_hash,
-      message:   "Created with content hash #{content_hash}")
+    logger.attribute_changed(title, 'content', nil, content_hash,
+      message: "Created with content hash #{content_hash}")
   end
   logger.changed(title: title)
 rescue StandardError => e
@@ -264,22 +257,42 @@ This example is only for demonstration purposes. In the normal course of operati
 
 The following action/context methods are available:
 
-* `creating(title, message: 'Creating', &block)`
-* `updating(title, message: 'Updating', &block)`
-* `deleting(title, message: 'Deleting', &block)`
-* `attribute_changed(attribute, old_value:, new_value:, message: nil)`: default to the title from the context
+* Context functions
+** `creating(title, message: 'Creating', &block)`
+** `updating(title, message: 'Updating', &block)`
+** `deleting(title, message: 'Deleting', &block)`
+** `processing(title, is, should, message: 'Processing', &block)`
+** `failing(title, message: 'Failing', &block)`: unlikely to be used often, but provided for completeness
+** `attribute_changed(attribute, is, should, message: nil)`: default to the title from the context
 
-* `created(title, message: 'Created')`
-* `updated(title, message: 'Updated')`
-* `deleted(title, message: 'Deleted')`
-* `unchanged(title, message: 'Unchanged')`: the resource did not require a change - emit no logging
-* `processed(title, is, should)`: the resource has been processed - emit default logging for the resource and each attribute
-* `failed(title:, message:)`: the resource has not been updated successfully
-* `attribute_changed(title, attribute, old_value:, new_value:, message: nil)`
+* Action functions
+** `created(title, message: 'Created')`
+** `updated(title, message: 'Updated')`
+** `deleted(title, message: 'Deleted')`
+** `unchanged(title, message: 'Unchanged')`: the resource did not require a change - emit no logging
+** `processed(title, is, should)`: the resource has been processed - emit default logging for the resource and each attribute
+** `failed(title:, message:)`: the resource has not been updated successfully
+** `attribute_changed(title, attribute, is, should, message: nil)`: use outside of a context, or in a context with multiple resources
 
 * `fail(message:)`: abort the current context with an error
 
+* Plain messages
+** `debug(message)`
+** `debug(title:, message:)`
+** `info(message)`
+** `info(title:, message:)`
+** `notice(message)`
+** `notice(title:, message:)`
+** `warning(message)`
+** `warning(title:, message:)`
+** `err(message)`
+** `err(title:, message:)`
+
 `title` can be a single identifier for a resource instance, or an array of values, if the following block batch-processes multiple resources in one pass. If that processing is not atomic, implementations should instead use the non-block forms of logging, and provide accurate status reporting on the individual parts of update operations.
+
+A single `set()` execution may only log messages for instances it has been passed as part of the `changes` to process. Logging for foreign instances will cause an exception, as the runtime environment is not prepared for other resources to change.
+
+The implementation is free to call different logging methods for different resources in any order it needs to. The only ordering restriction is for all calls specifying the same `title`. The `attribute_changed` logging needs to be done before that resource's action logging, and if a context is opened, it needs to be opened before any other logging for this resource.
 
 # Known Limitations
 
