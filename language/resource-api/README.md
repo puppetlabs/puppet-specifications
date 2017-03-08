@@ -64,12 +64,12 @@ The two fundamental operations to manage resources are reading and writing syste
 ```ruby
 Puppet::ResourceProvider.register('apt_key') do
   def get(names = nil)
-    {
-      'name': {
+    [
+      {
         name: 'name',
         # ...
       },
-    }
+    ]
   end
 
   def set(changes, noop: false)
@@ -82,7 +82,7 @@ Puppet::ResourceProvider.register('apt_key') do
 end
 ```
 
-The `get` method reports the current state of the managed resources. It is called with an array of resource names, or `nil`. It is expected to return a Hash of resources keyed by their name. These resources must at least contain the ones mentioned in the `names` array, but may contain more than those. As a special case, if the `names` parameter is `nil`, all existing resources should be returned. If the `get` method raises an exception, the provider is marked as unavailable during the current run, and all resources of this type will fail in the current transaction. The error message will be reported to the user.
+The `get` method reports the current state of the managed resources. It is called with an array of resource names, or `nil`. It is expected to return an Array of resources. These resources must at least contain the ones mentioned in the `names` array, but may contain more than those. As a special case, if the `names` parameter is `nil`, all existing resources should be returned. If the `get` method raises an exception, the provider is marked as unavailable during the current run, and all resources of this type will fail in the current transaction. The error message will be reported to the user.
 
 The `set` method updates resources to a new state. The `changes` parameter gets passed an a hash of change requests, keyed by the resource's name. Each value is another hash with a `:should` key, and an optional `:is` key. Those values will be of the same shape as those returned by `get`. After the `set`, all resources should be in the state defined by the `:should` values. For convenience, `:is` may contain the last available system state from a prior `get` call. If the `:is` value is `nil`, the resources was not found by `get`. If there is no `:is` key, the runtime did not have a cached state available. When `noop` is set to true, the provider must not change the system state, but only report what it would change. The `set` method should always return `nil`. Any progress signalling should be done through the logging utilities described below. Should the `set` method throw an exception, all resources that should change in this call, and haven't already been marked with a definite state, will be marked as failed.
 
