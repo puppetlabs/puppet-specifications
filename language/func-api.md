@@ -313,6 +313,51 @@ a regular Ruby Proc). Also note that when using Ruby 1.8.7 the Proc API is limit
 
 Use the `closure` method on the proc to get the Puppet closure (an instance of `Puppet::Pops::Evaluator::Closure`).
 
+### Type Mismatch Dispatch
+
+Since Puppet 4.10.0
+
+A dispatcher named `argument_mismatch` can be used to dispatch calls that would
+otherwise result in a type mismatch error with a generic error message describing why
+there was a mismatch.
+
+The `argument_mismatch` dispatcher works exactly like the regular dispatcher,
+but it only kicks in if the given arguments does not match any of the regular
+dispatchers.
+
+The methods that this dispatcher dispatches to must return a `String`, and this
+value becomes the error message that is shown for the detected mismatch.
+
+If none of the `argument_mismatch` dispatches matches the given arguments,
+or if there is no `argument_mismatch` at all in the function, then the default, generic 
+type mismatch error will be raised.
+
+An `argument_mismatch` dispatcher accepts and matches a block parameter, but the
+block itself is not passed on to the implementation method.
+
+```
+      dispatch :process do
+        param 'Numeric', :a,
+        param 'Numeric', :b
+      end
+      
+      type_mismatch :on_error do
+        param 'Any', :a
+        param 'Any', :b
+      end
+      
+      def process(a, b)
+        # return the result of the function
+      end
+
+      def on_error(a,b)
+        # return the custom error message
+        "Both parameters must be Numeric"
+      end
+
+```
+
+
 ### Local Type Aliases
 
 Since Puppet 4.5.0 it is possible to define local type aliases that can be used to type
