@@ -1,3 +1,7 @@
+
+# This is a experimental hardcoded implementation of what will be come the Resource API's runtime
+# environment. This code is used as test-bed to see that the proposal is technically feasible.
+
 require 'puppet/pops/patterns'
 require 'puppet/pops/utils'
 
@@ -46,17 +50,17 @@ DEFINITION = {
             docs: 'Additional options to pass to apt-key\'s --keyserver-options.',
         },
         fingerprint: {
-            type:      'String',
+            type:      'Pattern[/[a-f]{40}/]',
             docs:      'The 40-digit hexadecimal fingerprint of the specified GPG key.',
             read_only: true,
         },
         long:        {
-            type:      'String',
+            type:      'Pattern[/[a-f]{16}/]',
             docs:      'The 16-digit hexadecimal id of the specified GPG key.',
             read_only: true,
         },
         short:       {
-            type:      'String',
+            type:      'Pattern[/[a-f]{8}/]',
             docs:      'The 8-digit hexadecimal id of the specified GPG key.',
             read_only: true,
         },
