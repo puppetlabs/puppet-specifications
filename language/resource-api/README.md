@@ -54,6 +54,7 @@ The `Puppet::ResourceType.register(options)` function takes a Hash with the foll
   * `read_only`: values for this attribute will be returned by `get()`, but `set()` is not able to change them. Values for this should never be specified in a manifest. For example the checksum of a file, or the MAC address of a network interface.
   * `parameter`: these attributes influence how the provider behaves, and cannot be read from the target system. For example, the target file on inifile, or credentials to access an API.
 * `autorequires`, `autobefore`, `autosubscribe`, and `autonotify`: a Hash mapping resource types to titles. Currently the titles must either be constants, or, if the value starts with a dollar sign, a reference to the value of an attribute. If the specified resources exist in the catalog, puppet will automatically create the relationsships requested here.
+* `provider_features`: a list of feature names, specifying which optional parts of this spec the provider supports. Currently there are two defined: `simple_get_filter`, and `noop_handler`. See below for details.
 
 # Resource Provider
 
@@ -63,7 +64,7 @@ The two fundamental operations to manage resources are reading and writing syste
 
 ```ruby
 Puppet::ResourceProvider.register('apt_key') do
-  def get(names = nil)
+  def get()
     [
       {
         name: 'name',
@@ -72,7 +73,7 @@ Puppet::ResourceProvider.register('apt_key') do
     ]
   end
 
-  def set(changes, noop: false)
+  def set(changes)
     changes.each do |name, change|
       is = change.has_key? :is ? change[:is] : get_single(name)
       should = change[:should]
@@ -82,10 +83,54 @@ Puppet::ResourceProvider.register('apt_key') do
 end
 ```
 
-The `get` method reports the current state of the managed resources. It is called with an array of resource names, or `nil`. It is expected to return an Array of resources. These resources must at least contain the ones mentioned in the `names` array, but may contain more than those. As a special case, if the `names` parameter is `nil`, all existing resources should be returned. If a requested resource is not listed in the result, it is considered to not exist on the system. If the `get` method raises an exception, the provider is marked as unavailable during the current run, and all resources of this type will fail in the current transaction. The error message will be reported to the user.
+The `get` method reports the current state of the managed resources. It is expected to return an Array of resources. Each resource is a Hash with attribute names as keys, and their respective values as values. It is an error to return values not matching the type specified in the resource type. If a requested resource is not listed in the result, it is considered to not exist on the system. If the `get` method raises an exception, the provider is marked as unavailable during the current run, and all resources of this type will fail in the current transaction. The error message will be reported to the user.
 
-The `set` method updates resources to a new state. The `changes` parameter gets passed an a hash of change requests, keyed by the resource's name. Each value is another hash with a `:should` key, and an optional `:is` key. Those values will be of the same shape as those returned by `get`. After the `set`, all resources should be in the state defined by the `:should` values. For convenience, `:is` may contain the last available system state from a prior `get` call. If the `:is` value is `nil`, the resources was not found by `get`. If there is no `:is` key, the runtime did not have a cached state available. When `noop` is set to true, the provider must not change the system state, but only report what it would change. The `set` method should always return `nil`. Any progress signalling should be done through the logging utilities described below. Should the `set` method throw an exception, all resources that should change in this call, and haven't already been marked with a definite state, will be marked as failed.
+The `set` method updates resources to a new state. The `changes` parameter gets passed an a hash of change requests, keyed by the resource's name. Each value is another hash with a `:should` key, and an optional `:is` key. Those values will be of the same shape as those returned by `get`. After the `set`, all resources should be in the state defined by the `:should` values. For convenience, `:is` may contain the last available system state from a prior `get` call. If the `:is` value is `nil`, the resources was not found by `get`. If there is no `:is` key, the runtime did not have a cached state available. The `set` method should always return `nil`. Any progress signaling should be done through the logging utilities described below. Should the `set` method throw an exception, all resources that should change in this call, and haven't already been marked with a definite state, will be marked as failed. The runtime will only call the `set` method if there are changes to be made. Especially in the case of resources marked with `noop => true` (either locally, or through a global flag), the runtime will not pass them to `set`. See `noop_handler` below for changing this behaviour if required.
 
+## Provider Feature: simple_get_filter
+
+```ruby
+Puppet::ResourceType.register(
+  name: 'apt_key',
+  features: [ 'simple_get_filter' ],
+)
+
+Puppet::ResourceProvider.register('apt_key') do
+  def get(names = [])
+    [
+      {
+        name: 'name',
+        # ...
+      },
+    ]
+  end
+```
+
+Some resources are very expensive to enumerate. In this case the provider can implement `simple_get_filter` to signal extended capabilities of the `get` method to address this. The provider's `get` method will be called with an array of resource names, or `nil`. The `get` method must at least return the resources mentioned in the `names` array, but may return more than those. As a special case, if the `names` parameter is `nil`, all existing resources should be returned. To support simple runtimes, the `names` parameter should default to `[]`, to avoid unnecessary work if the runtime does not specify a filter at all.
+
+The runtime environment should call `get` with a minimal set of names it is interested in, and should keep track of additional instances returned, to avoid double querying.
+
+## Provider Feature: noop_handler
+
+```ruby
+Puppet::ResourceType.register(
+  name: 'apt_key',
+  features: [ 'noop_handler' ],
+)
+
+Puppet::ResourceProvider.register('apt_key') do
+  def set(changes, noop: false)
+    changes.each do |name, change|
+      is = change.has_key? :is ? change[:is] : get_single(name)
+      should = change[:should]
+      # ...
+      do_something unless noop
+    end
+  end
+end
+```
+
+When a resource is marked with `noop => true`, either locally, or through a global flag, the standard runtime will emit the default change report with a `noop` flag set. In some cases an implementation can provide additional information (e.g. commands that would get executed), or requires additional evaluation before determining the effective changes (e.g. `exec`'s `onlyif` attribute). In those cases, the resource type can specify the `noop_handler` feature to have `set` called for all resources, even those flagged with `noop`. When the `noop` parameter is set to true, the provider must not change the system state, but only report what it would change. The `noop` parameter should default to `false` to allow simple runtimes to ignore this feature.
 
 # Runtime Environment
 
