@@ -54,7 +54,7 @@ The `Puppet::ResourceType.register(options)` function takes a Hash with the foll
   * `read_only`: values for this attribute will be returned by `get()`, but `set()` is not able to change them. Values for this should never be specified in a manifest. For example the checksum of a file, or the MAC address of a network interface.
   * `parameter`: these attributes influence how the provider behaves, and cannot be read from the target system. For example, the target file on inifile, or credentials to access an API.
 * `autorequires`, `autobefore`, `autosubscribe`, and `autonotify`: a Hash mapping resource types to titles. Currently the titles must either be constants, or, if the value starts with a dollar sign, a reference to the value of an attribute. If the specified resources exist in the catalog, puppet will automatically create the relationsships requested here.
-* `provider_features`: a list of feature names, specifying which optional parts of this spec the provider supports. Currently there are two defined: `simple_get_filter`, and `noop_handler`. See below for details.
+* `features`: a list of API feature names, specifying which optional parts of this spec the provider supports. Currently there are two defined: `simple_get_filter`, and `noop_handler`. See below for details.
 
 # Resource Provider
 
