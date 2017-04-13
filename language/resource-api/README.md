@@ -54,7 +54,7 @@ The `Puppet::ResourceType.register(options)` function takes a Hash with the foll
   * `read_only`: values for this attribute will be returned by `get()`, but `set()` is not able to change them. Values for this should never be specified in a manifest. For example the checksum of a file, or the MAC address of a network interface.
   * `parameter`: these attributes influence how the provider behaves, and cannot be read from the target system. For example, the target file on inifile, or credentials to access an API.
 * `autorequires`, `autobefore`, `autosubscribe`, and `autonotify`: a Hash mapping resource types to titles. Currently the titles must either be constants, or, if the value starts with a dollar sign, a reference to the value of an attribute. If the specified resources exist in the catalog, puppet will automatically create the relationsships requested here.
-* `features`: a list of API feature names, specifying which optional parts of this spec the provider supports. Currently there are two defined: `simple_get_filter`, and `noop_handler`. See below for details.
+* `features`: a list of API feature names, specifying which optional parts of this spec the provider supports. Currently defined: features: `canonicalize`, `simple_get_filter`, and `noop_handler`. See below for details.
 
 # Resource Provider
 
@@ -86,6 +86,33 @@ end
 The `get` method reports the current state of the managed resources. It is expected to return an Array of resources. Each resource is a Hash with attribute names as keys, and their respective values as values. It is an error to return values not matching the type specified in the resource type. If a requested resource is not listed in the result, it is considered to not exist on the system. If the `get` method raises an exception, the provider is marked as unavailable during the current run, and all resources of this type will fail in the current transaction. The error message will be reported to the user.
 
 The `set` method updates resources to a new state. The `changes` parameter gets passed an a hash of change requests, keyed by the resource's name. Each value is another hash with a `:should` key, and an optional `:is` key. Those values will be of the same shape as those returned by `get`. After the `set`, all resources should be in the state defined by the `:should` values. For convenience, `:is` may contain the last available system state from a prior `get` call. If the `:is` value is `nil`, the resources was not found by `get`. If there is no `:is` key, the runtime did not have a cached state available. The `set` method should always return `nil`. Any progress signaling should be done through the logging utilities described below. Should the `set` method throw an exception, all resources that should change in this call, and haven't already been marked with a definite state, will be marked as failed. The runtime will only call the `set` method if there are changes to be made. Especially in the case of resources marked with `noop => true` (either locally, or through a global flag), the runtime will not pass them to `set`. See `noop_handler` below for changing this behaviour if required.
+
+## Provider Feature: canonicalize
+
+```ruby
+Puppet::ResourceType.register(
+  name: 'apt_key',
+  features: [ 'canonicalize' ],
+)
+
+Puppet::ResourceProvider.register('apt_key') do
+  def canonicalize(resources)
+    resources.collect do |r|
+      r[:name] = if r[:name].start_with?('0x')
+                   r[:name][2..-1].upcase
+                 else
+                   r[:name].upcase
+                 end
+      r
+    end
+  end
+```
+
+The runtime environment requires a provider to always use the same format for values to be able to correctly detect changes, and not produce false positives. In the example, the `apt_key` name is a hexadecimal number that can be written with, and without, the `'0x'` prefix, and the casing of the digits is irrelevant. The implementation has chosen to always use all upper case, and no prefix. To avoid inflicting a unneccessarily strict form on users, the `canonicalize` function transforms all allowed formats into the standard format. The only argument to `canonicalize` is a list of resource hashes matching the structure returned by `get`. The function should transform all values in those hashes into the canonical format returned by get. The runtime environment must use `canonicalize` before comparing user input values with values returned from get. The runtime environment must protect itself from modifications to the object passed in as `resources`, if it requires the original values later in its processing.
+
+> Note: When the provider implements canonicalisation, it should strive for always logging canonicalized values. By virtue of `get`, and `set` always producing and consuming canonically formatted values, this is not expected to pose extra overhead.
+
+> Note: A interesting side-effect of these rules is the fact that the canonicalization of `get`'s return value must not change the processed values. Runtime environments may have strict or development modes that check this property.
 
 ## Provider Feature: simple_get_filter
 
