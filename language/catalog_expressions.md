@@ -215,11 +215,18 @@ elsewhere via *exported resource collection*.
        : Expression<Tree[Variant[String[1], Default]]>
        ;
 
-<table><tr><th>Note</th></tr>
-<tr><td>
-  The syntax above describes the current implementation. A Ux study is under way.
-</td></tr>
-</table>
+** Return Value **
+
+A `ResourceExpression` returns an `Array[Type[CatalogEntry]]` type, where each entry is a reference to a just created resource
+(a `Resource` or a `Class` type). Note that the resource expression itself has very low precedence, and it is not possible to directly assign the value of this expression to a variable - but when this expression is the last in a block it can be obtained.
+
+```puppet
+$created = ['message1', 'message2'].map | $m | { notify { $m: } }
+```
+would create two notify resources and output:
+```puppet
+[[Notify['message1']], [Notify['message2']]]
+```
 
 ** Semantic Constraints **
 
