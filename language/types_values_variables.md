@@ -75,16 +75,18 @@ the conceptual categories **Data Types** e.g.:
 * `Any`; the parent type of all types
 * `CatalogEntry`; the parent type of all types that are included in a *Puppet Catalog*
 * `Collection`; a parent type of `Array` and `Hash`
-* `Data`; a parent type of all data directly representable as JSON (alias for `Variant[Undef, ScalarData, Array[Data], Hash[String, Data]]`)
+* `Data`; a parent type of all data directly representable as JSON
+  (alias for `Variant[Undef, ScalarData, Array[Data], Hash[String, Data]]`)
 * `Enum`; an enumeration of strings
 * `Iterator`; a special kind of lazy `Iterable` suitable for chaining
 * `NotUndef`; a type that represents all types not assignable from the `Undef` type
 * `Numeric`; the parent type of all numeric data types (`Integer`, `Float`)
 * `Optional`; either `Undef` or a specific type
 * `Pattern`; an enumeration of regular expression patterns
-* `RichData'`; a parent type of all data types except the non serializeable types `Callable`, `Iterator`, and `Runtime`
+* `RichData'`; a parent type of all data types except the non serializeable types `Callable`, `Iterator`, `Iterable`, and `Runtime`
 * `Scalar`; the same as `Variant[ScalarData, Regexp, SemVer, Timespan, Timestamp]`
-* `ScalarData`; a parent type of all single valued data types that are directly representable in JSON (alias for `Variant[Numeric, String, Boolean]`)
+* `ScalarData`; a parent type of all single valued data types that are directly representable in JSON
+  (alias for `Variant[Integer, Float, String, Boolean]`)
 * `SemVerRange`; a range of `SemVer` versions
 * `Struct`; a Hash where each entry is individually named and typed
 * `Tuple`; an `Array` where each slot is typed individually
@@ -236,7 +238,7 @@ directly to the puppet type system.
 
 ### Ruby Object to Type Mapping
 
-The Ruby implementation of the Puppet Programming Language uses the Ruby classes `String`, `Integer` (`Fixnum`, `Bignum`, etc), `Float`, `Hash`, `Array`, `Regexp`, `TrueClass`, `FalseClass`, `NilObj`. Instances of these Ruby types are directly mapped to the corresponding puppet types (e.g. even if an instance of a puppet `String` is an instance of the Ruby class called `String`, it is not interpreted as `Runtime['Ruby', 'String']`.
+The Ruby implementation of the Puppet Programming Language uses the Ruby classes `String`, `Integer` (in some versions subclasses thereof, etc), `Float`, `Hash`, `Array`, `Regexp`, `TrueClass`, `FalseClass`, `NilObj`. Instances of these Ruby types are directly mapped to the corresponding puppet types (e.g. even if an instance of a puppet `String` is an instance of the Ruby class called `String`, it is not interpreted as `Runtime['Ruby', 'String']`.
 
 The catalog types are mapped to their corresponding runtime implementation in Ruby.
 
@@ -288,13 +290,13 @@ Note that a hash element key must be `String`.
 ### RichData
 
 Represents the abstract notion of "serializeable" and includes all the types in the type system except
-`Runtime`, `Callable`, and `Iterator`. It is expressed as an alias o
+`Runtime`, `Callable`, `Iterator` and `Iterable`. It is expressed as an alias o
 `Variant[Default, Object, Scalar, SemVerRange, Type, Undef, Array[RichData], Hash[RichData, RichData]]`)
 
 ### ScalarData
 
 Represents a restricted set of "value" data types that have concrete direct representation in JSON.
-`ScalarData` is an alias for `Variant[Numeric, String, Boolean]`.
+`ScalarData` is an alias for `Variant[Integer, Float, String, Boolean]`.
 
 ### Scalar
 
