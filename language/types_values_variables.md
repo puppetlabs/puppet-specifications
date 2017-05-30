@@ -62,7 +62,6 @@ the conceptual categories **Data Types** e.g.:
 *  `String`
 *  `Regexp`
 *  `SemVer`
-*  `SemVerRange`
 *  `Timespan`
 *  `Timestamp`
 
@@ -73,22 +72,26 @@ the conceptual categories **Data Types** e.g.:
 
 **Abstract Types** e.g.:
 
-* `Collection`; a parent type of `Array` and `Hash`
-* `Scalar`; a parent type of all single valued data types (`Integer`, `Float`, `String`, `Boolean`, `Regexp`)
-* `Numeric`; the parent type of all numeric data types (Integer, Float)
-* `CatalogEntry`; the parent type of all types that are included in a *Puppet Catalog*
-* `Data`; a parent type of all kinds of general purpose "data" (`Scalar` and `Array` of `Data`,
-  and `Hash` with `Scalar` key and `Data` values).
-* `Tuple`; an `Array` where each slot is typed individually
-* `Struct`; a Hash where each entry is individually named and typed
-* `Optional`; either `Undef` or a specific type
-* `NotUndef`; a type that represents all types not assignable from the `Undef` type
-* `Variant`; one of a selection of types
-* `Enum`; an enumeration of strings
-* `Pattern`; an enumeration of regular expression patterns
 * `Any`; the parent type of all types
-* `Iterable`; a type that represents all types that allow iteration
+* `CatalogEntry`; the parent type of all types that are included in a *Puppet Catalog*
+* `Collection`; a parent type of `Array` and `Hash`
+* `Data`; a parent type of all data directly representable as JSON
+  (alias for `Variant[Undef, ScalarData, Array[Data], Hash[String, Data]]`)
+* `Enum`; an enumeration of strings
 * `Iterator`; a special kind of lazy `Iterable` suitable for chaining
+* `NotUndef`; a type that represents all types not assignable from the `Undef` type
+* `Numeric`; the parent type of all numeric data types (`Integer`, `Float`)
+* `Optional`; either `Undef` or a specific type
+* `Pattern`; an enumeration of regular expression patterns
+* `RichData'`; a parent type of all data types except the non serializeable types `Callable`, `Iterator`, `Iterable`, and `Runtime`
+* `Scalar`; the same as `Variant[ScalarData, Regexp, SemVer, Timespan, Timestamp]`
+* `ScalarData`; a parent type of all single valued data types that are directly representable in JSON
+  (alias for `Variant[Integer, Float, String, Boolean]`)
+* `SemVerRange`; a range of `SemVer` versions
+* `Struct`; a Hash where each entry is individually named and typed
+* `Tuple`; an `Array` where each slot is typed individually
+* `Variant`; one of a selection of types
+* `Iterable`; a type that represents all types that allow iteration
 
 (The term *abstract* denotes that instances of such a type are always an instance of some other
 *concrete* type).
@@ -96,14 +99,14 @@ the conceptual categories **Data Types** e.g.:
 and **Platform Types**:
 
 * `Callable`; something that can be called (function, lambda)
-* `Type`; the type of types
-* `Runtime`; the type of runtime (non Puppet) types
-* `Undef`; the "no value" type
 * `Default`; the "default value" type
+* `Runtime`; the type of runtime (non Puppet) types
 * `Sensitive`; a type that represents a data type that have "clear text" restrictions
+* `Type`; the type of types
+* `Undef`; the "no value" type
 
 
-All types (Platform and Puppet) are organized into one *Type System*.
+All types are organized into one *Type System*.
 
 The conceptual categories shown above are for documentation purposes (e.g. there is no type
 in the type system called "DataType"), and to establish names for these categories that can be used
@@ -144,31 +147,35 @@ The type hierarchy is shown in the figure below. (A single capital letter denote
 reference to a type, lower case type parameters have special processing rules as shown
 in section specific to each type). Note that a type supporting parameters also may be referenced
 without any parameters, in which case type specific rules apply. Also note that the same type
-may appear more than once in the hierarchy (e.g. a `Scalar` is both `Any` and `Data`).
+may appear more than once in the hierarchy (e.g. a `ScalarData` is both `Scalar` and `Data`).
 
      Any
        |- Scalar
-       |  |- Numeric
-       |  |  |- Integer[from, to]
-       |  |     |- (Integer with range inside another Integer)
-       |  |  |- Float[from, to]
-       |  |     |- (Float with range inside another Float)
-       |  |- String[from, to]
-       |  |  |- Enum[*strings]
-       |  |  |- Pattern[*patterns]
+       |  |- ScalarData
+       |  |  |- Numeric
+       |  |  |  |- Integer[from, to]
+       |  |  |  |  |- (Integer with range inside another Integer)
+       |  |  |  |- Float[from, to]
+       |  |  |  |  |- (Float with range inside another Float)
+       |  |  |
+       |  |  |- String[from, to]
+       |  |  |  |- Enum[*strings]
+       |  |  |  |  | - (narrower Enum - a subset of options)
+       |  |  |  |- Pattern[*patterns]
+       |  |  |  |  | - (Enum with all options matching pattern)
+       |  |  |
+       |  |  |- Boolean
        |  |
-       |  |- Boolean
        |  |- Regexp[pattern_string]
        |  |- SemVer
-       |  |- SemVerRange
        |  |- Timespan
        |  |- Timestamp
-       |  |
        |
+       |- SemVerRange
        |- Collection
-       |  |- Array[T]
+       |  |- Array[T, from, to]
        |  |  |- Tuple[*types, from, to]
-       |  |- Hash[K, V]
+       |  |- Hash[K, V, from, to]
        |  |  |- Struct[{ key => T, ...}]
        |
        |- Variant[*types]
@@ -180,7 +187,6 @@ may appear more than once in the hierarchy (e.g. a `Scalar` is both `Any` and `D
        |  |- String
        |  |- Array[type]
        |  |- Hash[type]
-       |  |- Integer[from,to]
        |  |- Type[Integer[from,to]]
        |  |- Type[Enum[*strings]]
        |  |- Iterator[type]
@@ -191,20 +197,29 @@ may appear more than once in the hierarchy (e.g. a `Scalar` is both `Any` and `D
        |
        |- Undef
        |- Data
-       |  |- Boolean
-       |  |- Numeric
-       |  |- String
-       |  |- Array[Data]
-       |  |- Hash[Boolean, Data]
-       |  |- Hash[Numeric, Data]
-       |  |- Hash[String, Data]
+       |  |- ScalarData
        |  |- Undef
+       |  |- Array[Data]
+       |  |- Hash[String, Data]
+       |
+       |- RichData
+       |  |- Default
+       |  |- Object
+       |  |- Scalar
+       |  |- SemVerRange
+       |  |- Sensitive
+       |  |- Type
+       |  |- Undef
+       |  |- Array[RichData]
+       |  |- Hash[RichData, RichData]
        |
        |- Callable[signature...]
-       |- Type[T]
-       |- Runtime[runtime_name, class_name]
        |- Default
+       |- Object[specification...]
+       |- Runtime[runtime_name, class_name]
        |- Sensitive[T]
+       |- Type[T]
+       |- TypeSet[specification...]
 
 In addition to these types, a Qualified Reference that does not represent any of the other types is an alias for `Resource[the_qualified_reference]` (e.g. `File` is shorthand notation for `Resource[File]` / `Resource[file]`).
 
@@ -223,7 +238,7 @@ directly to the puppet type system.
 
 ### Ruby Object to Type Mapping
 
-The Ruby implementation of the Puppet Programming Language uses the Ruby classes `String`, `Integer` (`Fixnum`, `Bignum`, etc), `Float`, `Hash`, `Array`, `Regexp`, `TrueClass`, `FalseClass`, `NilObj`. Instances of these Ruby types are directly mapped to the corresponding puppet types (e.g. even if an instance of a puppet `String` is an instance of the Ruby class called `String`, it is not interpreted as `Ruby[String]`.
+The Ruby implementation of the Puppet Programming Language uses the Ruby classes `String`, `Integer` (in some versions subclasses thereof, etc), `Float`, `Hash`, `Array`, `Regexp`, `TrueClass`, `FalseClass`, `NilObj`. Instances of these Ruby types are directly mapped to the corresponding puppet types (e.g. even if an instance of a puppet `String` is an instance of the Ruby class called `String`, it is not interpreted as `Runtime['Ruby', 'String']`.
 
 The catalog types are mapped to their corresponding runtime implementation in Ruby.
 
@@ -259,27 +274,34 @@ must be used.
 
 ### Data
 
-Represents the abstract notion of "data", its subtypes are `Scalar`, and `Array[Data]` or
-`Hash[Scalar, Data]`. Further, arrays and hashes may be empty and contain `Undef`. A
-hash element key may not be `Undef`.
+Represents the abstract notion of "concrete JSON data". It is an alias for `Variant[ScalarData, Array[Data], Hash[String, Data], Undef]`
+Note that a hash element key must be `String`.
 
 #### Type Algebra on Data
 
     Data ∪ Data                 → Data
-    Data ∪ Boolean              → Data
     Data ∪ Numeric              → Data
     Data ∪ String               → Data
     Data ∪ Array[Data]          → Data
-    Data ∪ Hash[Boolean, Data]  → Data
-    Data ∪ Hash[Numeric, Data]  → Data
     Data ∪ Hash[String, Data]   → Data
     Data ∪ Undef                → Data
     Data ∪ (T ∉ Data)           → Any
 
+### RichData
+
+Represents the abstract notion of "serializeable" and includes all the types in the type system except
+`Runtime`, `Callable`, `Iterator` and `Iterable`. It is expressed as an alias o
+`Variant[Default, Object, Scalar, SemVerRange, Type, Undef, Array[RichData], Hash[RichData, RichData]]`)
+
+### ScalarData
+
+Represents a restricted set of "value" data types that have concrete direct representation in JSON.
+`ScalarData` is an alias for `Variant[Integer, Float, String, Boolean]`.
+
 ### Scalar
 
 Represents the abstract notion of "value", its subtypes are `Numeric`, `String` (including subtypes
-`Pattern`, and `Enum`), `Boolean`, and `Regexp`.
+`Pattern`, and `Enum`), `Boolean`, `Regexp`, `TimeStamp`, `TimeSpan`, and `SemVer`.
 
 #### Type Algebra on Scalar
 
@@ -1368,7 +1390,7 @@ The first index in an array instance is a non negative integer and starts with 0
 
 The type of `V` is unrestricted.
 
-When used without parameters, the default is `Array[Data]`.
+When used without parameters, the default is `Array[Any]`.
 
 An empty array is denoted with `Array[0, 0]`.
 It is illegal to specify the element type for an empty array. An empty array is accepted by
@@ -1414,16 +1436,17 @@ a value (of `V` type), optionally constrained in size by the integer range param
 The types of `K` and `V` are unrestricted.
 
 While the key is generally not restricted, it is recommended that `Undef` is not accepted
-as a key (not accepting `Undef` is the default, and default for hashes that conforms to the `Data` type).
+as a key (not accepting `Undef` is the default for hashes that conforms to the `Data` type).
 
 The hash maintains the order of the entries so that iteration over the hash yields the entries
 in the order they were inserted. When hashes are merged (using the `+` operator), the order of the keys
 in the constructed hash have the same order as the LHS side keys, and the RHS keys not present in the LHS
 are inserted at the end of the resulting hash in their RHS order.
 
-An empty hash is denoted with `Hash[0, 0]`.
-It is illegal to specify the key and/or element type for an empty hash.
-An empty hash is accepted by any typed hash that allows *from* to be 0. 
+* An unparameterized `Hash` is the same as `Hash[Any, Any]`
+* An empty hash is denoted with `Hash[0, 0]`.
+* It is illegal to specify the key and/or element type for an empty hash.
+* An empty hash is accepted by any typed hash that allows *from* to be 0. 
 
 #### Type Algebra on Hash
 
@@ -1911,6 +1934,10 @@ There is no automatic unwrapping of sensitive values. As a consequence it is not
 #### Use of Sensitive values in Resources
 
 Sensitive values can be used in resources. It is not allowed to use a sensitive value as a resource title.
+
+### Object Type, TypeSet
+
+The types `Object` and `TypeSet` are defined in the Puppet Type system as an experimental feature.
 
 Operations per Type
 ---
