@@ -652,5 +652,10 @@ Manifest loaded functions can define functions in any namespace. This should onl
 
 Nested namespaces are suppoted in the 4.x API for both Ruby and Puppet. The paths to the `.rb` or `.pp` files containing such functions should have each additional namespace in a nested directory. As an example the function `environment::testing::env_func()` should be placed in `<root>/lib/puppet/functions/environment/testing/env_func.rb` (Ruby API), or `<root>/functions/environment/testing/env_func.pp` (Puppet API).
 
+> **Note:** A module that wants to call a function in another module **must** either have
+> that module listed as a dependency, or have no dependencies entry at all in its `metadata.json`.
+> This requirement is enforced at runtime to help users keep meta data for modules up to date
+> as users then simply need to install a module and its dependencies. If a module does not have
+> the correct dependencies listed the runtime will simply not find the function.
 
 [1]: #autoloading
