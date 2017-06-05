@@ -1235,7 +1235,7 @@ The rules are:
   * If more than one name is given, the result is an `Array` of class types in **reference** form;
     evaluated from left to right.
 * When `[]` is applied to a **reference** class type:
-  * The names are references to the parameters or meta-parameters of the referenced class and must
+  * The names are references to the parameters or metaparameters of the referenced class and must
     evaluate to `String`.
   * Produces a single value when there is a single key, and an array of values otherwise
 
@@ -1268,9 +1268,9 @@ obtain the class variables using this syntax.
   value. **PUP-??? Open Issue**
 * Evaluation of parameter lookup is evaluation order dependent and that resource instantiation is
   lazily evaluated.
-* Note that meta parameters only include values for what has explicitly been assigned as they 
+* Note that metaparameters only include values for what has explicitly been assigned as they
   defaults are evaluated late, and may depend on other values.
-* Note that meta-parameters is an open ended concept where each meta-parameter defines its own
+* Note that metaparameters is an open ended concept where each metaparameter defines its own
   behavior.
 
 #### Resource Type [ ]
