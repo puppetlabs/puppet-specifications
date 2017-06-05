@@ -137,7 +137,7 @@ Syntax:
 * A Resource Type named the same as a type provided in a plugin will never be selected
 * The default parameter value expressions may not reference variables in the calling scope, and
   should not reference any of the other parameters in the list when using a runtime where the
-  order is not guaranteed. It may reference meta parameters and global variables.
+  order is not guaranteed. It may reference metaparameters and global variables.
 * A define may occur at top level, or inside a class
 * A resource type defined inside a class automatically becomes prefixed with the containing class'
   name as its name space.

@@ -330,7 +330,7 @@ $surprise in top scope
 $bar in foo
 ```
 
-### Meta Parameters are available in Parameter Scope
+### Metaparameters are available in Parameter Scope
 
 ```
 define example($a = $title) { }

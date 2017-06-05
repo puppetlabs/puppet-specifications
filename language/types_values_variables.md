@@ -1995,7 +1995,7 @@ This may change in a future version as it is inconsistent with how class/type na
 ### Variable Reference
 
 An expression such as `$x` evaluates to the value bound (assigned) to the variable name. Numeric
-variables are assigned as a side effect of evaluating a match expression. SEE TODO REF. It is legal to reference any numeric variable, but it is illegal to reference a named variable that does not exist. A variable that has been assigned, a built in variable, or a variable that represents a parameter value that is provided by the runtime (e.g. meta-parameters) are said to exist.
+variables are assigned as a side effect of evaluating a match expression. SEE TODO REF. It is legal to reference any numeric variable, but it is illegal to reference a named variable that does not exist. A variable that has been assigned, a built in variable, or a variable that represents a parameter value that is provided by the runtime (e.g. metaparameters) are said to exist.
 
 **In this version of the specification strict variable lookup is optional (controlled by a feature switch). It is not on by default in Puppet 4.x, but will be mandatory in Puppet 5.0.**
 
