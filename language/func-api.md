@@ -654,7 +654,7 @@ Nested namespaces are suppoted in the 4.x API for both Ruby and Puppet. The path
 
 > **Note:** A module that wants to call a function in another module **must** either have
 > that module listed as a dependency, or have no dependencies entry at all in its `metadata.json`.
-> This requirement is enforced at runtime to help users keep meta data for modules up to date
+> This requirement is enforced at runtime to help users keep metadata for modules up to date
 > as users then simply need to install a module and its dependencies. If a module does not have
 > the correct dependencies listed the runtime will simply not find the function.
 
