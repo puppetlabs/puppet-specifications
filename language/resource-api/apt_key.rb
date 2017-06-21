@@ -5,8 +5,6 @@
 require 'puppet/pops/patterns'
 require 'puppet/pops/utils'
 
-require 'pry'
-
 DEFINITION = {
     name: 'apt_key',
     docs: <<-EOS,
