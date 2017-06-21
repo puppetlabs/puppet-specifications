@@ -97,13 +97,12 @@ Puppet::ResourceType.register(
 
 Puppet::ResourceProvider.register('apt_key') do
   def canonicalize(resources)
-    resources.collect do |r|
+    resources.each do |r|
       r[:name] = if r[:name].start_with?('0x')
                    r[:name][2..-1].upcase
                  else
                    r[:name].upcase
                  end
-      r
     end
   end
 ```
