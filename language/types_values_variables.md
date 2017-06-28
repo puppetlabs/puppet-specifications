@@ -54,6 +54,7 @@ the conceptual categories **Data Types** e.g.:
 *  `Array`
 *  `Hash`
 *  `Undef`
+*  `Binary`
 
 **Scalar Types** e.g.:
 *  `Integer`
@@ -220,6 +221,7 @@ may appear more than once in the hierarchy (e.g. a `ScalarData` is both `Scalar`
        |- Sensitive[T]
        |- Type[T]
        |- TypeSet[specification...]
+       |- Binary
 
 In addition to these types, a Qualified Reference that does not represent any of the other types is an alias for `Resource[the_qualified_reference]` (e.g. `File` is shorthand notation for `Resource[File]` / `Resource[file]`).
 
@@ -1108,6 +1110,23 @@ Defaults to `s` at top level and `p` inside array or hash.
 | s         | same as d
 | p         | same as d
 
+##### Binary value to String
+
+| Format    | Default formats
+| ------    | ---------------
+| s         | binary as unquoted UTF-8 characters (errors if byte sequence is invalid UTF-8). Alternate form escapes non ascii bytes.
+| p         | 'Binary("<base64strict>")'
+| b         | '<base64>' - base64 string with newlines inserted
+| B         | '<base64strict>' - base64 strict string (without newlines inserted). This is the default format for `#to_s`.
+| u         | '<base64urlsafe>' - base64 urlsafe string
+| t         | 'Binary' - outputs the name of the type only
+| T         | 'BINARY' - output the name of the type in all caps only
+
+* The alternate form flag `#` will quote the binary or base64 text output.
+* The format `%#s` allows invalid UTF-8 characters and outputs all non ascii bytes
+  as hex escaped characters on the form `\xHH` where `H` is a hex digit.
+* The width and precision values are applied to the text part only in `%p` format.
+
 ##### Array & Tuple to String
 
 | Format    | Array/Tuple Formats
@@ -1378,6 +1397,70 @@ function SemVerRange.new(
          }
 
 function SemVerRange.new(SemVerRangeHash $semver_range_hash)
+~~~
+
+### Binary
+
+A `Binary` object represents a sequence of bytes and it can be created from a String in Base64 format, a verbatim String,
+or an Array containing byte values. A Binary can also be created from a Hash containing the value to convert to
+a `Binary`.
+
+#### Binary Type Algebra
+
+* A `Binary` can only be assigned a `Binary` value
+* A `Binary` has no type parameters
+
+#### Binary.new
+
+The signatures are:
+
+~~~ puppet
+
+type ByteInteger = Integer[0,255]
+type Base64Format = Enum["%b", "%u", "%B", "%s"]
+type StringHash = Struct[{value => String, "format" => Optional[Base64Format]}]
+type ArrayHash = Struct[{value => Array[ByteInteger]}]
+type BinaryArgsHash = Variant[StringHash, ArrayHash]
+
+function Binary.new(
+  String $base64_str, 
+  Optional[Base64Format] $format
+)
+
+
+function Binary.new(
+  Array[ByteInteger] $byte_array
+}
+
+ # Same as for String, or for Array, but where arguments are given in a Hash.
+ function Binary.new(BinaryArgsHash $hash_args)
+~~~
+
+The formats have the following meaning:
+
+| format | explanation |
+| ----   | ----        |
+| b | The data is in base64 encoding, padding as required by base64 strict is added by default
+| u | The data is in URL safe base64 encoding
+| B | The data is in base64 strict encoding
+| s | The data is a puppet string. The string must be valid UTF-8, or convertible to UTF-8 or an error is raised.
+| r | (Ruby Raw) the byte sequence in the given string is used verbatim irrespective of possible encoding errors
+
+* The default format is `%B`.
+* Note that the format `%r` should be used sparingly, or not at all. It exists for backwards compatibility reasons when someone receiving
+  a string from some function and that string should be treated as Binary. Such code should be changed to return a Binary instead of a String.
+  This format will be deprecated in a future version of the specification when enough time has been given to migrate existing use
+  of Ruby "binary strings" or Ruby strings that lie about their encoding.
+
+**Examples:** Creating a Binary
+
+~~~ puppet
+
+# create the binary content "abc" from base64 encoded string
+$a = Binary('YWJj')
+
+# create the binary content from content in a module's file
+$b = binary_file('mymodule/mypicture.jpg')
 ~~~
 
 ### Array[V, from, to]
