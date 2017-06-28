@@ -1117,7 +1117,7 @@ Defaults to `s` at top level and `p` inside array or hash.
 | s         | binary as unquoted UTF-8 characters (errors if byte sequence is invalid UTF-8). Alternate form escapes non ascii bytes.
 | p         | 'Binary("<base64strict>")'
 | b         | '<base64>' - base64 string with newlines inserted
-| B         | '<base64strict>' - base64 strict string (without newlines inserted)
+| B         | '<base64strict>' - base64 strict string (without newlines inserted). This is the default format for `#to_s`.
 | u         | '<base64urlsafe>' - base64 urlsafe string
 | t         | 'Binary' - outputs the name of the type only
 | T         | 'BINARY' - output the name of the type in all caps only
@@ -1446,7 +1446,7 @@ The formats have the following meaning:
 | s | The data is a puppet string. The string must be valid UTF-8, or convertible to UTF-8 or an error is raised.
 | r | (Ruby Raw) the byte sequence in the given string is used verbatim irrespective of possible encoding errors
 
-* The default format is `%b`.
+* The default format is `%B`.
 * Note that the format `%r` should be used sparingly, or not at all. It exists for backwards compatibility reasons when someone receiving
   a string from some function and that string should be treated as Binary. Such code should be changed to return a Binary instead of a String.
   This format will be deprecated in a future version of the specification when enough time has been given to migrate existing use
