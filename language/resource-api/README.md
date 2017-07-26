@@ -27,13 +27,13 @@ Puppet::ResourceType.register(
         },
         id:          {
             type: 'Variant[Pattern[/\A(0x)?[0-9a-fA-F]{8}\Z/], Pattern[/\A(0x)?[0-9a-fA-F]{16}\Z/], Pattern[/\A(0x)?[0-9a-fA-F]{40}\Z/]]',
-            kind: :namevar,
+            behaviour: :namevar,
             docs: 'The ID of the key you want to manage.',
         },
         # ...
         created:     {
             type: 'String',
-            kind: :read_only,
+            behaviour: :read_only,
             docs: 'Date the key was created, in ISO format.',
         },
     },
@@ -48,7 +48,7 @@ The `Puppet::ResourceType.register(options)` function takes a Hash with the foll
 
 * `name`: the name of the resource type. For autoloading to work, the function call needs to go into `lib/puppet/type/<name>.rb`.
 * `docs`: a doc string that describes the overall working of the resource type, gives examples, and explains pre-requisites as well as known issues.
-* `attributes`: an hash mapping attribute names to their details. Each attribute is described by a hash containing the puppet 4 data `type`, a `docs` string, and the `kind` of the attribute: `namevar`, `read_only`, `init_only`, or a `parameter`.
+* `attributes`: an hash mapping attribute names to their details. Each attribute is described by a hash containing the puppet 4 data `type`, a `docs` string, and the `behaviour` of the attribute: `namevar`, `read_only`, `init_only`, or a `parameter`.
   * `namevar`: marks an attribute as part of the "primary key", or "identity" of the resource. A given set of namevar values needs to distinctively identify a instance.
   * `init_only`: this attribute can only be set during creation of the resource. Its value will be reported going forward, but trying to change it later will lead to an error. For example, the base image for a VM, or the UID of a user.
   * `read_only`: values for this attribute will be returned by `get()`, but `set()` is not able to change them. Values for this should never be specified in a manifest. For example the checksum of a file, or the MAC address of a network interface.
