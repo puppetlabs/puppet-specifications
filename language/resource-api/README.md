@@ -191,7 +191,7 @@ apt_key 'del', key_id, env: { 'LC_ALL': 'C' }
 By default the `stdout` of the command is logged to debug, while the `stderr` is logged to warning. To access the `stdout` in the provider, use the command name with `_lines` appended, and process it through the returned [Enumerable](http://ruby-doc.org/core/Enumerable.html) line-by-line. For example, to process the list of all apt keys:
 
 ```ruby
-apt_key_lines(%w{adv --list-keys --with-colons --fingerprint --fixed-list-mode}).collect do |line|
+apt_key_lines('adv', '--list-keys', '--with-colons', '--fingerprint', '--fixed-list-mode').collect do |line|
   # process each line here, and return a result
 end
 ```
