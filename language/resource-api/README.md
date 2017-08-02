@@ -372,13 +372,13 @@ This API is not a full replacement for the power of 3.x style types and provider
 
 ## Multiple providers for the same type
 
-The previous version of this API allowed multiple providers for the same resource type. This leads to the following problems:
+The predecessor of this API allows multiple providers for the same resource type. This leads to the following problems:
 
 * attribute sprawl
 * missing features
 * convoluted implementations
 
-puppet DSL already can address this:
+While the puppet DSL can address this, it is cumbersome, and does not provide the same look-up capabilities as a type with multiple providers.
 
 ```puppet
 define package (
@@ -409,6 +409,8 @@ define package (
   }
 }
 ```
+
+Options for the future include forward-porting the status quo through enabling multiple Implementations to register for the same Definition, or allowing  Definitions to declare (partial) equivalence to other Definitions (ala "`apt::package` is a `package`"). The former option is quite simple to implement, but carry forward the issues described above. The latter option will require more implementation work, but allows Definitions to stay at arms length of each other, providing better decoupling.
 
 ## Composite namevars
 
