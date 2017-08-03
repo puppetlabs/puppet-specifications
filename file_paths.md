@@ -146,6 +146,7 @@ The files annotated by an '*' indicate that they are created by package installa
         modules *
             pxp-module-puppet *
         spool *                            # directory containing results of pxp-agent modules
+        tasks-cache *                      # directory containing a cache of files for all downloaded tasks
 
     /var/log/puppetlabs *
         mcollective
@@ -253,6 +254,7 @@ create a `puppet` user or group.
                 pxp-access.log                # not enabled by default
             spool *                           # directory containing results of pxp-agent modules
             run *
+        tasks-cache *                         # directory containing a cache of files for all downloaded tasks
 
     C:\Program Files\Puppet Labs\Puppet
         VERSION                               # puppet-agent package version
