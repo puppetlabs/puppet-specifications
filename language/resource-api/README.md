@@ -372,13 +372,17 @@ This API is not a full replacement for the power of 3.x style types and provider
 
 ## Multiple providers for the same type
 
-The predecessor of this API allows multiple providers for the same resource type. This leads to the following problems:
+The original Puppet Type and Provider API allows multiple providers for the same resource type. This allows the creation of abstract resource types, such as package, which can span multiple operating systems. Automatic selection of an os-appropriate provider means less work for the user, as they don't have to address in their code whether the package needs to be managed using apt, or managed using yum.
 
-* attribute sprawl
-* missing features
-* convoluted implementations
+Allowing multiple providers doesn't come for free though and in the previous implementation it incurs a number of complexity costs to be shouldered by the type or provider developer.
 
-While the puppet DSL can address this, it is cumbersome, and does not provide the same look-up capabilities as a type with multiple providers.
+    attribute sprawl
+    disparate feature sets between the different providers for the same abstract type
+    complexity in implementation of both the type and provider pieces stemming from the two issues above
+
+The Resource API will not implement support for multiple providers at this time.
+
+Today, should support for multiple providers be highly desirable for a given type, the two options are: 1) use the older, more complex API. 2) implement multiple similar types using the Resource API, and select the platform-appropriate type in Puppet code. For example:
 
 ```puppet
 define package (
@@ -410,7 +414,7 @@ define package (
 }
 ```
 
-Options for the future include forward-porting the status quo through enabling multiple Implementations to register for the same Definition, or allowing  Definitions to declare (partial) equivalence to other Definitions (ala "`apt::package` is a `package`"). The former option is quite simple to implement, but carry forward the issues described above. The latter option will require more implementation work, but allows Definitions to stay at arms length of each other, providing better decoupling.
+Neither of these options is ideal, thus it is documented as a limitation today. Ideas for the future include forward-porting the status quo through enabling multiple Implementations to register for the same Definition, or allowing Definitions to declare (partial) equivalence to other Definitions (ala "apt::package is a package").
 
 ## Composite namevars
 
