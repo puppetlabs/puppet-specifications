@@ -268,6 +268,7 @@ create a `puppet` user or group.
         puppet_shell.bat *                    # targets for shortcuts
         run_facter_interactive.bat *
         run_puppet_interactive.bat *
+        puppetres.dll *                       # event log message resource dll (in Puppet\misc for releases before puppet-agent 1.6.0)
 
     C:\Program Files\Puppet Labs\Puppet\facter *
         bin *                                 # executables and dlls
@@ -295,7 +296,6 @@ create a `puppet` user or group.
     C:\Program Files\Puppet Labs\Puppet\misc *
         LICENSE.rtf *                         # license
         puppetlabs.ico *                      # icon for start menu shortcut
-        puppetres.dll *                       # event log message resource dll
         versions.txt *                        # versions of components
 
     C:\Program Files\Puppet Labs\Puppet\puppet *
