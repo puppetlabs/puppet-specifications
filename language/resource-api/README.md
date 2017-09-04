@@ -450,3 +450,7 @@ There is no way to access the catalog from the provider. Several existing types 
 ## Logging for unmanaged instances
 
 The provider could provide log messages for resource instances that were not passed into the `set` call. In the current implementation those will cause an error. How this is handeled in the future might change drastically.
+
+## Sharing code between providers
+
+Providers in the old API share code through inheritance, using the `:parent` key in the `provide()` call. To reduce entanglement between the business end of code, and the required interactions with the Resource API, it is recommended to put shared code in separate classes, that are used directly, instead of inheriting their contents. This can either happen through normal instantiation and usage, or for small chunks of code through a `Module`, and `include`.
