@@ -52,9 +52,10 @@ The `Puppet::ResourceApi.register_type(options)` function takes the following ke
 
 * `name`: the name of the resource type.
 * `desc`: a doc string that describes the overall working of the resource type, gives examples, and explains pre-requisites as well as known issues.
-* `attributes`: an hash mapping attribute names to their details. Each attribute is described by a hash containing the puppet 4 data `type`, a `desc` string, and the `behaviour` of the attribute: `namevar`, `read_only`, `init_only`, or a `parameter`.
+* `attributes`: an hash mapping attribute names to their details. Each attribute is described by a hash containing the puppet 4 data `type`, a `desc` string, a `default` value, and the `behaviour` of the attribute: `namevar`, `read_only`, `init_only`, or a `parameter`.
   * `type`: the puppet 4 data type allowed in this attribute.
   * `desc`: a string describing this attribute. This is used in creating the automated API docs with [puppet-strings](https://github.com/puppetlabs/puppet-strings).
+  * `default`: a default value that will be used by the runtime environment, whenever the caller doesn't specify a value for this attribute.
   * `behaviour`/`behavior`: how the attribute behaves. Currently available values:
     * `namevar`: marks an attribute as part of the "primary key", or "identity" of the resource. A given set of namevar values needs to distinctively identify a instance.
     * `init_only`: this attribute can only be set during creation of the resource. Its value will be reported going forward, but trying to change it later will lead to an error. For example, the base image for a VM, or the UID of a user.
