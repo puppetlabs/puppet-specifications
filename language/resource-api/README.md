@@ -68,12 +68,14 @@ For autoloading to work, this code needs to go into `lib/puppet/type/<name>.rb` 
 
 # Resource Implementation ("Provider")
 
-To effect changes on the real world, a resource also requires an implementation that makes the universe's state available to puppet, and causes the changes to bring reality to whatever state is requested in the catalog. The two fundamental operations to manage resources are reading and writing system state. These operations are implemented as `get` and `set`. The implementation itself is a basic Ruby class in the `Puppet::Provider` namespace, named after the Type using CamelCase.
+To effect changes on the real world, a resource also requires an implementation that makes the universe's state available to puppet, and causes the changes to bring reality to whatever state is requested in the catalog. The two fundamental operations to manage resources are reading and writing system state. These operations are implemented as `get` and `set`. The implementation itself is a basic Ruby class in the `Puppet::Provider` namespace, named after the Type using CamelCase. 
+
+> Note: Due to the way puppet autoload works, this has to be in a file called `puppet/provider/<type_name>/<type_name>.rb` and the class will also have the CamelCased type name twice.
 
 At runtime the current and intended system states for a specific resource are always represented as ruby Hashes of the resource's attributes, and applicable operational parameters.
 
 ```ruby
-class Puppet::Provider::AptKey
+class Puppet::Provider::AptKey::AptKey
   def get(context)
     [
       {
@@ -116,7 +118,7 @@ Puppet::ResourceApi.register_type(
   features: [ 'canonicalize' ],
 )
 
-class Puppet::Provider::AptKey
+class Puppet::Provider::AptKey::AptKey
   def canonicalize(context, resources)
     resources.each do |r|
       r[:name] = if r[:name].start_with?('0x')
@@ -148,7 +150,7 @@ Puppet::ResourceApi.register_type(
   features: [ 'simple_get_filter' ],
 )
 
-class Puppet::Provider::AptKey
+class Puppet::Provider::AptKey::AptKey
   def get(context, names = nil)
     [
       {
@@ -171,7 +173,7 @@ Puppet::ResourceApi.register_type(
   features: [ 'noop_handler' ],
 )
 
-class Puppet::Provider::AptKey
+class Puppet::Provider::AptKey::AptKey
   def set(context, changes, noop: false)
     changes.each do |name, change|
       is = change.has_key? :is ? change[:is] : get_single(name)
@@ -202,7 +204,7 @@ To use CLI commands in a safe and comfortable manner, the Resource API provides 
 To create a re-usable command, create a new instance of `Puppet::ResourceApi::Command` passing in the command. You can either specify a full path, or a bare command name. In the latter case the Command will use the system's `PATH` setting to search for the command. 
 
 ```ruby
-class Puppet::Provider::AptKey
+class Puppet::Provider::AptKey::AptKey
   def initialize
     @apt_key_cmd = Puppet::ResourceApi::Command.new('/usr/bin/apt-key')
     @gpg_cmd = Puppet::ResourceApi::Command.new('gpg')
@@ -218,7 +220,7 @@ You can set default environment variables on the `@cmd.environment` Hash, and a 
 The `run(*args)` method takes any number of arguments, and executes the command using them. For example to call `apt-key` to delete a specific key by id:
 
 ```ruby
-class Puppet::Provider::AptKey
+class Puppet::Provider::AptKey::AptKey
   def set(context, changes, noop: false)
     # ...
     @apt_key_cmd.run(context, 'del', key_id)
@@ -245,7 +247,7 @@ For more involved scenarios, variants of `@cmd.start` take the same arguments as
 To use a command to read information from the system, `start_read` does not allow input to the process, and its `stderr` is logged at the warning level. The handle's `stdout` attribute can be used to access the normal output of the command through an [`IO`](https://ruby-doc.org/core/IO.html) object. For example, to process the list of all apt keys:
 
 ```ruby
-class Puppet::Provider::AptKey
+class Puppet::Provider::AptKey::AptKey
   def get(context)
     @apt_key_cmd.start_read(context, 'adv', '--list-keys', '--with-colons', '--fingerprint', '--fixed-list-mode') do |handle|
       handle.stdout.each_line.collect do |line|
@@ -258,7 +260,7 @@ class Puppet::Provider::AptKey
 To use a command to write to, `start_write` allows input into the process, but will only log its output like `run` does. For example, to provide a key on stdin to the apt-key tool:
 
 ```ruby
-class Puppet::Provider::AptKey
+class Puppet::Provider::AptKey::AptKey
   def set(context, changes)
     # ...
     @apt_key_cmd.start_write(context, 'add', '-') do |handle|
