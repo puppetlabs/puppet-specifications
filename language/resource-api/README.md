@@ -68,13 +68,13 @@ For autoloading to work, this code needs to go into `lib/puppet/type/<name>.rb` 
 
 # Resource Implementation ("Provider")
 
-To effect changes on the real world, a resource also requires an implementation that makes the universe's state available to puppet, and causes the changes to bring reality to whatever state is requested in the catalog. The two fundamental operations to manage resources are reading and writing system state. These operations are implemented as `get` and `set`.
+To effect changes on the real world, a resource also requires an implementation that makes the universe's state available to puppet, and causes the changes to bring reality to whatever state is requested in the catalog. The two fundamental operations to manage resources are reading and writing system state. These operations are implemented as `get` and `set`. The implementation itself is a basic Ruby class in the `Puppet::Provider` namespace, named after the Type using CamelCase.
 
 At runtime the current and intended system states for a specific resource are always represented as ruby Hashes of the resource's attributes, and applicable operational parameters.
 
 ```ruby
-Puppet::ResourceApi.register_provider('apt_key') do
-  def get()
+class Puppet::Provider::AptKey
+  def get(context)
     [
       {
         name: 'name',
@@ -86,7 +86,7 @@ Puppet::ResourceApi.register_provider('apt_key') do
     ]
   end
 
-  def set(changes)
+  def set(context, changes)
     changes.each do |name, change|
       is = change.has_key? :is ? change[:is] : get_single(name)
       should = change[:should]
@@ -99,6 +99,8 @@ end
 The `get` method reports the current state of the managed resources. It returns an Enumerable of all existing resources. Each resource is a Hash with attribute names as keys, and their respective values as values. It is an error to return values not matching the type specified in the resource type. If a requested resource is not listed in the result, it is considered to not exist on the system. If the `get` method raises an exception, the provider is marked as unavailable during the current run, and all resources of this type will fail in the current transaction. The exception's message will be reported to the user.
 
 The `set` method updates resources to a new state. The `changes` parameter gets passed an a hash of change requests, keyed by the resource's name. Each value is another hash with the optional `:is` and `:should` keys. At least one of the two has to be specified. The values will be of the same shape as those returned by `get`. After the `set`, all resources should be in the state defined by the `:should` values. As a special case, a missing `:should` entry indicates that a resource should be removed from the system. Even a type implementing the `ensure => [present, absent]` attribute pattern for its human consumers, still has to react correctly on a missing `:should` entry. For convenience, and performance, `:is` may contain the last available system state from a prior `get` call. If the `:is` value is `nil`, the resources was not found by `get`. If there is no `:is` key, the runtime did not have a cached state available.  The `set` method should always return `nil`. Any progress signaling should be done through the logging utilities described below. Should the `set` method throw an exception, all resources that should change in this call, and haven't already been marked with a definite state, will be marked as failed. The runtime will only call the `set` method if there are changes to be made. Especially in the case of resources marked with `noop => true` (either locally, or through a global flag), the runtime will not pass them to `set`. See `noop_handler` below for changing this behaviour if required.
+
+Both methods take a `context` parameter which provides utilties from the Runtime Environment, and is decribed in more detail there.
 
 ## Provider Features
 
@@ -114,8 +116,8 @@ Puppet::ResourceApi.register_type(
   features: [ 'canonicalize' ],
 )
 
-Puppet::ResourceApi.register_provider('apt_key') do
-  def canonicalize(resources)
+class Puppet::Provider::AptKey
+  def canonicalize(context, resources)
     resources.each do |r|
       r[:name] = if r[:name].start_with?('0x')
                    r[:name][2..-1].upcase
@@ -128,7 +130,9 @@ Puppet::ResourceApi.register_provider('apt_key') do
 
 The runtime environment needs to compare user input from the manifest (the desired state) with values returned from `get` (the actual state) to determine whether or not changes need to be effected. In simple cases, a provider will only accept values from the manifest in the same format as `get` would return. Then no extra work is required, as a trivial value comparison will suffice. In many cases this places a high burden on the user to provide values in an unnaturally constrained format. In the example, the `apt_key` name is a hexadecimal number that can be written with, and without, the `'0x'` prefix, and the casing of the digits is irrelevant. A trivial value comparison on the strings would cause false positives, when the user input format does not match, and there is no Hexadecimal type in the Puppet language. In this case the provider can specify the `canonicalize` feature and implement the `canonicalize` method.
 
-The `canonicalize` method transforms its arguments into the standard format required by the rest of the provider. The only argument to `canonicalize` is an Enumerable of resource hashes matching the structure returned by `get`. It returns all passed values in the same structure, with the required transformations applied. It is free to re-use, or recreate the data structures passed in as arguments. The runtime environment must use `canonicalize` before comparing user input values with values returned from `get`. The runtime environment must always pass canonicalized values into `set`. If the runtime environment must requires the original values for later processing, it must protect itself from modifications to the objects passed into `canonicalize`, for example through creating a deep copy of the objects.
+The `canonicalize` method transforms its `resources` argument into the standard format required by the rest of the provider. The `resources` argument to `canonicalize` is an Enumerable of resource hashes matching the structure returned by `get`. It returns all passed values in the same structure, with the required transformations applied. It is free to re-use, or recreate the data structures passed in as arguments. The runtime environment must use `canonicalize` before comparing user input values with values returned from `get`. The runtime environment must always pass canonicalized values into `set`. If the runtime environment must requires the original values for later processing, it must protect itself from modifications to the objects passed into `canonicalize`, for example through creating a deep copy of the objects.
+
+The `context` parameter is the same as passed to `get` and `set` which provides utilties from the Runtime Environment, and is decribed in more detail there.
 
 > Note: When the provider implements canonicalisation, it should strive for always logging canonicalized values. By virtue of `get`, and `set` always producing and consuming canonically formatted values, this is not expected to pose extra overhead.
 
@@ -144,8 +148,8 @@ Puppet::ResourceApi.register_type(
   features: [ 'simple_get_filter' ],
 )
 
-Puppet::ResourceApi.register_provider('apt_key') do
-  def get(names = nil)
+class Puppet::Provider::AptKey
+  def get(context, names = nil)
     [
       {
         name: 'name',
@@ -167,8 +171,8 @@ Puppet::ResourceApi.register_type(
   features: [ 'noop_handler' ],
 )
 
-Puppet::ResourceApi.register_provider('apt_key') do
-  def set(changes, noop: false)
+class Puppet::Provider::AptKey
+  def set(context, changes, noop: false)
     changes.each do |name, change|
       is = change.has_key? :is ? change[:is] : get_single(name)
       should = change[:should]
@@ -191,65 +195,107 @@ The runtime environment provides some utilities to make the providers's life eas
 
 ### Commands
 
-To use CLI commands in a safe and comfortable manner, the provider can use the `commands` method to access shell commands. You can either specify a full path, or a bare command name. In the latter case puppet will use the system's `PATH` setting to search for the command. If the commands are not available, an error will be raised and the resources will fail in this run. The commands are aware of whether noop is in effect or not, and will signal success while skipping the real execution if necessary. Using these methods also causes the provider's actions to be logged at the appropriate levels.
+To use CLI commands in a safe and comfortable manner, the Resource API provides a thin wrapper around the excellent [childprocess gem](https://rubygems.org/gems/childprocess) to address the most common use-cases. Through using the library commands and their arguments are never passed through the shell leading to a safer execution environment (no funny parsing), and faster execution times (no extra processes).
+
+#### Creating a Command
+
+To create a re-usable command, create a new instance of `Puppet::ResourceApi::Command` passing in the command. You can either specify a full path, or a bare command name. In the latter case the Command will use the system's `PATH` setting to search for the command. 
 
 ```ruby
-Puppet::ResourceApi.register_provider('apt_key') do
-  commands apt_key: '/usr/bin/apt-key'
-  commands gpg: 'gpg'
+class Puppet::Provider::AptKey
+  def initialize
+    @apt_key_cmd = Puppet::ResourceApi::Command.new('/usr/bin/apt-key')
+    @gpg_cmd = Puppet::ResourceApi::Command.new('gpg')
+  end
 ```
 
-This will create methods called `apt_get`, and `gpg`, which will take CLI arguments in an Array, and execute the command directly without any shell processing in a safe environment (clean working directory, clean environment). For example to call `apt-key` to delete a specific key by id:
+It is recommended to create the command in the `initialize` function of the provider, and store them in a member named after the command, with the `_cmd` suffix. This makes it easy to re-use common settings throughout the provider.
+
+You can set default environment variables on the `@cmd.environment` Hash, and a default working directory using `@cmd.cwd=`.
+
+#### Running simple commands
+
+The `run(*args)` method takes any number of arguments, and executes the command using them. For example to call `apt-key` to delete a specific key by id:
 
 ```ruby
-apt_key 'del', key_id
+class Puppet::Provider::AptKey
+  def set(context, changes, noop: false)
+    # ...
+    @apt_key_cmd.run(context, 'del', key_id)
 ```
 
-To pass additional environment variables through to the command, pass a hash of them as `env:`:
+If the command is not available, a `Puppet::ResourceApi::CommandNotFoundError` will be raised. This can be easily used to fail the resources for a specific run, if the requirements for the provider are not yet met.
+
+The call will only return after the command has finished executing. If the command exits with a exitstatus indicating an error condition (that is non-zero), a `Puppet::ResourceApi::CommandExecutionError` is raised, containing the details of the command, and exit status.
+
+Through the context, the commands are aware of whether noop is in effect or not, and will signal success while skipping the real execution if necessary. Using these methods also causes the provider's actions to be logged at the appropriate levels.
+
+To pass additional environment variables through to the command, pass a hash of them as `environment:`:
 
 ```ruby
-apt_key 'del', key_id, env: { 'LC_ALL': 'C' }
+@apt_key_cmd.run('del', key_id, environment: { 'LC_ALL': 'C' })
 ```
 
-By default the `stdout` of the command is logged to debug, while the `stderr` is logged to warning. To access the `stdout` in the provider, use the command name with `_lines` appended, and process it through the returned [Enumerable](http://ruby-doc.org/core/Enumerable.html) line-by-line. For example, to process the list of all apt keys:
+By default the `stdout` of the command is logged to debug, while the `stderr` is logged to warning.
+
+#### Processing commands
+
+For more involved scenarios, variants of `@cmd.start` take the same arguments as `run`, but will start the command in the background, and return a handle to that process. The different variants have different defaults in how the process is set up. The handle provides functionality to interact with the command, and query its state.
+
+To use a command to read information from the system, `start_read` does not allow input to the process, and its `stderr` is logged at the warning level. The handle's `stdout` attribute can be used to access the normal output of the command through an [`IO`](https://ruby-doc.org/core/IO.html) object. For example, to process the list of all apt keys:
 
 ```ruby
-apt_key_lines('adv', '--list-keys', '--with-colons', '--fingerprint', '--fixed-list-mode').collect do |line|
-  # process each line here, and return a result
-end
+class Puppet::Provider::AptKey
+  def get(context)
+    @apt_key_cmd.start_read(context, 'adv', '--list-keys', '--with-colons', '--fingerprint', '--fixed-list-mode') do |handle|
+      handle.stdout.each_line.collect do |line|
+        # process each line here, and compute a Hash
+      end
+    end
+  end
 ```
 
-> Note: the output of the command is streamed through the Enumerable. If the implementation requires the exit value of the command before processing, or wants to cache the output, use `to_a` to read the complete stream in one go.
-
-If the command returns a non-zero exit code, an error is raised. If this happens during `get`, all managed resources of this type will fail. If this happens during a `set`, all resources that have been scheduled for processing in this call, but not yet have been marked as a success will be marked as failed. To avoid this behaviour, call the `try_` prefix variant. In this (hypothetical) example, `apt-key` signals already deleted keys with an exit code of `1`, which is still OK when the provider is trying to delete the key:
+To use a command to write to, `start_write` allows input into the process, but will only log its output like `run` does. For example, to provide a key on stdin to the apt-key tool:
 
 ```ruby
-try_apt_key 'del', key_id
-
-if [0, 1].contains $?.exitstatus
-  # success, or already deleted
-else
-  # fail
-end
+class Puppet::Provider::AptKey
+  def set(context, changes)
+    # ...
+    @apt_key_cmd.start_write(context, 'add', '-') do |handle|
+      handle.stdin.puts the_key
+    end
+  end
 ```
 
-The exit code is signalled through the ruby standard variable `$?` as a [`Process::Status` object](https://ruby-doc.org/core/Process/Status.html)
+Like the `run` method, the block forms of `start` will wait after the block has finished processing, to make sure that the command has exited cleanly, and will raise an error if the command returns a non-zero exit code.
 
-<!-- TODO:
-  * add a set `run_command` or `execute` methods that provide the same functionality without hardcoding the binary path
-  * provide access to all streams of a command - currently skipped due to complexities around nonblocking IO reqs
--->
+#### Advanced scenarios
+
+For advanced scenarios, the plain `start` method returns a handle with the `stdin`, `stdout`, and `stderr` pipes open, and unhandled.
+
+This can be particularily useful together with providing your own `IO` objects, by using the `stdin:`, `stdout:`, and `stderr:` keyword arguments. For example redirecting the output of a command to a temporary file:
+
+```ruby
+error_out = Tempfile.new('err')
+@apt_key_cmd.start('add', '-', stdin: File.open('/tmp/key_in.gpg'), stdout: nil, stderr: error_out)
+```
+
+> Note that due to buffering on the OS level (or lack thereof), bidirectional communication with that command can randomly hang your process, unless you take extra care only using the non-blocking methods on `IO`. Depending on your needs, you can also go straight to the childprocess gem.
+
+The handle also can be used to query whether the process is still running with `alive?`, and `exited?`, access the `exit_code` of the command, `wait` for it to finish, or poll for it to exit using `poll_for_exit(seconds)`, and `stop` the process. All those methods correspond to their respective counterparts on [`ChildProcess::AbstractProcess`](http://www.rubydoc.info/gems/childprocess/ChildProcess/AbstractProcess).
+
+> Note: If you don't provide a block to the `start` methods, you will have to take care of exit code handling yourself.
 
 ### Logging and Reporting
 
-The provider needs to signal changes, successes and failures to the runtime environment. The `logger` is the primary way to do so. It provides a single interface for both the detailed technical information for later automatic processing, as well as human readable progress and status messages for operators.
+The provider needs to signal changes, successes and failures to the runtime environment. The `context` is the primary way to do so. It provides a single interface for both the detailed technical information for later automatic processing, as well as human readable progress and status messages for operators.
 
 #### General messages
 
-To provide feedback about the overall operation of the provider, the logger has the usual set of [loglevel](https://docs.puppet.com/puppet/latest/metaparameter.html#loglevel) methods that take a string, and pass that up to runtime environment's logging infrastructure:
+To provide feedback about the overall operation of the provider, the `context` has the usual set of [loglevel](https://docs.puppet.com/puppet/latest/metaparameter.html#loglevel) methods that take a string, and pass that up to runtime environment's logging infrastructure:
 
 ```ruby
-logger.warning("Unexpected state detected, continuing in degraded mode.")
+context.warning("Unexpected state detected, continuing in degraded mode.")
 ```
 
 will result in the following message:
@@ -271,29 +317,29 @@ See [wikipedia](https://en.wikipedia.org/wiki/Syslog#Severity_level) and [RFC424
 
 In many simple cases, a provider can pass off the real work to a external tool, detailed logging happens there, and reporting back to puppet only requires acknowledging those changes. In these situations, signalling can be as easy as this:
 
-```
-apt_key action, key_id
-logger.processed(key_id, is, should)
+```ruby
+@apt_key_cmd.run(context, action, key_id)
+context.processed(key_id, is, should)
 ```
 
 This will report all changes from `is` to `should`, using default messages.
 
-Providers that want to have more control over the logging throughout the processing can use the more specific `created(title)`, `updated(title)`, `deleted(title)`, `unchanged(title)` methods for that. To report the change of an attribute, the `logger` provides a `attribute_changed(title, attribute, old_value, new_value, message)` method.
+Providers that want to have more control over the logging throughout the processing can use the more specific `created(title)`, `updated(title)`, `deleted(title)`, `unchanged(title)` methods for that. To report the change of an attribute, the `context` provides a `attribute_changed(title, attribute, old_value, new_value, message)` method.
 
 #### Logging contexts
 
-Most of those messages are expected to be relative to a specific resource instance, and a specific operation on that instance. To enable detailed logging without repeating key arguments, and provide consistent error logging, the logger provides *logging context* methods that capture the current action and resource instance.
+Most of those messages are expected to be relative to a specific resource instance, and a specific operation on that instance. To enable detailed logging without repeating key arguments, and provide consistent error logging, the context provides *logging context* methods that capture the current action and resource instance.
 
 ```ruby
-logger.updating(title) do
+context.updating(title) do
   if key_not_found
-    logger.warning('Original key not found')
+    context.warning('Original key not found')
   end
 
   # Update the key by calling CLI tool
   apt_key(...)
 
-  logger.attribute_changed('content', nil, content_hash,
+  context.attribute_changed('content', nil, content_hash,
     message: "Replaced with content hash #{content_hash}")
 end
 ```
@@ -324,24 +370,24 @@ Logging contexts process all exceptions. [`StandardError`s](https://ruby-doc.org
 The equivalent long-hand form with manual error handling:
 
 ```ruby
-logger.updating(title)
+context.updating(title)
 begin
   if key_not_found
-    logger.warning(title, message: 'Original key not found')
+    context.warning(title, message: 'Original key not found')
   end
 
   # Update the key by calling CLI tool
   try_apt_key(...)
 
   if $?.exitstatus != 0
-    logger.error(title, "Failed executing apt-key #{...}")
+    context.error(title, "Failed executing apt-key #{...}")
   else
-    logger.attribute_changed(title, 'content', nil, content_hash,
+    context.attribute_changed(title, 'content', nil, content_hash,
       message: "Replaced with content hash #{content_hash}")
   end
-  logger.changed(title)
+  context.changed(title)
 rescue Exception => e
-  logger.error(title, e, message: 'Updating failed')
+  context.error(title, e, message: 'Updating failed')
   raise unless e.is_a? StandardError
 end
 ```
