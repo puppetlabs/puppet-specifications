@@ -223,14 +223,16 @@ The `run(*args)` method takes any number of arguments, and executes the command 
 class Puppet::Provider::AptKey::AptKey
   def set(context, changes, noop: false)
     # ...
-    @apt_key_cmd.run(context, 'del', key_id)
+    @apt_key_cmd.run(context, 'del', key_id, noop: noop)
 ```
 
 If the command is not available, a `Puppet::ResourceApi::CommandNotFoundError` will be raised. This can be easily used to fail the resources for a specific run, if the requirements for the provider are not yet met.
 
 The call will only return after the command has finished executing. If the command exits with a exitstatus indicating an error condition (that is non-zero), a `Puppet::ResourceApi::CommandExecutionError` is raised, containing the details of the command, and exit status.
 
-Through the context, the commands are aware of whether noop is in effect or not, and will signal success while skipping the real execution if necessary. Using these methods also causes the provider's actions to be logged at the appropriate levels.
+The commands take a `noop:` keyword argument, and will signal success while skipping the real execution if necessary.
+
+Using these methods also causes the provider's actions to be logged at the appropriate levels.
 
 To pass additional environment variables through to the command, pass a hash of them as `environment:`:
 
