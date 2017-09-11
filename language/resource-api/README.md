@@ -237,7 +237,7 @@ Using these methods also causes the provider's actions to be logged at the appro
 To pass additional environment variables through to the command, pass a hash of them as `environment:`:
 
 ```ruby
-@apt_key_cmd.run('del', key_id, environment: { 'LC_ALL': 'C' })
+@apt_key_cmd.run(context, 'del', key_id, environment: { 'LC_ALL': 'C' })
 ```
 
 By default the `stdout` of the command is logged to debug, while the `stderr` is logged to warning.
