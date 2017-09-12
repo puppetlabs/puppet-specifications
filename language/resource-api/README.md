@@ -404,35 +404,35 @@ This example is only for demonstration purposes. In the normal course of operati
 The following action/context methods are available:
 
 * Context functions
-** `creating(titles, message: 'Creating', &block)`
-** `updating(titles, message: 'Updating', &block)`
-** `deleting(titles, message: 'Deleting', &block)`
-** `processing(titles, is, should, message: 'Processing', &block)`
-** `failing(titles, message: 'Failing', &block)`: unlikely to be used often, but provided for completeness
-** `attribute_changed(attribute, is, should, message: nil)`: default to the title from the context
+  * `creating(titles, message: 'Creating', &block)`
+  * `updating(titles, message: 'Updating', &block)`
+  * `deleting(titles, message: 'Deleting', &block)`
+  * `processing(titles, is, should, message: 'Processing', &block)`
+  * `failing(titles, message: 'Failing', &block)`: unlikely to be used often, but provided for completeness
+  * `attribute_changed(attribute, is, should, message: nil)`: default to the title from the context
 
 * Action functions
-** `created(titles, message: 'Created')`
-** `updated(titles, message: 'Updated')`
-** `deleted(titles, message: 'Deleted')`
-** `unchanged(titles, message: 'Unchanged')`: the resource did not require a change - emit no logging
-** `processed(titles, is, should)`: the resource has been processed - emit default logging for the resource and each attribute
-** `failed(titles, message:)`: the resource has not been updated successfully
-** `attribute_changed(titles, attribute, is, should, message: nil)`: use outside of a context, or in a context with multiple resources
+  * `created(titles, message: 'Created')`
+  * `updated(titles, message: 'Updated')`
+  * `deleted(titles, message: 'Deleted')`
+  * `unchanged(titles, message: 'Unchanged')`: the resource did not require a change - emit no logging
+  * `processed(titles, is, should)`: the resource has been processed - emit default logging for the resource and each attribute
+  * `failed(titles, message:)`: the resource has not been updated successfully
+  * `attribute_changed(titles, attribute, is, should, message: nil)`: use outside of a context, or in a context with multiple resources
 
 * `fail(message)`: abort the current context with an error
 
 * Plain messages
-** `debug(message)`
-** `debug(titles, message:)`
-** `info(message)`
-** `info(titles, message:)`
-** `notice(message)`
-** `notice(titles, message:)`
-** `warning(message)`
-** `warning(titles, message:)`
-** `err(message)`
-** `err(titles, message:)`
+  * `debug(message)`
+  * `debug(titles, message:)`
+  * `info(message)`
+  * `info(titles, message:)`
+  * `notice(message)`
+  * `notice(titles, message:)`
+  * `warning(message)`
+  * `warning(titles, message:)`
+  * `err(message)`
+  * `err(titles, message:)`
 
 `titles` can be a single identifier for a resource, or an Array of values, if the following block batch-processes multiple resources in one pass. If that processing is not atomic, providers should instead use the non-block forms of logging, and provide accurate status reporting on the individual parts of update operations.
 
