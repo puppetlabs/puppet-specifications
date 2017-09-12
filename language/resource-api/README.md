@@ -244,16 +244,16 @@ By default the `stdout` of the command is logged to debug, while the `stderr` is
 
 #### Processing commands
 
-For more involved scenarios, variants of `@cmd.start` take the same arguments as `run`, but will start the command in the background, and return a handle to that process. The different variants have different defaults in how the process is set up. The handle provides functionality to interact with the command, and query its state.
+For more involved scenarios, variants of `@cmd.start` take the same arguments as `run`, but will start the command in the background, and return a handle to that process. The different variants have different defaults in how the process is set up. The `process` handle provides functionality to interact with the command, and query its state.
 
-To use a command to read information from the system, `start_read` does not allow input to the process, and its `stderr` is logged at the warning level. The handle's `stdout` attribute can be used to access the normal output of the command through an [`IO`](https://ruby-doc.org/core/IO.html) object. For example, to process the list of all apt keys:
+To use a command to read information from the system, `start_read` does not allow input to the process, and its `stderr` is logged at the warning level. The process' `io.stdout` attribute can be used to access the normal output of the command through an [`IO`](https://ruby-doc.org/core/IO.html) object. For example, to process the list of all apt keys:
 
 ```ruby
 class Puppet::Provider::AptKey::AptKey
   def get(context)
-    @apt_key_cmd.start_read(context, 'adv', '--list-keys', '--with-colons', '--fingerprint', '--fixed-list-mode') do |handle|
-      handle.stdout.each_line.collect do |line|
-        # process each line here, and compute a Hash
+    @apt_key_cmd.start_read(context, 'adv', '--list-keys', '--with-colons', '--fingerprint', '--fixed-list-mode') do |process|
+      process.io.stdout.each_line.collect do |line|
+        # handle each line here, and compute a Hash
       end
     end
   end
@@ -265,8 +265,8 @@ To use a command to write to, `start_write` allows input into the process, but w
 class Puppet::Provider::AptKey::AptKey
   def set(context, changes)
     # ...
-    @apt_key_cmd.start_write(context, 'add', '-') do |handle|
-      handle.stdin.puts the_key
+    @apt_key_cmd.start_write(context, 'add', '-') do |process|
+      process.io.stdin.puts the_key
     end
   end
 ```
@@ -275,18 +275,19 @@ Like the `run` method, the block forms of `start` will wait after the block has 
 
 #### Advanced scenarios
 
-For advanced scenarios, the plain `start` method returns a handle with the `stdin`, `stdout`, and `stderr` pipes open, and unhandled.
+For advanced scenarios, the plain `start` method returns a `process` handle with the `stdin`, `stdout`, and `stderr` pipes open, and unhandled.
 
 This can be particularily useful together with providing your own `IO` objects, by using the `stdin:`, `stdout:`, and `stderr:` keyword arguments. For example redirecting the output of a command to a temporary file:
 
 ```ruby
+# add a apt key using a file as stdin, capturing the error output in a temporary file
 error_out = Tempfile.new('err')
 @apt_key_cmd.start('add', '-', stdin: File.open('/tmp/key_in.gpg'), stdout: nil, stderr: error_out)
 ```
 
-> Note that due to buffering on the OS level (or lack thereof), bidirectional communication with that command can randomly hang your process, unless you take extra care only using the non-blocking methods on `IO`. Depending on your needs, you can also go straight to the childprocess gem.
+> Note that due to buffering on the OS level (or lack thereof), bidirectional communication with that command can randomly hang your process, unless you take extra care only using the non-blocking methods on `IO`. Depending on your needs, you can also go straight to the childprocess gem, and use its facilities directly.
 
-The handle also can be used to query whether the process is still running with `alive?`, and `exited?`, access the `exit_code` of the command, `wait` for it to finish, or poll for it to exit using `poll_for_exit(seconds)`, and `stop` the process. All those methods correspond to their respective counterparts on [`ChildProcess::AbstractProcess`](http://www.rubydoc.info/gems/childprocess/ChildProcess/AbstractProcess).
+The `process` handle also can be used to query whether the process is still running with `alive?`, and `exited?`, access the `exit_code` of the command, `wait` for it to finish, or poll for it to exit using `poll_for_exit(seconds)`, and `stop` the process. See [`ChildProcess::AbstractProcess`](http://www.rubydoc.info/gems/childprocess/ChildProcess/AbstractProcess) for a more in-depth explanation of those methods.
 
 > Note: If you don't provide a block to the `start` methods, you will have to take care of exit code handling yourself.
 
