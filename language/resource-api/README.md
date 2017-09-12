@@ -492,7 +492,7 @@ Neither of these options is ideal, thus it is documented as a limitation today. 
 
 ## Composite namevars
 
-The current API does not provide a way to specify composite namevars. [`title_patterns`](https://github.com/puppetlabs/puppet-specifications/blob/master/language/resource_types.md#title-patterns) are already very data driven, and will be easy to add at a later point.
+The current API does not provide a way to specify composite namevars (that is, types with multiple namevars). [`title_patterns`](https://github.com/puppetlabs/puppet-specifications/blob/master/language/resource_types.md#title-patterns) are already very data driven, and will be easy to add at a later point.
 
 ## Puppet 4 data types
 
