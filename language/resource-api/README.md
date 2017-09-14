@@ -201,7 +201,7 @@ To use CLI commands in a safe and comfortable manner, the Resource API provides 
 
 #### Creating a Command
 
-To create a re-usable command, create a new instance of `Puppet::ResourceApi::Command` passing in the command. You can either specify a full path, or a bare command name. In the latter case the Command will use the system's `PATH` setting to search for the command. 
+To create a re-usable command, create a new instance of `Puppet::ResourceApi::Command` passing in the command. You can either specify a full path, or a bare command name. In the latter case the Command will use the Runtime Environment's `PATH` setting to search for the command. 
 
 ```ruby
 class Puppet::Provider::AptKey::AptKey
@@ -217,22 +217,33 @@ You can set default environment variables on the `@cmd.environment` Hash, and a 
 
 #### Running simple commands
 
-The `run(*args)` method takes any number of arguments, and executes the command using them. For example to call `apt-key` to delete a specific key by id:
+The `run(*args)` method takes any number of arguments, and executes the command using them on the command line. For example to call `apt-key` to delete a specific key by id:
 
 ```ruby
 class Puppet::Provider::AptKey::AptKey
-  def set(context, changes, noop: false)
+  def set(context, changes)
     # ...
-    @apt_key_cmd.run(context, 'del', key_id, noop: noop)
+    @apt_key_cmd.run(context, 'del', key_id)
 ```
 
 If the command is not available, a `Puppet::ResourceApi::CommandNotFoundError` will be raised. This can be easily used to fail the resources for a specific run, if the requirements for the provider are not yet met.
 
 The call will only return after the command has finished executing. If the command exits with a exitstatus indicating an error condition (that is non-zero), a `Puppet::ResourceApi::CommandExecutionError` is raised, containing the details of the command, and exit status.
 
-The commands take a `noop:` keyword argument, and will signal success while skipping the real execution if necessary.
+By default the `stdout` of the command is logged to debug, while the `stderr` is logged to warning.
 
-Using these methods also causes the provider's actions to be logged at the appropriate levels.
+#### Implementing `noop` for `noop_handler`
+
+The `run` method takes a `noop:` keyword argument, and will signal success while skipping the real execution if necessary. Providers implementing the `noop_handler` feature should use this for all commands that are executed in the regular flow of the implementation.
+
+```ruby
+class Puppet::Provider::AptKey::AptKey
+  def set(context, changes, noo: false)
+    # ...
+    @apt_key_cmd.run(context, 'del', key_id, noop: noop)
+```
+
+#### Passing in specific environment variables
 
 To pass additional environment variables through to the command, pass a hash of them as `environment:`:
 
@@ -240,56 +251,84 @@ To pass additional environment variables through to the command, pass a hash of 
 @apt_key_cmd.run(context, 'del', key_id, environment: { 'LC_ALL': 'C' })
 ```
 
-By default the `stdout` of the command is logged to debug, while the `stderr` is logged to warning.
+This can also be set on the `@cmd.environment` attribute to run all executions of the command with the same environment.
 
-#### Processing commands
+#### Running in a specific directory
 
-For more involved scenarios, variants of `@cmd.start` take the same arguments as `run`, but will start the command in the background, and return a handle to that process. The different variants have different defaults in how the process is set up. The `process` handle provides functionality to interact with the command, and query its state.
+To run the command in a specific directory, use the `cwd` keyword argument:
 
-To use a command to read information from the system, `start_read` does not allow input to the process, and its `stderr` is logged at the warning level. The process' `io.stdout` attribute can be used to access the normal output of the command through an [`IO`](https://ruby-doc.org/core/IO.html) object. For example, to process the list of all apt keys:
+```ruby
+@apt_key_cmd.run(context, 'del', key_id, cwd: '/etc/apt')
+```
+
+This can also be set on the `@cmd.cwd` attribute to run all executions of the command with the working directory.
+
+#### Processing command output
+
+To use a command to read information from the system, `run` can redirect the output from the command to various destinations, using the `stdout_destination:` and `stderr_destination:` keywords:
+* `:log`: each line from the specified stream gets logged to the Runtime Environment. Use `stdout_loglevel:`, and `stderr_loglevel:` to specify the intended log-level.
+* `:store`: the stream gets captured in a buffer, and will be returned as a string in the `result` object.
+* `:discard`: the stream is discarded unprocessed.
+* `:io`: the stream is connected to the IO object specified in `stdout_io:`, and `stderr_io:`.
+* `:merge_to_stdout`: to get the process' standard error correctly interleaved into its regular output, this option can be specified for `stderr_destination:` only, and will provide the same file descriptor for both stdout, and stderr to the process.
+
+By default the standard output of the process is logged at the `:debug` level (see below), and the standard error stream is logged at the `:warning` level. To replicate this behaviour:
+
+```ruby
+@apt_key_cmd.run(context, 'del', key_id, stdout_destination: :log, stdout_loglevel: :debug, stderr_destination: :log, stderr_loglevel: :warning)
+```
+
+To store, and process the output from the command, use the `:store` destination, and the `result` object:
 
 ```ruby
 class Puppet::Provider::AptKey::AptKey
   def get(context)
-    @apt_key_cmd.start_read(context, 'adv', '--list-keys', '--with-colons', '--fingerprint', '--fixed-list-mode') do |process|
-      process.io.stdout.each_line.collect do |line|
-        # handle each line here, and compute a Hash
-      end
-    end
+    run_result = @apt_key_cmd.run(context, 'adv', '--list-keys', '--with-colons', '--fingerprint', '--fixed-list-mode', stdout_destination: :store)
+    run_result.stdout.split('\n').each do |line|
+      # process/parse stdout_text here
   end
 ```
 
-To use a command to write to, `start_write` allows input into the process, but will only log its output like `run` does. For example, to provide a key on stdin to the apt-key tool:
+To emulate most shell based redirections to files, the `:io` destination lets you (re-)use `File` handles, and temporary files (through `Tempfile` ):
+
+```ruby
+tmp = Tempfile.new('key_list')
+@apt_key_cmd.run(context, 'adv', '--list-keys', '--with-colons', '--fingerprint', '--fixed-list-mode', stdout_destination: :io, stdout_io: tmp)
+```
+
+#### Providing command input
+
+To use a command to write to, `run` allows passing input into the process. For example, to provide a key on stdin to the apt-key tool:
 
 ```ruby
 class Puppet::Provider::AptKey::AptKey
   def set(context, changes)
     # ...
-    @apt_key_cmd.start_write(context, 'add', '-') do |process|
-      process.io.stdin.puts the_key
-    end
+    @apt_key_cmd.run(context, 'add', '-', stdin_source: :value, stdin_value: the_key_string)
   end
 ```
 
-Like the `run` method, the block forms of `start` will wait after the block has finished processing, to make sure that the command has exited cleanly, and will raise an error if the command returns a non-zero exit code.
+The `stdin_source:` keyword argument takes the following values:
+* `:value`: allows specifying a string to pass on to the process in `stdin_value:`.
+* `:io`: the input of the process is connected to the IO object specified in `stdin_io:`.
+* `:none`: the input of the process is closed, and the process will receive an error when trying to read input. This is the default.
 
-#### Advanced scenarios
+#### Summary
 
-For advanced scenarios, the plain `start` method returns a `process` handle with the `stdin`, `stdout`, and `stderr` pipes open, and unhandled.
+Synopsis of the `run` function: `@cmd.run(context, *args, **kwargs)` with the following keyword arguments:
 
-This can be particularily useful together with providing your own `IO` objects, by using the `stdin:`, `stdout:`, and `stderr:` keyword arguments. For example redirecting the output of a command to a temporary file:
+* `stdout_destination:` `:log`, `:io`, `:store`, `:discard`
+* `stdout_loglevel:` `:debug`, `:info`, `:notice`, `:warning`, `:err`
+* `stdout_io:` an `IO` object
+* `stderr_destination:` `:log`, `:io`, `:store`, `:discard`, `:merge_to_stdout`
+* `stderr_loglevel:` `:debug`, `:info`, `:notice`, `:warning`, `:err`
+* `stderr_io:` an `IO` object
+* `stdin_source:` `:io`, `:value`, `:none`
+* `stdin_io:` an `IO` object
+* `stdin_value:` a String
+* `ignore_exit_code:` `true` or `false`
 
-```ruby
-# add a apt key using a file as stdin, capturing the error output in a temporary file
-error_out = Tempfile.new('err')
-@apt_key_cmd.start('add', '-', stdin: File.open('/tmp/key_in.gpg'), stdout: nil, stderr: error_out)
-```
-
-> Note that due to buffering on the OS level (or lack thereof), bidirectional communication with that command can randomly hang your process, unless you take extra care only using the non-blocking methods on `IO`. Depending on your needs, you can also go straight to the childprocess gem, and use its facilities directly.
-
-The `process` handle also can be used to query whether the process is still running with `alive?`, and `exited?`, access the `exit_code` of the command, `wait` for it to finish, or poll for it to exit using `poll_for_exit(seconds)`, and `stop` the process. See [`ChildProcess::AbstractProcess`](http://www.rubydoc.info/gems/childprocess/ChildProcess/AbstractProcess) for a more in-depth explanation of those methods.
-
-> Note: If you don't provide a block to the `start` methods, you will have to take care of exit code handling yourself.
+The `run` function returns an object with the attributes `stdout`, `stderr`, and `exit_code`. The first two will only be used, if their respective `destination:` is set to `:store`. The `exit_code` will contain the exit code of the process.
 
 ### Logging and Reporting
 
