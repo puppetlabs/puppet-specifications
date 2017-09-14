@@ -479,7 +479,7 @@ The following action/context methods are available:
 
 `titles` can be a single identifier for a resource, or an Array of values, if the following block batch-processes multiple resources in one pass. If that processing is not atomic, providers should instead use the non-block forms of logging, and provide accurate status reporting on the individual parts of update operations.
 
-A single `set()` execution may only log messages for instances it has been passed as part of the `changes` to process. Logging for foreign instances will cause an exception, as the runtime environment is not prepared for other resources to change.
+A single `set()` execution may only log messages for instances it has been passed as part of the `changes` to process. Logging for instances not requested to be changed will cause an exception, as the runtime environment is not prepared for other resources to change.
 
 The provider is free to call different logging methods for different resources in any order it needs to. The only ordering restriction is for all calls specifying the same `title`. The `attribute_changed` logging needs to be done before that resource's action logging, and if a context is opened, it needs to be opened before any other logging for this resource.
 
