@@ -376,7 +376,7 @@ Most of those messages are expected to be relative to a specific resource instan
 
 ```ruby
 context.updating(title) do
-  if key_not_found
+  if apt_key_not_found(title)
     context.warning('Original key not found')
   end
 
@@ -416,14 +416,18 @@ The equivalent long-hand form with manual error handling:
 ```ruby
 context.updating(title)
 begin
-  if key_not_found
-    context.warning(title, message: 'Original key not found')
+  unless title_got_passed_to_set(title)
+    raise Puppet::DevError, 'Managing resource outside of requested set: %{title}')
+  end
+
+  if apt_key_not_found(title)
+    context.warning('Original key not found')
   end
 
   # Update the key by calling CLI tool
-  try_apt_key(...)
+  result = @apt_key_cmd.run(...)
 
-  if $?.exitstatus != 0
+  if result.exitstatus != 0
     context.error(title, "Failed executing apt-key #{...}")
   else
     context.attribute_changed(title, 'content', nil, content_hash,
