@@ -1,6 +1,6 @@
 # Puppet Resource API
 
-This libarary provides a simple way to write new native resources for [puppet](https://puppet.com).
+This library provides a simple way to write new native resources for [puppet](https://puppet.com).
 
 A *resource* is the basic thing that is managed by puppet. Each resource has a set of attributes describing its current state. Some of the attributes can be changed throughout the life-time of the resource, some attributes are only reported back, but cannot be changed (see `read_only`) others can only be set once during initial creation (see `init_only`). To gather information about those resources, and to enact changes in the real world, puppet requires a *provider* to implement this interaction. The provider can have parameters that influence its mode of operation (see `parameter`). To describe all these parts to the infrastructure, and the consumers, the resource *type* defines the all the metadata, including the list of the attributes. The *provider* contains the code to *get* and *set* the system state.
 
