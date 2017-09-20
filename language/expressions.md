@@ -227,6 +227,20 @@ A "Literal" Hash has the following syntax.
 The hash entries are evaluated from left to right, key before value and a runtime hash
 object is produced with all of the entries.
 
+### Hash Expression without braces
+
+A `HashEntry` is a legal `Expression` in an array or an argument list. One or more adjacent `HashEntry` expressions
+are converted into one single `Hash` as if they were surrounded by curly braces.
+
+Examples:
+
+     $a = [1, 2, a => 3, b => 4, 5]              # $a becomes [1, 2, {a => 3, b => 4}, 5]
+     foo('hello', a => 'universe', b => 'world') # same as   foo('hello', { a => 'universe', b => 'world' })
+     Struct[a => Integer, b => String]           # same as Struct[{a => Integer, b => String}]
+
+It is illegal to use `HashEntry` expressions in the argument list of a top level function call unless the list
+is delimited with parenthesis.
+
 Operators
 ---
 ### + operator
