@@ -238,8 +238,7 @@ Examples:
      foo('hello', a => 'universe', b => 'world') # same as   foo('hello', { a => 'universe', b => 'world' })
      Struct[a => Integer, b => String]           # same as Struct[{a => Integer, b => String}]
 
-It is illegal to use `HashEntry` expressions in the argument list of a top level function call unless the list
-is delimited with parenthesis.
+`HashEntry` expressions can only be used in a function call argument list when the list is enclosed in parentheses.
 
 Operators
 ---
