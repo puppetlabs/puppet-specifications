@@ -468,12 +468,13 @@ The `stdin_source:` keyword argument takes the following values:
 
 #### Character encoding
 
-To support the widest array of platforms and use-cases, character encoding of a provider's inputs, and outputs needs to be considered. By default, the Commands API follows the ruby model of having all strings tagged with their current [`Encoding`](https://ruby-doc.org/core/Encoding.html), and using the system's current default character set for I/O. That means that strings read from Commands might be tagged with non-UTF-8 character sets on input, and UTF-8 strings will be transcoded on output.
+To support the widest array of platforms and use-cases, character encoding of a provider's inputs, and outputs needs to be considered. By default, the Commands API follows the ruby model of having all strings tagged with their current [`Encoding`](https://ruby-doc.org/core/Encoding.html), and using the system's current default character set for I/O. That means that strings read from Commands might be tagged with non-UTF-8 character sets on input, and UTF-8 strings might be transcoded on output.
 
 To influence this behaviour, you can tell the `run` method which encoding to use, and enable transcoding, if required for your use-case. Use the following keyword arguments:
 
 * `stdout_encoding:`, `stderr_encoding:` The encoding to tag incoming bytes with.
 * `stdin_encoding:` ensures that strings are transcoded to this encoding before being written to this command.
+* `stdout_encoding_opts:`,`stderr_encoding_opts:`,`stdin_encoding_opts:` options for [`String.encode`](https://ruby-doc.org/core-2.4.1/String.html#method-i-encode) for the different streams.
 
 > Note: Use the `ASCII-8BIT` encoding to disable all conversions, and receive the raw bytes.
 
