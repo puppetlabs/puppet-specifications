@@ -368,6 +368,15 @@ On Windows, when not running on the SYSTEM account
 
 These sections describe other Puppet packages that rely on puppet-agent to create the initial directory layout. It does not attempt to specify the full set of file paths for these packages, just cases where the other package has a dependency on puppet-agent.
 
+pxp-agent also supports running as non-root, and uses the following paths.
+
+    ~/.puppetlabs/etc/pxp-agent/{pxp-agent.conf,modules}
+    ~/.puppetlabs/opt/pxp-agent/{spool,tasks-cache}
+    ~/.puppetlabs/var/run/pxp-agent.pid (*nix only)
+    ~/.puppetlabs/var/log/{pxp-agent.log,pxp-access.log}
+
+The installed modules directory is also used for non-root pxp-agents.
+
 # puppetdb
 
     /etc/puppetlabs/puppet
