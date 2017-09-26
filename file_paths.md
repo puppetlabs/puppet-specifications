@@ -155,7 +155,7 @@ The files annotated by an '*' indicate that they are created by package installa
             puppet.log                    # not enabled by default
         pxp-agent *
             pxp-agent.log                 # enabled by default
-            pxp-access.log                # not enabled by default
+            pcp-access.log                # not enabled by default
 
     /var/run/puppetlabs *                 # :rundir                      /var/lib/puppet/run
         agent.pid                         # :pidfile
@@ -251,7 +251,7 @@ create a `puppet` user or group.
         var *
             log *
                 pxp-agent.log                 # enabled by default
-                pxp-access.log                # not enabled by default
+                pcp-access.log                # not enabled by default
             spool *                           # directory containing results of pxp-agent modules
             run *
         tasks-cache *                         # directory containing a cache of files for all downloaded tasks
@@ -383,7 +383,7 @@ pxp-agent also supports running as non-root, and uses the following paths.
 
     ~/.puppetlabs/var/log
         pxp-agent.log
-        pxp-access.log
+        pcp-access.log
 
 The installed modules directory is also used for non-root pxp-agents.
 
