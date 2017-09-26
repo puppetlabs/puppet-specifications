@@ -370,10 +370,20 @@ These sections describe other Puppet packages that rely on puppet-agent to creat
 
 pxp-agent also supports running as non-root, and uses the following paths.
 
-    ~/.puppetlabs/etc/pxp-agent/{pxp-agent.conf,modules}
-    ~/.puppetlabs/opt/pxp-agent/{spool,tasks-cache}
-    ~/.puppetlabs/var/run/pxp-agent.pid (*nix only)
-    ~/.puppetlabs/var/log/{pxp-agent.log,pxp-access.log}
+    ~/.puppetlabs/etc/pxp-agent
+        modules
+        pxp-agent.conf
+
+    ~/.puppetlabs/opt/pxp-agent
+        spool
+        tasks-cache
+
+    ~/.puppetlabs/var/run
+        pxp-agent.pid (*nix only)
+
+    ~/.puppetlabs/var/log
+        pxp-agent.log
+        pxp-access.log
 
 The installed modules directory is also used for non-root pxp-agents.
 
