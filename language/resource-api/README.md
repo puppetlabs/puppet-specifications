@@ -391,7 +391,7 @@ The `run` method takes a `noop:` keyword argument, and will signal success while
 
 ```ruby
 class Puppet::Provider::AptKey::AptKey
-  def set(context, changes, noo: false)
+  def set(context, changes, noop: false)
     # ...
     @apt_key_cmd.run(context, 'del', key_id, noop: noop)
 ```
