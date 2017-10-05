@@ -315,7 +315,7 @@ The following action/context methods are available:
   * `creating(titles, message: 'Creating', &block)`
   * `updating(titles, message: 'Updating', &block)`
   * `deleting(titles, message: 'Deleting', &block)`
-  * `processing(titles, is, should, message: 'Processing', &block)`
+  * `processing(title, is, should, message: 'Processing', &block)`: process a resource. `&block` should raise an exception for potential fault cases; if no exception is raised then it is assumed the change from `is` to `should` was succesful.
   * `failing(titles, message: 'Failing', &block)`: unlikely to be used often, but provided for completeness
   * `attribute_changed(attribute, is, should, message: nil)`: default to the title from the context
 
@@ -324,7 +324,7 @@ The following action/context methods are available:
   * `updated(titles, message: 'Updated')`
   * `deleted(titles, message: 'Deleted')`
   * `unchanged(titles, message: 'Unchanged')`: the resource did not require a change - emit no logging
-  * `processed(titles, is, should)`: the resource has been processed - emit default logging for the resource and each attribute
+  * `processed(title, is, should)`: the resource has been processed - emit default logging for the resource and each attribute
   * `failed(titles, message:)`: the resource has not been updated successfully
   * `attribute_changed(titles, attribute, is, should, message: nil)`: use outside of a context, or in a context with multiple resources
 
