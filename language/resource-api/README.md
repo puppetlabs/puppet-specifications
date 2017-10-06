@@ -328,8 +328,6 @@ The following action/block methods are available:
 * Attribute Change notifications
   * `attribute_changed(title, attribute, is, should, message: nil)`: Notify the runtime environment that a specific attribute for a specific resource has changed. `is` and `should` are the original and the new value of the attribute. Either can be `nil`. 
 
-* `fail(message)`: abort the current context with an error
-
 * Plain messages
   * `debug(message)`
   * `debug(titles, message:)`
