@@ -326,8 +326,7 @@ The following action/block methods are available:
   * `failed(titles, message:)`: the resource has not been updated successfully
 
 * Attribute Change notifications
-  * `attribute_changed(attribute, is, should, message: nil)`: Call this from a context, default to the title from the context
-  * `attribute_changed(titles, attribute, is, should, message: nil)`: use outside of a context, or in a context with multiple resources
+  * `attribute_changed(title, attribute, is, should, message: nil)`: Notify the runtime environment that a specific attribute for a specific resource has changed. `is` and `should` are the original and the new value of the attribute. Either can be `nil`. 
 
 * `fail(message)`: abort the current context with an error
 
