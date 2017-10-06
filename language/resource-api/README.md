@@ -309,23 +309,24 @@ This example is only for demonstration purposes. In the normal course of operati
 
 #### Logging reference
 
-The following action/context methods are available:
+The following action/block methods are available:
 
-* Context functions
+* Block functions: These functions provide logging, and timing around a provider's core actions. If the the passed `&block` returns, the action is recorded as successful. To signal a failure, the block should raise an exception explaining the problem.
   * `creating(titles, message: 'Creating', &block)`
   * `updating(titles, message: 'Updating', &block)`
   * `deleting(titles, message: 'Deleting', &block)`
-  * `processing(title, is, should, message: 'Processing', &block)`: process a resource. `&block` should raise an exception for potential fault cases; if no exception is raised then it is assumed the change from `is` to `should` was succesful.
-  * `failing(titles, message: 'Failing', &block)`: unlikely to be used often, but provided for completeness
-  * `attribute_changed(attribute, is, should, message: nil)`: default to the title from the context
+  * `processing(title, is, should, message: 'Processing', &block)`: Generic processing of a resource, emits default change messages for the difference between `is:` and `should:`.
+  * `failing(titles, message: 'Failing', &block)`: unlikely to be used often, but provided for completeness, always records a failure.
 
 * Action functions
   * `created(titles, message: 'Created')`
   * `updated(titles, message: 'Updated')`
   * `deleted(titles, message: 'Deleted')`
-  * `unchanged(titles, message: 'Unchanged')`: the resource did not require a change - emit no logging
   * `processed(title, is, should)`: the resource has been processed - emit default logging for the resource and each attribute
   * `failed(titles, message:)`: the resource has not been updated successfully
+
+* Attribute Change notifications
+  * `attribute_changed(attribute, is, should, message: nil)`: Call this from a context, default to the title from the context
   * `attribute_changed(titles, attribute, is, should, message: nil)`: use outside of a context, or in a context with multiple resources
 
 * `fail(message)`: abort the current context with an error
