@@ -1522,7 +1522,7 @@ an `Integer`.
 
 An `URI` instance can be created from a `String` using valid syntax or a `Hash` using the valid part names.
 
-Individual parts of an `URI` are available as instance attrbiutes and an `URI` can be merged with another `URI` or a `String`
+Individual parts of an `URI` are available as instance attributes and an `URI` can be merged with another `URI` or a `String`
 using the `+` operator.
 
 **Examples:**
@@ -1568,6 +1568,42 @@ notice($d + $rp) # notices 'http://example.com/a/b/c/d'
 
 $f = URI('http://example.com/a/b')
 notice($f + $rp) # notices 'http://example.com/a/c/d'
+```
+
+Restricting URIs using type parameter constraints
+
+Allow any http/https URI without query or fragments:
+
+```puppet
+$t = URI[scheme => Enum[http,https,true], query => Undef, fragment => Undef]
+URI('http://example.com/a/b') =~ $t     # true
+URI('http://example.com/a/b?x=y') =~ $t # false
+URI('http://example.com/a/b#l22') =~ $t # false
+```
+
+Require that the URI includes host and path:
+
+```puppet
+$t = URI[host => NotUndef, path => NotUndef]
+URI('http://example.com/a/b') =~ $t # true
+URI('http://example.com') =~ $t     # false
+URI('file:///etc/passwd') =~ $t     # false
+```
+
+Require that the URI has an absolute path:
+
+```puppet
+$t = URI[path => /^\//]
+URI('/a/b') =~ $t            # true
+URI('a/b') =~ $t             # false
+```
+
+or conversely, require it to be relative:
+
+```puppet
+URI[path => /^[^/]/]
+URI('http://example.com/a/b') =~ $t   # false
+URI('a/b') =~ $t                      # true
 ```
 
 ### Array[V, from, to]
