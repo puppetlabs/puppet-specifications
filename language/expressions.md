@@ -246,7 +246,7 @@ Operators
 
      PlusExpression : Expression<R> '+' Expression<R> ;
 
-* Performs a concatenate/merge if the LHS is an Array or Hash
+* Performs a concatenate/merge if the LHS is an Array, Hash, or URI
 * Adds LHS and RHS numerically otherwise
   * Operation fails if LHS or RHS are not numeric
 * Is not commutative for non numeric/string operands ( `[1,2,3] + 3` is not the same as `3 + [1,2,3]`,
@@ -299,6 +299,11 @@ Illegal operations:
   * The merged result retains the insertion order of the LHS's keys irrespective of if
     the value has been modified or not. Additional merged keys from the RHS are inserted into
     the result in their RHS order.
+* When LHS is a `URI`
+  * If RHS is an `URI` it is merged with the LHS `URI`. The parts of the LHS `URI` takes precedence.
+    A hierarchical `URI` is merged with respect to the included paths so that an absolute path in LHS
+    replaces the RHS path and a relative path in LHS is appended to the RHS path.
+  * If RHS is a `String`, it is first converted to an `URI` and then merged with the LHS `URI`.
 
 Examples
 
@@ -312,6 +317,10 @@ Examples
     {a => 10, b => 20} + 30         # => error
     {a => 10, b => 20} + [30]       # => error
     {a => 10, b => 20} + [c, 30]    # => {a => 10, b => 20, c => 30}
+
+    URI('http://example.com/a/b/') + URI('/c/d') # => URI('http://example.com/c/d')
+    URI('http://example.com/a/b/') + URI('c/d')  # => URI('http://example.com/a/b/c/d')
+    URI('http://example.com/a/b' ) + URI('c/d')  # => URI('http://example.com/a/c/d')
 
 ### - operator
 

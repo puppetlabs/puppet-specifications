@@ -54,6 +54,7 @@ the conceptual categories **Data Types** e.g.:
 *  `Array`
 *  `Hash`
 *  `Undef`
+*  `URI`
 *  `Binary`
 
 **Scalar Types** e.g.:
@@ -209,6 +210,8 @@ may appear more than once in the hierarchy (e.g. a `ScalarData` is both `Scalar`
        |  |- Scalar
        |  |- SemVerRange
        |  |- Sensitive
+       |  |- Binary
+       |  |- URI
        |  |- Type
        |  |- Undef
        |  |- Array[RichData]
@@ -222,6 +225,7 @@ may appear more than once in the hierarchy (e.g. a `ScalarData` is both `Scalar`
        |- Type[T]
        |- TypeSet[specification...]
        |- Binary
+       |- URI
 
 In addition to these types, a Qualified Reference that does not represent any of the other types is an alias for `Resource[the_qualified_reference]` (e.g. `File` is shorthand notation for `Resource[File]` / `Resource[file]`).
 
@@ -1127,6 +1131,15 @@ Defaults to `s` at top level and `p` inside array or hash.
   as hex escaped characters on the form `\xHH` where `H` is a hex digit.
 * The width and precision values are applied to the text part only in `%p` format.
 
+##### URI value to String
+
+| Format    | Default formats
+| ------    | ---------------
+| s         | URI as a string
+| p         | 'URI(<quoted uri string>)'
+
+* The alternate form flag `#` will quote the URI text output.
+
 ##### Array & Tuple to String
 
 | Format    | Array/Tuple Formats
@@ -1462,6 +1475,136 @@ $a = Binary('YWJj')
 # create the binary content from content in a module's file
 $b = binary_file('mymodule/mypicture.jpg')
 ~~~
+
+### URI[V]
+
+`URI` represents a Uniform Resource Identifier as described by [RFC-2396](https://tools.ietf.org/html/rfc2396).
+The optional type parameter `V` is either a `String` that represents a valid `URI` where all parts are optional, or a `Hash` with
+constraints for individual parts of the `URI`.
+
+The valid part names of the `URI`, and the `V` type parameter are `scheme`, `userinfo`, `host`, `port`, `path`, `query`, `fragment`
+and `opaque`. An `URI` is either hierarchical or opaque and the `opaque` part is therefore mutually exclusive to all other parts
+except `scheme`. The following diagram shows how the parts are mapped:
+
+Hierarchical `URI`:
+~~~
+  abc://username:password@example.com:123/path/data?key=value&key2=value2#fragid1
+  └┬┘   └───────┬───────┘ └────┬────┘ └┬┘└────┬───┘ └─────────┬─────────┘ └──┬──┘
+scheme      userinfo         host    port   path            query         fragment
+~~~
+Opaque `URI`:
+~~~
+  urn:example:mammal:monotreme:echidna
+  └┬┘ └──────────────┬───────────────┘
+scheme             opaque
+~~~
+
+The type can be constrained to match instances on a fine grained level using the `Hash` where each entry except the `port`
+can be constrained using:
+
+* A `String` that represents an exact match.
+* A `Regexp` that represents an pattern match
+* A `Type[Pattern]` that may contain one or more regexps
+* A `Type[Enum]` where at least one of the included strings must match
+* A `Type[NotUndef]` representing that the entry must be present 
+* An `undef` or `Type[Undef]` representing that the entry must not be present
+
+The `port` entry can be constrained using:
+
+* A `Type[Integer]` that represents the range of valid port numbers
+* A `Type[NotUndef]` representing that the entry must be present 
+* An `undef` or `Type[Undef]` representing that the entry must not be present
+
+When `V` is a string, it will be parsed into a `Hash` where each contained part will be a `String` except `port` which will be
+an `Integer`.
+
+***Using an URI instance***
+
+An `URI` instance can be created from a `String` using valid syntax or a `Hash` using the valid part names.
+
+Individual parts of an `URI` are available as instance attributes and an `URI` can be merged with another `URI` or a `String`
+using the `+` operator.
+
+**Examples:**
+
+Creating a URI from a string
+
+```puppet
+$u = URI('http://www.example.com')
+```
+
+Creating a URI from a hash
+
+```puppet
+$u = URI(scheme => 'http', host => 'www.example.com', path => '/a/b')
+```
+
+Accessing parts as instance attributes:
+
+```puppet
+$u = URI('http://bob:pwd@www.example.com:23/a/b?x=2#frag')
+notice($u.scheme)   # will notice the string 'http'
+notice($u.userinfo) # will notice the string 'bob:pwd'
+notice($u.host)     # will notice the string 'www.example.com'
+notice($u.port)     # will notice the string '23' (from integer value)
+notice($u.path)     # will notice the string '/a/b'
+notice($u.query)    # will notice the string 'x=2'
+notice($u.fragment) # will notice the string 'frag'
+
+$o = URI('urn:a:b:c')
+notice($o.scheme)   # will notice the string 'urn'
+notice($o.opaque)   # will notice the string 'a:b:c'
+```
+
+Merging URIs:
+
+```puppet
+$d = URI('http://example.com/a/b/')
+$ap = URI('/c/d')
+notice($d + $ap) # notices 'http://example.com/c/d'
+
+$rp = URI('c/d')
+notice($d + $rp) # notices 'http://example.com/a/b/c/d'
+
+$f = URI('http://example.com/a/b')
+notice($f + $rp) # notices 'http://example.com/a/c/d'
+```
+
+Restricting URIs using type parameter constraints
+
+Allow any http/https URI without query or fragments:
+
+```puppet
+$t = URI[scheme => Enum[http,https,true], query => Undef, fragment => Undef]
+URI('http://example.com/a/b') =~ $t     # true
+URI('http://example.com/a/b?x=y') =~ $t # false
+URI('http://example.com/a/b#l22') =~ $t # false
+```
+
+Require that the URI includes host and path:
+
+```puppet
+$t = URI[host => NotUndef, path => NotUndef]
+URI('http://example.com/a/b') =~ $t # true
+URI('http://example.com') =~ $t     # false
+URI('file:///etc/passwd') =~ $t     # false
+```
+
+Require that the URI has an absolute path:
+
+```puppet
+$t = URI[path => /^\//]
+URI('/a/b') =~ $t            # true
+URI('a/b') =~ $t             # false
+```
+
+or conversely, require it to be relative:
+
+```puppet
+URI[path => /^[^/]/]
+URI('http://example.com/a/b') =~ $t   # false
+URI('a/b') =~ $t                      # true
+```
 
 ### Array[V, from, to]
 
