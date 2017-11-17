@@ -1228,9 +1228,33 @@ The commonality of two Pattern types is the set operation pattern | pattern:
 
      type_of([Pattern[a], Pattern[b]]) # => Array[Type[Pattern[a,b]]]
 
-### Boolean
+### Boolean[boolean-value]
 
-The types of the boolean expressions `true` and `false`.
+Type parameter available since version 5.4.0
+
+An unparameterized `Boolean` describes the boolean expressions `true` and `false`. A parameterized
+`Boolean` describes either `true` or `false`.
+
+Examples checking if an expression is an instance of `Boolean`:
+
+~~~ puppet
+true =~ Boolean         # true
+true =~ Boolean[true]   # true
+true =~ Boolean[false]  # false
+
+false =~ Boolean         # true
+false =~ Boolean[true]   # false
+false =~ Boolean[false]  # true
+~~~
+
+Examples checking assignability between `Boolean` types:
+
+~~~ puppet
+Boolean == Boolean[true]         # false
+Boolean[false] == Boolean[true]  # false
+Boolean > Boolean[true]          # true
+Boolean > Boolean[false]         # true
+~~~
 
 #### Boolean.new
 
