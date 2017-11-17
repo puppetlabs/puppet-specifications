@@ -187,6 +187,37 @@ end
 
 When a resource is marked with `noop => true`, either locally, or through a global flag, the standard runtime will emit the default change report with a `noop` flag set. In some cases an implementation can provide additional information (e.g. commands that would get executed), or requires additional evaluation before determining the effective changes (e.g. `exec`'s `onlyif` attribute). In those cases, the resource type can specify the `noop_handler` feature to have `set` called for all resources, even those flagged with `noop`. When the `noop` parameter is set to true, the provider must not change the system state, but only report what it would change. The `noop` parameter should default to `false` to allow simple runtimes to ignore this feature.
 
+## Provider Feature: remote_resource
+
+```ruby
+Puppet::ResourceApi.register_type(
+  name: 'nx9k_vlan',
+  features: [ 'remote_resource' ],
+)
+
+require 'puppet/util/network_device/simple/device'
+module Puppet::Util::NetworkDevice::Nexus
+  class Device < Puppet::Util::NetworkDevice::Simple::Device
+    def facts
+      # access the device and return facts hash
+    end
+  end
+end
+
+class Puppet::Provider::Nx9k_vlan::Nx9k_vlan
+  def set(context, changes, noop: false)
+    changes.each do |name, change|
+      is = change.has_key? :is ? change[:is] : get_single(name)
+      should = change[:should]
+      # ...
+      context.device.do_something unless noop
+    end
+  end
+end
+```
+
+Declaring this feature restricts the resource from being run "locally". It is now expected to execute all its external interactions through the `context.device` instance. How that instance is set up is runtime specific. In puppet, it is configured through the [`device.conf`](https://puppet.com/docs/puppet/5.3/config_file_device.html) file, and only available when running under [`puppet device`](https://puppet.com/docs/puppet/5.3/man/device.html). It is recommended to use `Puppet::Util::NetworkDevice::Simple::Device` as the base class for all devices, which automatically loads a configuration from the local filesystem of the proxy node where it's running on.
+
 # Runtime Environment
 
 The primary runtime environment for the provider is the puppet agent, a long-running daemon process. The provider can also be used in the puppet apply command, a one-shot version of the agent, or the puppet resource command, a short-lived CLI process for listing or managing a single resource type. Other callers who want to access the provider will have to emulate those environments. The primary lifecycle of resource managment in each of those tools is the *transaction*, a single set of changes (e.g. a catalog, or a CLI invocation) to work on. In any case the registered block will be surfaced in a clean class which will be instantiated once for each transaction. The provider can define any number of helper methods to support itself. To allow for a transaction to set up the prerequisites for an provider, and use it immediately, the provider is instantiated as late as possible. A transaction will usually call `get` once, and may call `set` any number of times to effect change. The object instance hosting the `get` and `set` methods can be used to cache ephemeral state during execution. The provider should not try to cache state beyond the transaction, to avoid interfering with the agent daemon. In many other cases caching beyond the transaction won't help anyways, as the hosting process will only manage a single transaction.
