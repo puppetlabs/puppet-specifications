@@ -415,22 +415,22 @@ access to the local scope the call originates from.
 Returns the loader that loaded the function. Further loading will be done from the perspective
 of this loader.
 
-#### call_function(function_name, args, &block)
+#### call_function(function_name, \*args, &block)
 
-Calls the function named `function_name` (the name is given without any prefix (3x prefixes
-names with `function_`, 4x does not), and an array containing the arguments.
+Calls the function named `function_name`, using the arguments specified in `*args`. The name is
+given without any prefix. (3x prefixes names with `function_`, while 4x does not).
 
 If you want to pass a block, you can either give a regular Ruby block, or pass on the `Proc` that
 was given to the function.
 
     def my_function1(a, b, &block)
       # passing given Proc
-      call_function('my_other_function', [a, b], &block)
+      call_function('my_other_function', a, b, &block)
     end
 
     def my_function2(a, &block)
       # using a Ruby block
-      call_function('my_other_function', [a, b]) { |x| ... }
+      call_function('my_other_function', a, b) { |x| ... }
     end
 
 ### Function Documentation
