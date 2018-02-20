@@ -108,7 +108,7 @@ The `set` method should always return `nil`. Any progress signaling should be do
 
 Both methods take a `context` parameter which provides utilties from the runtime environment, and is decribed in more detail there.
 
-### Provider features
+## Provider features
 
 There are some use cases where an implementation provides a better experience than the default runtime environment provides. To avoid burdening the simplest providers with that additional complexity, these cases are hidden behind feature flags. To enable the special handling, the resource definition has a `feature` key to list all features implemented by the provider.
 
@@ -134,13 +134,13 @@ class Puppet::Provider::AptKey::AptKey
   end
 ```
 
-The runtime environment needs to compare user input from the manifest (the desired state) with values returned from `get` (the actual state) to determine whether or not changes need to be affected. In simple cases, a provider will only accept values from the manifest in the same format as `get` returns. No extra work is required, as a value comparison will suffice. This places a high burden on the user to provide values in an unnaturally constrained format. In the example, the `apt_key` name is a hexadecimal number that can be written with, and without, the `'0x'` prefix, and the casing of the digits is irrelevant. A value comparison on the strings would cause false positives if the user input format that does not match. There is no hexadecimal type in the Puppet language. The provider can specify the `canonicalize` feature and implement the `canonicalize` method.
+The runtime environment needs to compare user input from the manifest (the desired state) with values returned from `get` (the actual state) to determine whether or not changes need to be affected. In simple cases, a provider will only accept values from the manifest in the same format as `get` returns. No extra work is required, as a value comparison will suffice. This places a high burden on the user to provide values in an unnaturally constrained format. In the example, the `apt_key` name is a hexadecimal number that can be written with, and without, the `'0x'` prefix, and the casing of the digits is irrelevant. A value comparison on the strings would cause false positives if the user input format that does not match. There is no hexadecimal type in the Puppet language. To address this, the provider can specify the `canonicalize` feature and implement the `canonicalize` method.
 
 The `canonicalize` method transforms its `resources` argument into the standard format required by the rest of the provider. The `resources` argument to `canonicalize` is an enumerable of resource hashes matching the structure returned by `get`. It returns all passed values in the same structure with the required transformations applied. It is free to reuse or recreate the data structures passed in as arguments. The runtime environment must use `canonicalize` before comparing user input values with values returned from `get`. The runtime environment always passes canonicalized values into `set`. If the runtime environment requires the original values for later processing, it protects itself from modifications to the objects passed into `canonicalize`, for example through creating a deep copy of the objects.
 
 The `context` parameter is the same passed to `get` and `set`, which provides utilties from the runtime environment, and is decribed in more detail there.
 
-> Note: When the provider implements canonicalization, it always logs canonicalized values. As a result of `get` and `set` producing and consuming canonically formatted values, this is not expected to present extra cost.
+> Note: When the provider implements canonicalization, it aims to always log the canonicalized values. As a result of `get` and `set` producing and consuming canonically formatted values, this is not expected to present extra cost.
 
 > Note: A side effect of these rules is that the canonicalization of `get`'s return value must not change the processed values. Runtime environments may have strict or development modes that check this property.
 
@@ -226,7 +226,7 @@ Declaring this feature restricts the resource from being run "locally". It is ex
 
 The primary runtime environment for the provider is the Puppet agent, a long-running daemon process. The provider can also be used in the Puppet apply command, a one-shot version of the agent, or the Puppet resource command, a short-lived command line interface (CLI) process for listing or managing a single resource type. Other callers who want to access the provider will have to imitate these environments. 
 
-The primary lifecycle of resource managment in each of these tools is the *transaction*, a single set of changes, for example a catalog or a CLI invocation. The registered block will be surfaced in a clean class, and will be instantiated once for each transaction. The provider defines any number of helper methods to support itself. To allow for a transaction to set up the prerequisites for a provider and be used immediately, the provider is instantiated as late as possible. A transaction will usually call `get` once, and may call `set` any number of times to affect change. The object instance hosting the `get` and `set` methods can be used to cache ephemeral state during execution. The provider should not try to cache state beyond the transaction, to avoid interfering with the agent daemon. In some cases, caching beyond the transaction won't help as the hosting process will only manage a single transaction.
+The primary lifecycle of resource managment in each of these tools is the transaction, a single set of changes, for example a catalog or a CLI invocation. The provider's class will be instantiated once for each transaction. Within that class the provider defines any number of helper methods to support itself. To allow for a transaction to set up the prerequisites for a provider and be used immediately, the provider is instantiated as late as possible. A transaction will usually call `get` once, and may call `set` any number of times to affect change. The object instance hosting the `get` and `set` methods can be used to cache ephemeral state during execution. The provider should not try to cache state outside of its instances. In many cases, such caching won't help as the hosting process will only manage a single transaction. In long-running runtime environments (like the agent) the benefit of the caching needs to be balanced by the cost of the cache at rest, and the lifetime of cache entries, which are only useful when they are longer than the regular `runinterval`.
 
 ### Utilities
 
@@ -234,9 +234,7 @@ The runtime environment has some utilities to provide a uniform experience for i
 
 #### Logging and reporting
 
-The provider needs to signal changes, successes, and failures to the runtime environment. The `context` is the primary way to do this. It provides a single interface for technical information, including automatic processing, human readable progress, and status messages for operators.
-
-[TODO: please check that the sentence above makes sense to you. This is how I understood what you wrote, but I may have changed the meaning]
+The provider needs to signal changes, successes, and failures to the runtime environment. The `context` is the primary way to do this. It provides a structured logging interface for all provider actions. Using this information the runtime environments can do automatic processing, emit human readable progress information, and provide status messages for operators.
 
 ##### General messages
 
@@ -259,13 +257,11 @@ Warning: apt_key: Unexpected state detected, continuing in degraded mode.
 * err: signal error conditions that have caused normal operations to fail.
 * critical/alert/emerg: should not be used by resource providers.
 
-See [wikipedia](https://en.wikipedia.org/wiki/Syslog#Severity_level) and [RFC424](https://tools.ietf.org/html/rfc5424) for more details.
-
-[TODO: Could we include the list itself, if needed, and just link to the second link? Or a source wikipedia?]
+See [RFC424](https://tools.ietf.org/html/rfc5424) for more details.
 
 ##### Signalling resource status
 
-In some cases, a provider passes off work to an external tool. Detailed logging happens here, and then reports back to Puppet by acknowledging these changes. Signalling can be:
+In many simple cases, a provider passes off work to an external tool. Detailed logging happens there, and then reports back to Puppet by acknowledging these changes. Signalling can be:
 
 ```ruby
 @apt_key_cmd.run(context, action, key_id)
@@ -278,7 +274,7 @@ Providers that want to have more control over the logging throughout the process
 
 ##### Logging contexts
 
-Most of those messages are expected to be relative to a specific resource instance, and a specific operation of that instance. To enable detailed logging without repeating key arguments, and to provide consistent error logging, the context provides *logging context* methods to capture the current action and resource instance:
+Most of those messages are expected to be relative to a specific resource instance, and a specific operation on that instance. To enable detailed logging without repeating key arguments, and to provide consistent error logging, the context provides *logging context* methods to capture the current action and resource instance:
 
 ```ruby
 context.updating(title) do
@@ -393,7 +389,7 @@ To use CLI commands in a safe manner, the Resource API provides a thin wrapper a
 
 ##### Creating a reusable command
 
-To create a new instance of `Puppet::ResourceApi::Command` passing in the command, you can either specify a full path or a bare command name. In the latter, the command will use the runtime environment's `PATH` setting to search for the command. 
+To create a new instance of `Puppet::ResourceApi::Command` passing in the command, you can either specify a full path or a bare command name. In the latter case the command will use the runtime environment's `PATH` setting to search for the command. 
 
 ```ruby
 class Puppet::Provider::AptKey::AptKey
@@ -404,8 +400,6 @@ class Puppet::Provider::AptKey::AptKey
 ```
 
 > Note: It is recommended to create the command in the `initialize` function of the provider, and store them in a member named after the command, with the `_cmd` suffix. This makes it easy to reuse common settings throughout the provider.
-
-[TODO: it is usually best to avoid saying "It is recommended". Could you be more specific on whether they should do it or not?]
 
 You can set default environment variables on the `@cmd.environment` hash, and a default working directory using `@cmd.cwd=`.
 
@@ -420,7 +414,7 @@ class Puppet::Provider::AptKey::AptKey
     @apt_key_cmd.run(context, 'del', key_id)
 ```
 
-If the command is not available, a `Puppet::ResourceApi::CommandNotFoundError` will appear. This can be used to fail the resources for a specific run if the requirements for the provider are not met.
+If the command is not available, a `Puppet::ResourceApi::CommandNotFoundError` will be raised. This can be used to fail the resources for a specific run if the requirements for the provider are not met.
 
 The call will only return after the command has finished executing. If the command exits with an exit status indicating an error condition - that is non-zero - a `Puppet::ResourceApi::CommandExecutionError` will be raised, containing the details of the command and exit status.
 
@@ -511,8 +505,6 @@ The `stdin_source:` keyword argument takes the following values:
 
 To support the widest array of platforms and use cases, character encoding of a provider's inputs and outputs need to be considered. By default the commands API follows the Ruby model of having all strings tagged with their current [`Encoding`](https://ruby-doc.org/core/Encoding.html), and uses the system's current default character set for I/O. This means that strings read from commands might be tagged with non-UTF-8 character sets on input and UTF-8 strings transcoded on output.
 
-[TODO: is it IO or I/O? Or are they different?]
-
 To influence this behaviour, tell the `run` method which encoding to use and enable transcoding. Use the following keyword arguments:
 
 * `stdout_encoding:`, `stderr_encoding:` the encoding to tag incoming bytes.
@@ -541,8 +533,6 @@ The `run` function returns an object with the attributes `stdout`, `stderr`, and
 ## Known limitations
 
 This API is not a full replacement for the power of 3.x style types and providers. Here is an (incomplete) list of missing pieces and thoughts on how to solve these. The goal of the new Resource API is not to be a replacement of the prior one, but to be a simplified way to get results for the majority of use cases.
-
-[TODO: where is the list mentioned above?] 
 
 ### Multiple providers for the same type
 
@@ -595,7 +585,7 @@ Neither of these options are ideal; and are documented as a limitation. Improvem
 
 ### Composite namevars
 
-The current API does not provide a way to specify composite namevars - types with multiple namevars. [`title_patterns`](https://github.com/puppetlabs/puppet-specifications/blob/master/language/resource_types.md#title-patterns) are already very data driven, and will be easier to add at a later point.
+The current API does not provide a way to specify composite namevars - types with multiple namevars. [`title_patterns`](https://github.com/puppetlabs/puppet-specifications/blob/master/language/resource_types.md#title-patterns) are already very data driven, and will be easy to add at a later point.
 
 ### Puppet 4 data types
 
