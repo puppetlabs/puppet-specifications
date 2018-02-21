@@ -68,7 +68,7 @@ For autoloading work, this code needs to go into `lib/puppet/type/<name>.rb` in 
 
 ## Resource implementation ("provider")
 
-To affect changes, a resource requires an implementation that makes the universe's state available to Puppet, and causes the changes to bring reality to whatever state is requested in the catalog. The two fundamental operations to manage resources are reading and writing system state. These operations are implemented as `get` and `set`. The implementation itself is a basic Ruby class in the `Puppet::Provider` namespace, named after the type using CamelCase. 
+To affect changes, a resource requires an implementation that makes the universe's state available to Puppet, and causes the changes to bring reality to whatever state is requested in the catalog. The two fundamental operations to manage resources are reading and writing system state. These operations are implemented as `get` and `set`. The implementation itself is a basic Ruby class in the `Puppet::Provider` namespace, named after the type using CamelCase.
 
 > Note: Due to the way Puppet autoload works, this has to be in a file called `puppet/provider/<type_name>/<type_name>.rb`. The class will also have the CamelCased type name twice.
 
@@ -100,9 +100,9 @@ end
 
 The `get` method reports the current state of the managed resources. It returns an enumerable of all existing resources. Each resource is a hash with attribute names as keys, and their respective values as values. It is an error to return values not matching the type specified in the resource type. If a requested resource is not listed in the result, it is considered to not exist on the system. If the `get` method raises an exception, the provider is marked as unavailable during the current run, and all resources of this type will fail in the current transaction. The exception message will be reported to the user.
 
-The `set` method updates resources to a new state. The `changes` parameter gets passed a hash of change requests, keyed by the resource's name. Each value is another hash with the optional `:is` and `:should` keys. At least one of the two has to be specified. The values will be of the same shape as those returned by `get`. After the `set`, all resources should be in the state defined by the `:should` values. 
+The `set` method updates resources to a new state. The `changes` parameter gets passed a hash of change requests, keyed by the resource's name. Each value is another hash with the optional `:is` and `:should` keys. At least one of the two has to be specified. The values will be of the same shape as those returned by `get`. After the `set`, all resources should be in the state defined by the `:should` values.
 
-A missing `:should` entry indicates that a resource should be removed from the system. Even a type implementing the `ensure => [present, absent]` attribute pattern still has to react correctly on a missing `:should` entry. `:is` may contain the last available system state from a prior `get` call. If the `:is` value is `nil`, the resources were not found by `get`. If there is no `:is` key, the runtime did not have a cached state available.  
+A missing `:should` entry indicates that a resource should be removed from the system. Even a type implementing the `ensure => [present, absent]` attribute pattern still has to react correctly on a missing `:should` entry. `:is` may contain the last available system state from a prior `get` call. If the `:is` value is `nil`, the resources were not found by `get`. If there is no `:is` key, the runtime did not have a cached state available.
 
 The `set` method should always return `nil`. Any progress signaling should be done through the logging utilities described below. If the `set` method throws an exception, all resources that should change in this call and haven't already been marked with a definite state, will be marked as failed. The runtime will only call the `set` method if there are changes to be made, especially in the case of resources marked with `noop => true` (either locally or through a global flag). The runtime will not pass them to `set`. See `noop_handler` below for changing this behaviour if required.
 
@@ -224,7 +224,7 @@ Declaring this feature restricts the resource from being run "locally". It is ex
 
 ## Runtime environment
 
-The primary runtime environment for the provider is the Puppet agent, a long-running daemon process. The provider can also be used in the Puppet apply command, a one-shot version of the agent, or the Puppet resource command, a short-lived command line interface (CLI) process for listing or managing a single resource type. Other callers who want to access the provider will have to imitate these environments. 
+The primary runtime environment for the provider is the Puppet agent, a long-running daemon process. The provider can also be used in the Puppet apply command, a one-shot version of the agent, or the Puppet resource command, a short-lived command line interface (CLI) process for listing or managing a single resource type. Other callers who want to access the provider will have to imitate these environments.
 
 The primary lifecycle of resource managment in each of these tools is the transaction, a single set of changes, for example a catalog or a CLI invocation. The provider's class will be instantiated once for each transaction. Within that class the provider defines any number of helper methods to support itself. To allow for a transaction to set up the prerequisites for a provider and be used immediately, the provider is instantiated as late as possible. A transaction will usually call `get` once, and may call `set` any number of times to affect change. The object instance hosting the `get` and `set` methods can be used to cache ephemeral state during execution. The provider should not try to cache state outside of its instances. In many cases, such caching won't help as the hosting process will only manage a single transaction. In long-running runtime environments (like the agent) the benefit of the caching needs to be balanced by the cost of the cache at rest, and the lifetime of cache entries, which are only useful when they are longer than the regular `runinterval`.
 
@@ -363,7 +363,7 @@ The following action/block methods are available:
   * `failed(titles, message:)`: the resource has not been updated successfully
 
 * Attribute Change notifications
-  * `attribute_changed(title, attribute, is, should, message: nil)`: notify the runtime environment that a specific attribute for a specific resource has changed. `is` and `should` are the original and the new value of the attribute. Either can be `nil`. 
+  * `attribute_changed(title, attribute, is, should, message: nil)`: notify the runtime environment that a specific attribute for a specific resource has changed. `is` and `should` are the original and the new value of the attribute. Either can be `nil`.
 
 * Plain messages
   * `debug(message)`
@@ -399,9 +399,9 @@ Allowing multiple providers does not come for free. The previous implementation 
 
 The Resource API will not implement support for multiple providers at this time.
 
-Should support for multiple providers be desirable for a given type, the two options are: 
+Should support for multiple providers be desirable for a given type, the two options are:
 
-1. Use the older, more complex API. 
+1. Use the older, more complex API.
 2. Implement multiple similar types using the Resource API, and select the platform-appropriate type in Puppet code. For example:
 
 ```puppet
