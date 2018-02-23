@@ -41,7 +41,7 @@ Puppet::ResourceApi.register_type(
       desc:      'Date the key was created, in ISO format.',
     },
   },
-  autorequires: {
+  autorequire: {
     file:    '$source', # will evaluate to the value of the `source` attribute
     package: 'apt',
   },
@@ -61,7 +61,7 @@ The `Puppet::ResourceApi.register_type(options)` function takes the following ke
     * `init_only`: this attribute can only be set during the creation of the resource. Its value will be reported going forward, but trying to change it later will lead to an error. For example, the base image for a VM or the UID of a user.
     * `read_only`: values for this attribute will be returned by `get()`, but `set()` is not able to change them. Values for this should never be specified in a manifest. For example, the checksum of a file or the MAC address of a network interface.
     * `parameter`: these attributes influence how the provider behaves and cannot be read from the target system. For example, the target file on inifile or credentials to access an API.
-* `autorequires`, `autobefore`, `autosubscribe`, and `autonotify`: a hash mapping resource types to titles. The titles must either be constants, or, if the value starts with a dollar sign, a reference to the value of an attribute. If the specified resources exist in the catalog, Puppet will create the relationsships requested here.
+* `autorequire`, `autobefore`, `autosubscribe`, and `autonotify`: a hash mapping resource types to titles. The titles must either be constants, or, if the value starts with a dollar sign, a reference to the value of an attribute. If the specified resources exist in the catalog, Puppet will create the relationsships requested here.
 * `features`: a list of API feature names, specifying which optional parts of this spec the provider supports. Currently defined features: `canonicalize`, `simple_get_filter`, and `noop_handler`. See below for details.
 
 For autoloading work, this code needs to go into `lib/puppet/type/<name>.rb` in your module.
