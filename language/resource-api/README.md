@@ -62,7 +62,7 @@ The `Puppet::ResourceApi.register_type(options)` function takes the following ke
     * `read_only`: values for this attribute will be returned by `get()`, but `set()` is not able to change them. Values for this should never be specified in a manifest. For example, the checksum of a file or the MAC address of a network interface.
     * `parameter`: these attributes influence how the provider behaves and cannot be read from the target system. For example, the target file on inifile or credentials to access an API.
 * `autorequire`, `autobefore`, `autosubscribe`, and `autonotify`: a hash mapping resource types to titles. The titles must either be constants, or, if the value starts with a dollar sign, a reference to the value of an attribute. If the specified resources exist in the catalog, Puppet will create the relationsships requested here.
-* `features`: a list of API feature names, specifying which optional parts of this spec the provider supports. Currently defined features: `canonicalize`, `simple_get_filter`, and `noop_handler`. See below for details.
+* `features`: a list of API feature names, specifying which optional parts of this spec the provider supports. Currently defined features: `canonicalize`, `simple_get_filter`, and `supports_noop`. See below for details.
 
 For autoloading work, this code needs to go into `lib/puppet/type/<name>.rb` in your module.
 
@@ -104,7 +104,7 @@ The `set` method updates resources to a new state. The `changes` parameter gets 
 
 A missing `:should` entry indicates that a resource should be removed from the system. Even a type implementing the `ensure => [present, absent]` attribute pattern still has to react correctly on a missing `:should` entry. `:is` may contain the last available system state from a prior `get` call. If the `:is` value is `nil`, the resources were not found by `get`. If there is no `:is` key, the runtime did not have a cached state available.
 
-The `set` method should always return `nil`. Any progress signaling should be done through the logging utilities described below. If the `set` method throws an exception, all resources that should change in this call and haven't already been marked with a definite state, will be marked as failed. The runtime will only call the `set` method if there are changes to be made, especially in the case of resources marked with `noop => true` (either locally or through a global flag). The runtime will not pass them to `set`. See `noop_handler` below for changing this behaviour if required.
+The `set` method should always return `nil`. Any progress signaling should be done through the logging utilities described below. If the `set` method throws an exception, all resources that should change in this call and haven't already been marked with a definite state, will be marked as failed. The runtime will only call the `set` method if there are changes to be made, especially in the case of resources marked with `noop => true` (either locally or through a global flag). The runtime will not pass them to `set`. See `supports_noop` below for changing this behaviour if required.
 
 Both methods take a `context` parameter which provides utilties from the runtime environment, and is decribed in more detail there.
 
@@ -169,12 +169,12 @@ Some resources are very expensive to enumerate. The provider can implement `simp
 
 The runtime environment calls `get` with a minimal set of names, and keeps track of additional instances returned to avoid double querying. To gain the most benefits from batching implementations, the runtime minimizes the number of calls into `get`.
 
-### Provider feature: `noop_handler`
+### Provider feature: `supports_noop`
 
 ```ruby
 Puppet::ResourceApi.register_type(
   name: 'apt_key',
-  features: [ 'noop_handler' ],
+  features: [ 'supports_noop' ],
 )
 
 class Puppet::Provider::AptKey::AptKey
@@ -189,7 +189,7 @@ class Puppet::Provider::AptKey::AptKey
 end
 ```
 
-When a resource is marked with `noop => true`, either locally or through a global flag, the standard runtime will produce the default change report with a `noop` flag set. In some cases, an implementation provides additional information, for example commands that would get executed, or requires additional evaluation before determining the effective changes, for example the `exec`'s `onlyif` attribute. The resource type specifies the `noop_handler` feature to have `set` called for all resources, even those flagged with `noop`. When the `noop` parameter is set to true, the provider must not change the system state, but only report what it would change. The `noop` parameter should default to `false` to allow simple runtimes to ignore this feature.
+When a resource is marked with `noop => true`, either locally or through a global flag, the standard runtime will produce the default change report with a `noop` flag set. In some cases, an implementation provides additional information, for example commands that would get executed, or requires additional evaluation before determining the effective changes, for example the `exec`'s `onlyif` attribute. The resource type specifies the `supports_noop` feature to have `set` called for all resources, even those flagged with `noop`. When the `noop` parameter is set to true, the provider must not change the system state, but only report what it would change. The `noop` parameter should default to `false` to allow simple runtimes to ignore this feature.
 
 ### Provider feature: `remote_resource`
 
