@@ -56,6 +56,16 @@ PN Node | Sample string representation
 `Map` | `{:a 2 :b 3 :c true}`
 `Call` | `(myFunc 1 2 "b")`
 
+### Puppet Expression transformed into JSON
+
+The Puppet AST can be transformed into PN. Examples:
+
+Puppet Expression | PN
+------------------|---
+1 + 2 * 3         | (+ 1 (* 2 3))
+a * (2 + 3)       | (* (qn "a") (paren (+ 2 3)))
+"hello ${var}"    | (concat "hello " (str (var "var")))
+
 ### PN represented as JSON or YAML
 
 When representing PN as JSON or YAML it must first be converted to `Data`. For JSON, this
