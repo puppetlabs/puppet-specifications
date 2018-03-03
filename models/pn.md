@@ -56,26 +56,28 @@ PN Node | Sample string representation
 `Map` | `{:a 2 :b 3 :c true}`
 `Call` | `(myFunc 1 2 "b")`
 
-### Puppet Expression transformed into JSON
-
-The Puppet AST can be transformed into PN. Examples:
-
-Puppet Expression | PN
-------------------|---
-1 + 2 * 3         | (+ 1 (* 2 3))
-a * (2 + 3)       | (* (qn "a") (paren (+ 2 3)))
-"hello ${var}"    | (concat "hello " (str (var "var")))
-
 ### PN represented as JSON or YAML
 
-When representing PN as JSON or YAML it must first be converted to `Data`. For JSON, this
-means that literals are represented verbatim and lists as JSON arrays.
+When representing PN as JSON or YAML, it must first be converted to `Data` as described in
+section [PN represented as Data](#pn-represented-as-data) above.
 
 Examples:
-A PN `Map` represented as JSON:
 
-    {:a 2 :b 3 :c true} => { "#": ["a", 2, "b", 3, "c", true] }
+PN class | PN | JSON
+-----|----|-----
+`List` | `[1, 2, "a"]` |  `[1, 2, "a"]`
+`Map` | `{:a 2 :b 3 :c true}` | `{ "#": ["a", 2, "b", 3, "c", true] }`
+`Call` | `(myFunc 1 2 "b")` | `{ "^": [ "myFunc", 1, 2, "b" ] }`
 
-A PN `Call` represented as JSON:
+#### Puppet Expression transformed into PN and JSON
 
-    (myFunc 1 2 "b") => { "^": [ "myFunc", 1, 2, "b" ] }
+The Abstract Syntax Tree (AST) that is the result of parsing a Puppet Expression can be transformed
+into a PN.
+
+Examples:
+
+Puppet Expression | PN | JSON
+-----|----|-----
+`1 + 2 * 3` | `(+ 1 (* 2 3))` | `{ "^": [ "+", 1, { "^": [ "*", 2, 3 ]} ]}`
+`a * (2 + 3)` | `(* (qn "a") (paren (+ 2 3)))` | `{ "^": [ "*", { "^": [ "paren", { "^": [ "+", 1, 2 ]} ]} ]}`
+`"hello ${var}"` | `(concat "hello " (str (var "var")))` | `{ "^": [ "concat", "hello ", { "^": [ "str", { "^": [ "var", "var" ]} ]} ]}`
