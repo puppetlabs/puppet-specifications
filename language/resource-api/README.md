@@ -455,3 +455,7 @@ There is no way to access the catalog from the provider. Several existing types 
 ### Logging for unmanaged instances
 
 Previously, the provider could provide log messages for resource instances that were not passed into the `set` call. In the current implementation, these will cause an error.
+
+### Automatic relationships constrained to consts and attribute values
+
+The puppet3 type API allows arbitrary code execution for calculating automatic relationship targets. The current approach in the Resource API is more restrained, but allowes understanding the type's needs by inspecting the metadata. This is a tradeoff that can be easily revisited by adding a feature later to allow the provider to implement a custom transformation.
