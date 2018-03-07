@@ -34,6 +34,10 @@ Puppet::ResourceApi.register_type(
       behaviour: :namevar,
       desc:      'The ID of the key you want to manage.',
     },
+    source:      {
+      type: 'String',
+      desc: 'Where to retrieve the key from, can be a HTTP(s) URL, or a local file. Files get automatically required.',
+    },
     # ...
     created:     {
       type:      'String',
