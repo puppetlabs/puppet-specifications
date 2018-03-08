@@ -146,7 +146,26 @@ The `context` parameter is the same passed to `get` and `set`, which provides ut
 
 > Note: When the provider implements canonicalization, it aims to always log the canonicalized values. As a result of `get` and `set` producing and consuming canonically formatted values, this is not expected to present extra cost.
 
-> Note: A side effect of these rules is that the canonicalization of `get`'s return value must not change the processed values. Runtime environments may have strict or development modes that check this property.
+A side effect of these rules is that the canonicalization of `get`'s return value must not change the processed values. 
+Runtime environments may have strict or development modes that check this property.
+ 
+For example, in the Puppet runtime environment this is bound to the `strict` setting, and will follow the established practises there:
+
+```text
+# puppet resource --strict=error apt_key ensure=present 
+> runtime exception
+```
+
+```text
+# puppet resource --strict=warning apt_key ensure=present 
+> warning logged but values changed
+```
+
+```text
+# puppet resource --strict=off apt_key ensure=present 
+> values changed
+```
+
 
 ### Provider feature: `simple_get_filter`
 
