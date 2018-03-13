@@ -1,0 +1,224 @@
+Moving Non-Core Types & Providers
+=================
+
+## Index
+
+* [Goals](#goals)
+* [User Stories](#user-stories)
+* [File Path Changes](#file-path-changes)
+* [Resource Type Taxonomy](#resource-type-taxonomy)
+  * [Internal](#internal)
+  * [Core](#core)
+  * [External](#external)
+  * [Dependencies](#dependencies)
+* [Packaging](#packaging)
+
+# Goals
+
+* Remove non-core types and providers from the puppet repo and move them to modules. Doing so will reduce the surface area of puppet, decrease puppet CI cycle times, while making the extracted types and providers more accessible to community members and increasing their maintainability.
+* Continue to bundle some modules with puppet-agent during packaging so that users have a batteries-included experience.
+
+# User Stories
+
+## Serverless Puppet
+
+As an admin, I want to run masterless puppet and immediately be able to manage basic resources on my system, so that I can more quickly get value from puppet. I do not want to search the forge in order to perform basic system tasks. The preinstalled modules should make sense for the local platform I'm running puppet on. On *nix, I should be able to manage cron, and on Windows, powershell resources.
+
+## Server-based Catalog Compilation
+
+As an admin, I should be able to compile catalogs for resources whose types are included in the locally installed puppet-agent package, so that I don't have to install modules I already have.
+
+## Server-based Catalog Application
+
+As an admin, if catalog compilation succeeds, then I want assurance that the catalog will be applied consistently across all agent versions regardless of which preinstalled modules are on each agent. For example, if the master has a newer version of a type, then all agents in that environment should use the same version of the type (and its provider) at catalog application time.
+
+## Module Updates
+
+As an admin, if there is a problem with a type/provider packaged with puppet-agent, I want to be able to install a newer version from the forge (for both serverless and server-based), so that I don't need to wait for Puppet to release a new puppet-agent build.
+
+ ## Puppet-Agent Updates
+
+As an admin, when the puppet-agent package is updated, I want to be able to use the new versions of types and providers that come with the new package, even if that means overwriting and deleting older preinstalled versions. However, installing a new puppet-agent package should not clobber modules I've installed via puppet module tool, r10k, etc.
+
+## Module Pinning
+
+As an admin, if I update the puppet-agent package, and it updates a preinstalled module, but the module introduces a regression, I want to easily install the older version of the module from the forge.  I don't want to be forced to downgrade puppet-agent packages, because that process introduces more risk.
+
+# File Path Changes
+
+Puppet's default `basemodulepath` includes two module directories visible to all environments:
+
+    /etc/puppetlabs/code/modules
+    /opt/puppetlabs/puppet/modules
+
+The first is where modules are typically installed to via puppet module tool, r10k, codemanager/filesync. The second path typically contains modules that are installed in PE environments, though there is nothing stopping users from manually installing modules there, e.g. `puppet module tool install puppetlabs-apt --target-dir /opt/puppetlabs/puppet/modules`. It is important that preinstalled modules do not use those same locations, otherwise, it will confuse package managers.
+
+We propose a new directory `/opt/puppetlabs/puppet/vendored_modules` to be created at puppet-agent installation time and containing all modules added to puppet-agent at packaging. The directory should be appended to the default `basemodulepath` so that the modules are available during compilation and application.
+
+# Resource Type Taxonomy
+
+## Internal
+
+The following types are internal to Puppet and will remain as is:
+
+    component
+    schedule
+    stage
+    whit
+
+## Core
+
+The following types will be left in Puppet for now. The `file`, `user`, and `group` types are needed to apply settings catalogs. The `filebucket`, `resources`, and `tidy` types know too much about puppet internals to be removed. The `notify` type is used extensively in puppet rspec tests as it is the most basic (providerless) type. The `package` and `service` types have multiple providers for each type, which makes removal more difficult. We may remove them at a later time (TBD).
+
+    exec
+    file
+    filebucket
+    group
+    notify
+    package
+    resources
+    service
+    tidy
+    user
+
+## External
+
+The following types and providers will be removed from Puppet. A subset (details TBD below) will be added back to puppet-agent during packaging.
+
+Each top-level path below specifies the name of the module, e.g. `augeas`, and the files contained within each module. The modules will be installed in a new directory visible to Puppet's autoloader, so catalog compilation and application will just work without additional configuration. Puppet will prefer modules in the modulepath and pluginsync'ed lib directory over the packaged modules, so that newer versions of modules can fix bugs in packaged modules.
+
+    Path                                           Comments
+
+    <vendored_modules>/                            (*nix) /opt/puppetlabs/puppet/vendored_modules/
+                                                   (Windows) C:\Program Files\Puppet Labs\Puppet\puppet\vendored_modules
+
+      augeas/                                      Depends on 'puppet/parameter/boolean'
+        lib/puppet/feature/augeas.rb               Extracted from lib/puppet/features/base.rb        
+        lib/puppet/type/augeas.rb
+        lib/puppet/provider/augeas/augeas.rb
+
+      cron/                                        Depends on 'puppet/provider/parsedfile',
+        lib/puppet/type/cron.rb                               'puppet/util/filetype'
+
+      host/                                        Depends on 'puppet/property/ordered_list',
+        lib/puppet/type/host.rb                               'puppet/provider/parsedfile',
+        lib/puppet/provider/host/parsed.rb
+
+      k5login/                                     Depends on 'puppet/type/file/selcontext',
+        lib/puppet/type/k5login.rb                            'puppet/util/selinux'
+                                                              
+      mailalias/                                   Depends on 'puppet/provider/parsedfile'
+        lib/puppet/type/mailalias.rb
+        lib/puppet/provider/mailalias/aliases.rb
+     
+      maillist/
+        lib/puppet/type/maillist.rb
+        lib/puppet/provider/maillist/maillist.rb
+
+      macdslocal/                                  Depends on 'puppet/provider/nameservice/directory_service',
+        lib/puppet/type/                                      'puppet/util/plist'
+          computer.rb
+          macauthorization.rb
+          mcx.rb
+        lib/puppet/provider/
+          computer.rb
+          macauthorization.rb
+          mcxcontent.rb
+
+      mount/                                       Depends on 'puppet/property/boolean',
+        lib/puppet/type/mount.rb                              'puppet/provider/parsedfile'
+        lib/puppet/provider/mount.rb
+        lib/puppet/provider/mount/parsed.rb
+
+      nagios/                                      Depends on 'puppet/provider/parsedfile'
+        lib/puppet/external/nagios.rb
+        lib/puppet/external/nagios/
+          base.rb
+          grammer.py
+          makefile
+          parser.rb
+        lib/puppet/type/
+          nagios_*.rb
+        lib/puppet/provider/naginator.rb          
+        lib/puppet/util/nagios_maker.rb
+
+      network_device/
+        lib/puppet/feature/telnet.rb
+        lib/puppet/type/
+          router.rb
+          interface.rb
+          vlan.rb
+        lib/puppet/provider/
+          cisco.rb
+          interface/cisco.rb
+          vlan/cisco.rb
+        lib/puppet/util/
+          network_device.rb
+          network_device/*
+
+      scheduled_task/                             Depends on 'puppet/util/windows'
+        lib/puppet/type/scheduled_task.rb
+        lib/puppet/provider/scheduled_task/win32_taskscheduler.rb
+        lib/puppet/util/windows/taskscheduler.rb
+      
+      selinux/                                    Depends on 'puppet/type/file/selcontext',
+        lib/puppet/feature/selinux.rb                        'puppet/util/selinux'
+        lib/puppet/type/
+          selboolean.rb
+          selmodule.rb
+        lib/puppet/provider/
+          selmodule/seboolean.rb
+          selmodule/semodule.rb
+
+      sshkeys/                                    Depends on 'puppet/provider/parsed'
+        lib/puppet/type/
+         sshkey.rb
+         ssh_authorized_key.rb
+        lib/puppet/provider/
+         sshkey/parsed.rb
+         ssh_authorized_key/parsed.rb
+
+      yumrepo/                                    Depends on 'puppet/util/filetype'
+        lib/puppet/type/yumrepo.rb
+        lib/puppet/provider/yumrepo/inifile.rb
+        lib/puppet/util/inifile.rb
+
+      zfs/
+        lib/puppet/type/zfs.rb
+        lib/puppet/provider/zfs/zfs.rb    
+
+      zone/                                       Depends on 'puppet/property/list'
+        lib/puppet/type/zone.rb
+        lib/puppet/provider/zone/zone.rb    
+
+      zpool/
+        lib/puppet/type/zpool.rb
+        lib/puppet/provider/zpool/zpool.rb
+
+## Dependencies
+
+The following classes are public API used by the above modules.
+
+    Puppet::Error
+    Puppet::FileSystem
+    Puppet::Parameter
+    Puppet::Property
+    Puppet::Resource
+    Puppet::Settings
+    Puppet::Type
+    Puppet::Util
+
+The following classes are specific to a few different types and providers, which makes removing them difficult:
+
+    Puppet::Provider::NameService::DirectoryService  Used by mac user and group providers
+    Puppet::Type::File::SelContext                   Used by :file, :k5login and :sel*
+    Puppet::Util::FileType                           Used by :cron, :yumrepo
+    Puppet::Util::PList                              Used by mac types
+    Puppet::Util::SELinux                            Used by :file, :k5login and :sel*
+    Puppet::Util::Windows                            Used by various windows types
+
+# Packaging
+
+This section lists which modules will be preinstalled in puppet-agent by platform family:
+
+TBD
