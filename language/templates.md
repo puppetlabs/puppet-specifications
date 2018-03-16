@@ -69,11 +69,11 @@ Below is the EPP Specific part of the Puppet Language Grammar, where parts of th
     statements
        : ... # All statements in the Puppet Programming Language (structure not shown)
        | primary_expression
-       
+
     primary_expression
       : ... # all expressions that are primary expression in the Puppet Language (not shown)
       | epp_render_expression
-      
+
     epp_expression
       : EPP_START epp_parameters_list? statements?
 
@@ -127,7 +127,7 @@ This means that it is not possible to assign the result of verbatim text or to p
 text as an argument in a function call.
 
     <% $a = %> text <%= $a %>
-    
+
 This produces the result `" text "`. The first assignment to `$a` sets `$a` to `undef`, and the second will interpolate an empty string since `$a` is `undef`.
 
     <% notice ( "a", %> text <%, "b" ) %>
@@ -143,10 +143,25 @@ This will notice `"a  b"`, because the verbatim text produces `undef`.
 | `<%%` | A literal `<%` is rendered, mode does not change |
 | `%%>` | A literal `%>` is rendered, mode does not change |
 | `<%-` | Switches to puppet mode. Whitespace text immediately preceding the tag, up to but not including a new line, is not rendered. |
-| `<%#` | A comment not included in the output (up to the next `%>`, or right trimming `-%>`). Continues in text mode after having skipped the comment.Always left trims whitespace on the same line, and may optionally right trim by ending the tag with `-%>`. |
+| `<%#` | A comment not included in the output (up to the next `%>`, or right trimming `-%>`). Continues in text mode after having skipped the comment. May optionally right trim by ending the tag with `-%>`. |
+| `<%#-` | Same as `<%#` but with trimming of all preceding whitespace on the same line.|
 | `%>` | Ends puppet mode |
 | `-%>` | Ends puppet mode and trims any generated trailing whitespace as well as whitespace immediately following the tag, up to, and including a newline. |
 
+
+Note:
+* Before Puppet 6.0.0 an EPP comment `<%#` always trimmed all preceding whitespace on the same line. From Puppet 6.0.0 it does not
+  and `<%#-` should instead be used if this is wanted.
+* Left trimming EPP comment `<%#-` is available from Puppet 6.0.0.
+* If using a non EPP single line comment it consumes the entire line including text that looks like EPP tags. Such an EPP must be
+  closed on a separate line.
+```
+<%-# this is a puppet language comment and it goes to new line %> and thus continues here
+-%>
+* If using non EPP multi line comment it consumes all text between `/*` and `*/` including any EPP tags.
+```
+<% /* this is puppet language comment, <% this is not EPP %>, and this is not a closing EPP %> */ %>
+```
 
 ### Examples
 
@@ -156,7 +171,7 @@ This will notice `"a  b"`, because the verbatim text produces `undef`.
     | END
 
 Produces a notice of the string "This is the droid you are looking for!"
-    
+
     $a = world
     notice inline_epp(@(END), {x => magic})
       <%-| $x |-%>
