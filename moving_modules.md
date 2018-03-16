@@ -15,14 +15,14 @@ Moving Non-Core Types & Providers
 
 # Goals
 
-* Remove non-core types and providers from the puppet repo and move them to modules. Doing so will reduce the surface area of puppet, decrease puppet CI cycle times, while making the extracted types and providers more accessible to community members and increasing their maintainability.
+* Extract non-core types and providers from the puppet repo and move them to modules. Doing so will reduce the surface area of puppet, decrease puppet CI cycle times, while making the extracted types and providers more accessible to community members and increasing their maintainability.
 * Continue to bundle some modules with puppet-agent during packaging so that users have a batteries-included experience.
 
 # User Stories
 
 ## Serverless Puppet
 
-As an admin, I want to run masterless puppet and immediately be able to manage basic resources on my system, so that I can more quickly get value from puppet. I do not want to search the forge in order to perform basic system tasks. The preinstalled modules should make sense for the local platform I'm running puppet on. On *nix, I should be able to manage cron, and on Windows, powershell resources.
+As an admin, I want to run masterless puppet and immediately be able to manage basic resources on my system, so that I can more quickly get value from puppet. I do not want to search the forge in order to perform basic system tasks. The preinstalled modules should make sense for the local platform I'm running puppet on. On \*nix, I should be able to manage cron, and on Windows, powershell resources.
 
 ## Server-based Catalog Compilation
 
@@ -36,13 +36,25 @@ As an admin, if catalog compilation succeeds, then I want assurance that the cat
 
 As an admin, if there is a problem with a type/provider packaged with puppet-agent, I want to be able to install a newer version from the forge (for both serverless and server-based), so that I don't need to wait for Puppet to release a new puppet-agent build.
 
- ## Puppet-Agent Updates
+## Puppet-Agent Updates
 
 As an admin, when the puppet-agent package is updated, I want to be able to use the new versions of types and providers that come with the new package, even if that means overwriting and deleting older preinstalled versions. However, installing a new puppet-agent package should not clobber modules I've installed via puppet module tool, r10k, etc.
 
 ## Module Pinning
 
 As an admin, if I update the puppet-agent package, and it updates a preinstalled module, but the module introduces a regression, I want to easily install the older version of the module from the forge.  I don't want to be forced to downgrade puppet-agent packages, because that process introduces more risk.
+
+## Environment Isolation
+
+As an admin, I want to be able to use deploy different versions of extracted modules in different environments without breaking environment isolation.
+
+## Module Contributor
+
+As an experienced puppet user, when I fix a bug in a puppet-maintained provider I use, I want to contribute that fix back upstream with a minimum of friction, so that I don't have to carry the patch to future versions of the agent.
+
+## Community Maintainer
+
+As a puppet community member with expertise in parts of the provider ecosystem, I want to manage the flow of fixes and contributions into the providers I care about, so that contributions and module releases can happen rapidly without requiring puppet core contributors to do a full agent release.
 
 # File Path Changes
 
@@ -53,7 +65,7 @@ Puppet's default `basemodulepath` includes two module directories visible to all
 
 The first is where modules are typically installed to via puppet module tool, r10k, codemanager/filesync. The second path typically contains modules that are installed in PE environments, though there is nothing stopping users from manually installing modules there, e.g. `puppet module tool install puppetlabs-apt --target-dir /opt/puppetlabs/puppet/modules`. It is important that preinstalled modules do not use those same locations, otherwise, it will confuse package managers.
 
-We propose a new directory `/opt/puppetlabs/puppet/vendored_modules` to be created at puppet-agent installation time and containing all modules added to puppet-agent at packaging. The directory should be appended to the default `basemodulepath` so that the modules are available during compilation and application.
+We propose a new directory `/opt/puppetlabs/puppet/vendor_modules` (which parallels ruby's `vendor_ruby`) to be created at puppet-agent installation time and containing all modules added to puppet-agent at packaging. The directory should be appended to the default `basemodulepath` so that the modules are available during compilation and application.
 
 # Resource Type Taxonomy
 
@@ -68,7 +80,7 @@ The following types are internal to Puppet and will remain as is:
 
 ## Core
 
-The following types will be left in Puppet for now. The `file`, `user`, and `group` types are needed to apply settings catalogs. The `filebucket`, `resources`, and `tidy` types know too much about puppet internals to be removed. The `notify` type is used extensively in puppet rspec tests as it is the most basic (providerless) type. The `package` and `service` types have multiple providers for each type, which makes removal more difficult. We may remove them at a later time (TBD).
+The following types will be left in Puppet for now. The `file`, `user`, and `group` types are needed to apply settings catalogs. The `filebucket`, `resources`, and `tidy` types know too much about puppet internals to be extracted. The `notify` type is used extensively in puppet rspec tests as it is the most basic (providerless) type. The `package` and `service` types have multiple providers for each type, which makes removal more difficult. We may extract them at a later time (TBD).
 
     exec
     file
@@ -83,14 +95,14 @@ The following types will be left in Puppet for now. The `file`, `user`, and `gro
 
 ## External
 
-The following types and providers will be removed from Puppet. A subset (details TBD below) will be added back to puppet-agent during packaging.
+The following types and providers will be extracted from Puppet. A subset (details TBD below) will be added back to puppet-agent during packaging.
 
 Each top-level path below specifies the name of the module, e.g. `augeas`, and the files contained within each module. The modules will be installed in a new directory visible to Puppet's autoloader, so catalog compilation and application will just work without additional configuration. Puppet will prefer modules in the modulepath and pluginsync'ed lib directory over the packaged modules, so that newer versions of modules can fix bugs in packaged modules.
 
     Path                                           Comments
 
-    <vendored_modules>/                            (*nix) /opt/puppetlabs/puppet/vendored_modules/
-                                                   (Windows) C:\Program Files\Puppet Labs\Puppet\puppet\vendored_modules
+    <vendor_modules>/                              (*nix) /opt/puppetlabs/puppet/vendor_modules/
+                                                   (Windows) C:\Program Files\Puppet Labs\Puppet\puppet\vendor_modules
 
       augeas/                                      Depends on 'puppet/parameter/boolean'
         lib/puppet/feature/augeas.rb               Extracted from lib/puppet/features/base.rb        
@@ -208,7 +220,7 @@ The following classes are public API used by the above modules.
     Puppet::Type
     Puppet::Util
 
-The following classes are specific to a few different types and providers, which makes removing them difficult:
+The following classes are specific to a few different types and providers, which makes extracting them difficult:
 
     Puppet::Provider::NameService::DirectoryService  Used by mac user and group providers
     Puppet::Type::File::SelContext                   Used by :file, :k5login and :sel*
