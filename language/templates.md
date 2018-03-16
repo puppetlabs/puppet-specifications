@@ -143,10 +143,25 @@ This will notice `"a  b"`, because the verbatim text produces `undef`.
 | `<%%` | A literal `<%` is rendered, mode does not change |
 | `%%>` | A literal `%>` is rendered, mode does not change |
 | `<%-` | Switches to puppet mode. Whitespace text immediately preceding the tag, up to but not including a new line, is not rendered. |
-| `<%#` | A comment not included in the output (up to the next `%>`, or right trimming `-%>`). Continues in text mode after having skipped the comment.Always left trims whitespace on the same line, and may optionally right trim by ending the tag with `-%>`. |
+| `<%#` | A comment not included in the output (up to the next `%>`, or right trimming `-%>`). Continues in text mode after having skipped the comment. May optionally right trim by ending the tag with `-%>`. |
+| `<%#-` | Same as `<%#` but with trimming of all preceding whitespace on the same line.|
 | `%>` | Ends puppet mode |
 | `-%>` | Ends puppet mode and trims any generated trailing whitespace as well as whitespace immediately following the tag, up to, and including a newline. |
 
+
+Note:
+* Before Puppet 6.0.0 an EPP comment `<%#` always trimmed all preceding whitespace on the same line. From Puppet 6.0.0 it does not
+  and `<%#-` should instead be used if this is wanted.
+* Left trimming EPP comment `<%#-` is available from Puppet 6.0.0.
+* If using a non EPP single line comment it consumes the entire line including text that looks like EPP tags. Such an EPP must be
+  closed on a separate line.
+```
+<%-# this is a puppet language comment and it goes to new line %> and thus continues here
+-%>
+* If using non EPP multi line comment it consumes all text between `/*` and `*/` including any EPP tags.
+```
+<% /* this is puppet language comment, <% this is not EPP %>, and this is not a closing EPP %> */ %>
+```
 
 ### Examples
 
