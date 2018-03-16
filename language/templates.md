@@ -69,11 +69,11 @@ Below is the EPP Specific part of the Puppet Language Grammar, where parts of th
     statements
        : ... # All statements in the Puppet Programming Language (structure not shown)
        | primary_expression
-       
+
     primary_expression
       : ... # all expressions that are primary expression in the Puppet Language (not shown)
       | epp_render_expression
-      
+
     epp_expression
       : EPP_START epp_parameters_list? statements?
 
@@ -127,7 +127,7 @@ This means that it is not possible to assign the result of verbatim text or to p
 text as an argument in a function call.
 
     <% $a = %> text <%= $a %>
-    
+
 This produces the result `" text "`. The first assignment to `$a` sets `$a` to `undef`, and the second will interpolate an empty string since `$a` is `undef`.
 
     <% notice ( "a", %> text <%, "b" ) %>
@@ -156,7 +156,7 @@ This will notice `"a  b"`, because the verbatim text produces `undef`.
     | END
 
 Produces a notice of the string "This is the droid you are looking for!"
-    
+
     $a = world
     notice inline_epp(@(END), {x => magic})
       <%-| $x |-%>
