@@ -258,15 +258,15 @@ collision, just makes it less likely.
 ## Builtin Types
 
 The loaders register builtin types based on
-`Puppet::Pops::Loader::StaticLoader#BUILTIN\_TYPE\_NAMES`. This is an
+`Puppet::Pops::Loader::StaticLoader#BUILTIN_TYPE_NAMES`. This is an
 optimization since we know the types exist in puppet and we don't need to scan
 the filesystem based on the per-environment modulepath. Any type removed from
-puppet, should be removed from `BUILTIN\_TYPE\_NAMES`. This will have an impact
+puppet, should be removed from `BUILTIN_TYPE_NAMES`. This will have an impact
 on compiler performance where the timeout is not unlimited.
 
 ## Environment Isolation
 
-All of the types extracted from puppet and removed from `BUILTIN\_TYPE\_NAMES`
+All of the types extracted from puppet and removed from `BUILTIN_TYPE_NAMES`
 above, will be subject to [environment
 isolation](https://puppet.com/docs/puppet/5.4/environment_isolation.html#environment-isolation)
 issues. Users that install newer versions of modules containing types that are
@@ -279,8 +279,8 @@ before.
 
 The autoloader does not rely on module metadata to load types. So any module
 that relies on an type, should just work in Puppet 6 provided the extracted
-module is vendored into puppet-agent (`augeas`), or the user installs the module
-(`nagios`).
+module is vendored into puppet-agent (eg `augeas`), or the user installs the module
+(eg `nagios`).
 
 ## Module Precedence
 
