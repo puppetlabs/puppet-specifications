@@ -12,6 +12,13 @@ Moving Non-Core Types & Providers
   * [External](#external)
   * [Dependencies](#dependencies)
 * [Packaging](#packaging)
+* [Technical Issues](#technical-issues)
+  * [Module Names](#module-names)
+  * [Builtin Types](#builtin-types)
+  * [Environment Isolation](#environment-isolation)
+  * [Module Dependencies](#module-dependencies)
+  * [Module Precedence](#module-precedence)
+  * [Agent Compatibility](#agent-compatibility)
 
 # Goals
 
@@ -104,30 +111,30 @@ Each top-level path below specifies the name of the module, e.g. `augeas`, and t
     <vendor_modules>/                              (*nix) /opt/puppetlabs/puppet/vendor_modules/
                                                    (Windows) C:\Program Files\Puppet Labs\Puppet\puppet\vendor_modules
 
-      augeas/                                      Depends on 'puppet/parameter/boolean'
+      augeas_core/                                 Depends on 'puppet/parameter/boolean'
         lib/puppet/feature/augeas.rb               Extracted from lib/puppet/features/base.rb        
         lib/puppet/type/augeas.rb
         lib/puppet/provider/augeas/augeas.rb
 
-      cron/                                        Depends on 'puppet/provider/parsedfile',
+      cron_core/                                   Depends on 'puppet/provider/parsedfile',
         lib/puppet/type/cron.rb                               'puppet/util/filetype'
 
-      host/                                        Depends on 'puppet/property/ordered_list',
+      host_core/                                   Depends on 'puppet/property/ordered_list',
         lib/puppet/type/host.rb                               'puppet/provider/parsedfile',
         lib/puppet/provider/host/parsed.rb
 
-      k5login/                                     Depends on 'puppet/type/file/selcontext',
+      k5login_core/                                Depends on 'puppet/type/file/selcontext',
         lib/puppet/type/k5login.rb                            'puppet/util/selinux'
                                                               
-      mailalias/                                   Depends on 'puppet/provider/parsedfile'
+      mailalias_core/                              Depends on 'puppet/provider/parsedfile'
         lib/puppet/type/mailalias.rb
         lib/puppet/provider/mailalias/aliases.rb
      
-      maillist/
+      maillist_core/
         lib/puppet/type/maillist.rb
         lib/puppet/provider/maillist/maillist.rb
 
-      macdslocal/                                  Depends on 'puppet/provider/nameservice/directory_service',
+      macdslocal_core/                             Depends on 'puppet/provider/nameservice/directory_service',
         lib/puppet/type/                                      'puppet/util/plist'
           computer.rb
           macauthorization.rb
@@ -137,12 +144,12 @@ Each top-level path below specifies the name of the module, e.g. `augeas`, and t
           macauthorization.rb
           mcxcontent.rb
 
-      mount/                                       Depends on 'puppet/property/boolean',
+      mount_core/                                  Depends on 'puppet/property/boolean',
         lib/puppet/type/mount.rb                              'puppet/provider/parsedfile'
         lib/puppet/provider/mount.rb
         lib/puppet/provider/mount/parsed.rb
 
-      nagios/                                      Depends on 'puppet/provider/parsedfile'
+      nagios_core/                                 Depends on 'puppet/provider/parsedfile'
         lib/puppet/external/nagios.rb
         lib/puppet/external/nagios/
           base.rb
@@ -154,7 +161,7 @@ Each top-level path below specifies the name of the module, e.g. `augeas`, and t
         lib/puppet/provider/naginator.rb          
         lib/puppet/util/nagios_maker.rb
 
-      network_device/
+      network_device_core/
         lib/puppet/feature/telnet.rb
         lib/puppet/type/
           router.rb
@@ -168,13 +175,13 @@ Each top-level path below specifies the name of the module, e.g. `augeas`, and t
           network_device.rb
           network_device/*
 
-      scheduled_task/                             Depends on 'puppet/util/windows'
+      scheduled_task_core/                         Depends on 'puppet/util/windows'
         lib/puppet/type/scheduled_task.rb
         lib/puppet/provider/scheduled_task/win32_taskscheduler.rb
         lib/puppet/util/windows/taskscheduler.rb
       
-      selinux/                                    Depends on 'puppet/type/file/selcontext',
-        lib/puppet/feature/selinux.rb                        'puppet/util/selinux'
+      selinux_core/                                Depends on 'puppet/type/file/selcontext',
+        lib/puppet/feature/selinux.rb                         'puppet/util/selinux'
         lib/puppet/type/
           selboolean.rb
           selmodule.rb
@@ -182,7 +189,7 @@ Each top-level path below specifies the name of the module, e.g. `augeas`, and t
           selmodule/seboolean.rb
           selmodule/semodule.rb
 
-      sshkeys/                                    Depends on 'puppet/provider/parsed'
+      sshkeys_core/                                Depends on 'puppet/provider/parsed'
         lib/puppet/type/
          sshkey.rb
          ssh_authorized_key.rb
@@ -190,20 +197,20 @@ Each top-level path below specifies the name of the module, e.g. `augeas`, and t
          sshkey/parsed.rb
          ssh_authorized_key/parsed.rb
 
-      yumrepo/                                    Depends on 'puppet/util/filetype'
+      yumrepo_core/                                Depends on 'puppet/util/filetype'
         lib/puppet/type/yumrepo.rb
         lib/puppet/provider/yumrepo/inifile.rb
         lib/puppet/util/inifile.rb
 
-      zfs/
+      zfs_core/
         lib/puppet/type/zfs.rb
-        lib/puppet/provider/zfs/zfs.rb    
+        lib/puppet/provider/zfs/zfs.rb
 
-      zone/                                       Depends on 'puppet/property/list'
+      zone_core/                                   Depends on 'puppet/property/list'
         lib/puppet/type/zone.rb
-        lib/puppet/provider/zone/zone.rb    
+        lib/puppet/provider/zone/zone.rb
 
-      zpool/
+      zpool_core/
         lib/puppet/type/zpool.rb
         lib/puppet/provider/zpool/zpool.rb
 
@@ -234,3 +241,77 @@ The following classes are specific to a few different types and providers, which
 This section lists which modules will be preinstalled in puppet-agent by platform family:
 
 TBD
+
+# Technical Issues
+
+## Module Names
+
+The puppet ecosystem contains modules that have the same name as some of the
+core types we want to extract: `augeas`, `cron`, `mount`, `selinux`. However,
+there can only be one version of a module installed per-environment (unless you
+use tricks like adding multiple directories to the `modulepath`). To avoid
+naming collisions, I'm proposing we append `_core` to all of the module names
+that we extract, e.g. `augeas_core`. This only changes the name of the module,
+not the names of the types contained within. Also it doesn't eliminate a
+collision, just makes it less likely.
+
+## Builtin Types
+
+The loaders register builtin types based on
+`Puppet::Pops::Loader::StaticLoader#BUILTIN\_TYPE\_NAMES`. This is an
+optimization since we know the types exist in puppet and we don't need to scan
+the filesystem based on the per-environment modulepath. Any type removed from
+puppet, should be removed from `BUILTIN\_TYPE\_NAMES`. This will have an impact
+on compiler performance where the timeout is not unlimited.
+
+## Environment Isolation
+
+All of the types extracted from puppet and removed from `BUILTIN\_TYPE\_NAMES`
+above, will be subject to [environment
+isolation](https://puppet.com/docs/puppet/5.4/environment_isolation.html#environment-isolation)
+issues. Users that install newer versions of modules containing types that are
+also vendored, should use `puppet generate types` to ensure types in one
+environment don't affect other environments. This isn't really a new concern,
+it's just that users haven't had to `puppet generate types` for builtin types
+before.
+
+## Module Dependencies
+
+The autoloader does not rely on module metadata to load types. So any module
+that relies on an type, should just work in Puppet 6 provided the extracted
+module is vendored into puppet-agent (`augeas`), or the user installs the module
+(`nagios`).
+
+## Module Precedence
+
+### Catalog Compilation
+
+It should be possible to install a new version of a module and have that take
+precedence over the `vendor_modules` directory during compilation (or `puppet
+apply`). That will require a change to the autoloader to search for types.
+
+### Pluginsync
+
+All modules visible in the current environment's modulepath should have their
+lib directories copied to the agent during pluginsync. If there are multiple
+versions of the same type installed (one in the `vendor_modules` directory,
+another in `$codedir/environments/production/modules`), then it's important that
+we pluginsync the same type/provider version as was used during compilation. So
+pluginsync and the compiler need to use the same precedence order when resolving
+types.
+
+### Catalog Application
+
+Agents may have different versions of vendored modules than the server used to
+compile the catalog. The agent should always use the pluginsync'ed version of
+the type and providers instead of whatever version is present in the agent's
+puppet-agent package.
+
+## Agent Compatibility
+
+Pre-6.0 agents will always prefer the builtin version over what was
+pluginsynced. If a new property/parameter is added to the type on the master and
+the manifest attempts to use that property/parameter, then old agents will not
+be able to apply the catalog. This is the same issue we had with virtual
+packages in puppet 4.x. Recommend users only deploy updated modules for builtin
+types in environments where there are only Puppet 6+ agents.
