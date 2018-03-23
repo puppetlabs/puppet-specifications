@@ -26,6 +26,24 @@
     "parameters": {
       "$ref": "#/definitions/paramsObject",
       "description": "An object mapping valid parameter names to corresponding json-schemas"
+    },
+    "implementations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "requirements": {
+            "type": "array",
+            "additionalItems": {
+              "type": "string"
+            }
+          }
+        }
+      }
     }
   },
   "definitions": {

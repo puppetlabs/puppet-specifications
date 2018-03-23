@@ -34,11 +34,9 @@ Tasks are packaged and distributed in the `/tasks` directory of a Puppet module.
 - Tasks are referred to as `module_name::task_name`.
 - Tasks must exist at the top level of the tasks directory to be found.
 - Task metadata is stored in `task_name.json` and is optional.
-- The executable for the task must be stored in `task_name` or `task_name.<extension>`(where extension != `json`, `md` or `conf`).
+- All executables for the task must be stored in `task_name` or `task_name.<extension>`(where extension != `json`, `md` or `conf`).
 - The presence or absence of an execute bit should be ignored by the task runner when finding task files and metadata.
 - The name `init` and `init.<extension>` are treated specially and the init task may be referred to by the shorthand `module_name`.
-
-A task with multiple executable files will be considered invalid.
 
 Tools for validating this metadata and making local task execution easier when testing will eventually be added to the PDK.
 
@@ -62,6 +60,8 @@ The preferred style of the keys should be `snake_case`.
 
 **parameters**:  The parameters or input the task accepts listed with a [Puppet data type](../language/types_values_variables.md) string and optional description. Top level params names have the same restrictions as Puppet class param names and must match `\A[a-z][a-z0-9_]*\z`.
 
+**implementations**: A list of implementation files in preference order, along with an optional list of required features for that implementation to be suitable on a target.
+
 #### Example
 
 ```json
@@ -80,7 +80,11 @@ The preferred style of the keys should be `snake_case`.
       "description": "Description of optional param3",
       "type": "Optional[Integer]"
     }
-  }
+  },
+  "implementations" : [
+    {"name": "foo.sh", "requirements": ["shell"]},
+    {"name": "foo.ps1", "requirements": ["powershell"]}
+  ]
 }
 ```
 
@@ -100,7 +104,11 @@ If a parameter type accepts `null` the task runner will accept either a `null` v
 
 ## Task execution
 
-The task file is copied to the target and then executed on the target by the task runner.
+If the task has multiple executable files, the `implementations` field of the metadata is used to determine which executable is suitable for the target. Each implementation can specify `requirements`, which is an array of the required "features" to use that implementation. The available features are defined by the task runner.
+
+If the task has a single executable file and doesn't use the `implementations` field, that executable will be used on every target.
+
+The task executable is copied to the target and then executed on the target by the task runner.
 
 No arguments are passed to the task when it is executed.
 
