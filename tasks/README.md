@@ -33,10 +33,11 @@ Tasks are packaged and distributed in the `/tasks` directory of a Puppet module.
 - Filenames not matching the task name regular expression will be ignored.
 - Tasks are referred to as `module_name::task_name`.
 - Tasks must exist at the top level of the tasks directory to be found.
-- Task metadata is stored in `task_name.json` and is optional.
-- All executables for the task must be stored in `task_name` or `task_name.<extension>`(where extension != `json`, `md` or `conf`).
+- Task metadata is stored in `task_name.json`.
+- By default, the task executable must be named according to the task (`task_name` or `task_name.<extension>`). Task metadata may specify different executables.
+- The `json`, `md`, and `conf` extensions are forbidden for task executables.
 - The presence or absence of an execute bit should be ignored by the task runner when finding task files and metadata.
-- The name `init` and `init.<extension>` are treated specially and the init task may be referred to by the shorthand `module_name`.
+- The filenames `init` and `init.<extension>` are treated specially and the init task may be referred to by the shorthand `module_name`.
 
 Tools for validating this metadata and making local task execution easier when testing will eventually be added to the PDK.
 
@@ -102,6 +103,10 @@ Any parameter that does not specify a type will accept any value (default type i
 
 If a parameter type accepts `null` the task runner will accept either a `null` value or the absence of the property. Task authors must accept missing properties for nullable parameters. Task authors must not differentiate between absent properties and properties with `null` values.
 
+### Metaparameters
+
+In addition to the tasks parameters, the task runner may inject metaparameters prefixed by '_'. These include `_noop` and `_task`.
+
 ## Task execution
 
 If the task has multiple executable files, the `implementations` field of the metadata is used to determine which executable is suitable for the target. Each implementation can specify `requirements`, which is an array of the required "features" to use that implementation. The available features are defined by the task runner.
@@ -135,8 +140,6 @@ In the future we may support other formats and methods for passing params to the
 ### Stdin
 
 The parameters are passed to the task in a JSON object on `stdin`.
-
-In addition to the tasks parameters, the task runner may inject metaparameters prefixed by '_', for example `_noop`.
 
 ### Environment Variables
 
