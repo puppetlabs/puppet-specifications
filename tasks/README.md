@@ -59,7 +59,7 @@ The preferred style of the keys should be `snake_case`.
 
 **parameters**:  The parameters or input the task accepts listed with a [Puppet data type](../language/types_values_variables.md) string and optional description. Top level params names have the same restrictions as Puppet class param names and must match `\A[a-z][a-z0-9_]*\z`.
 
-**implementations**: A list of implementation files in preference order, along with an optional list of required features for that implementation to be suitable on a target.
+**implementations**: A list of implementation files in preference order, along with an optional list of required features for that implementation to be suitable on a target. The available features are defined by the task runner, but task runners should define at least the `shell`, `powershell` and `puppet-agent` features.
 
 #### Example
 
@@ -107,7 +107,7 @@ In addition to the tasks parameters, the task runner may inject metaparameters p
 
 ## Task execution
 
-If the task has multiple implementation files, the `implementations` field of the metadata is used to determine which implementation is suitable for the target. Each implementation can specify `requirements`, which is an array of the required "features" to use that implementation. The available features are defined by the task runner.
+If the task has multiple implementation files, the `implementations` field of the metadata is used to determine which implementation is suitable for the target. Each implementation can specify `requirements`, which is an array of the required "features" to use that implementation.
 
 If the task has a single implementation file and doesn't use the `implementations` field, that implementation will be used on every target.
 
