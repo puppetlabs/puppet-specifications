@@ -204,15 +204,13 @@ Each top-level path below specifies the name of the module, e.g. `augeas`, and t
 
       zfs_core/
         lib/puppet/type/zfs.rb
+        lib/puppet/type/zpool.rb
         lib/puppet/provider/zfs/zfs.rb
+        lib/puppet/provider/zpool/zpool.rb
 
       zone_core/                                   Depends on 'puppet/property/list'
         lib/puppet/type/zone.rb
         lib/puppet/provider/zone/zone.rb
-
-      zpool_core/
-        lib/puppet/type/zpool.rb
-        lib/puppet/provider/zpool/zpool.rb
 
 ## Dependencies
 
