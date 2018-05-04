@@ -245,6 +245,17 @@ end
 
 Declaring this feature restricts the resource from being run "locally". It is expected to execute all external interactions through the `context.device` instance. The way that instance is set up is runtime specific. In Puppet, it is configured through the [`device.conf`](https://puppet.com/docs/puppet/5.3/config_file_device.html) file, and only available when running under [`puppet device`](https://puppet.com/docs/puppet/5.3/man/device.html). It is recommended to use `Puppet::Util::NetworkDevice::Simple::Device` as the base class for all devices, which automatically loads a configuration from the local filesystem of the proxy node where it is running on.
 
+## SimpleProvider Class
+
+SimpleProvider is a provider class template on which to extend or modify. It provides an insight into how Resource API provides data to your provider through the `context`, `changes`, `is` and `should` parameters.
+
+SimpleProvider requires that your type follows some common conventions:
+
+* `name` is the name of your namevar attribute
+* `ensure` attribute is present and is of the `Enum[absent, present]` type
+
+Once these conventions are in place the `set` method will be able to call either: `create`, `update` or `delete` methods. SimpleProvider does not implement these methods.
+
 ## Runtime environment
 
 The primary runtime environment for the provider is the Puppet agent, a long-running daemon process. The provider can also be used in the Puppet apply command, a one-shot version of the agent, or the Puppet resource command, a short-lived command line interface (CLI) process for listing or managing a single resource type. Other callers who want to access the provider will have to imitate these environments.
