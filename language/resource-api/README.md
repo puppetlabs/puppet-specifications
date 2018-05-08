@@ -406,6 +406,35 @@ A single `set()` execution may only log messages for instances that have been pa
 
 The provider is free to call different logging methods for different resources in any order it needs to. The only ordering restriction is for all calls specifying the same `title`. The `attribute_changed` logging needs to be done before that resource's action logging, and if a context is opened, needs to be opened before any other logging for this resource.
 
+#### Type Definition
+
+The provider can gain insight into the Type definition through `context.type` utility methods:
+
+  * `attributes`
+  * `ensurable?`
+  * `feature?(feature)`
+  
+`attributes` returns a hash containing the type attributes and their properties.
+
+`ensurable?` will return true if the type contains the `ensure` attribute.
+
+`feature?` will return true if the type supports a given [Provider Feature](#provider-features).
+
+```
+# example from simple_provider.rb
+
+def set(context, changes)
+  changes.each do |name, change|
+  is = if context.type.feature?('simple_get_filter')
+         change.key?(:is) ? change[:is] : (get(context, [name]) || []).find { |r| r[:name] == name }
+       else
+         change.key?(:is) ? change[:is] : (get(context) || []).find { |r| r[:name] == name }
+       end
+  ...
+
+end
+```
+
 ## Known limitations
 
 This API is not a full replacement for the power of 3.x style types and providers. Here is an (incomplete) list of missing pieces and thoughts on how to solve these. The goal of the new Resource API is not to be a replacement of the prior one, but to be a simplified way to get results for the majority of use cases.
