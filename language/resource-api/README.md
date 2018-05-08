@@ -112,6 +112,43 @@ The `set` method should always return `nil`. Any progress signaling should be do
 
 Both methods take a `context` parameter which provides utilties from the runtime environment, and is decribed in more detail there.
 
+## Implementing simple providers
+
+In many cases, the resource type follows the conventional patterns of puppet, and does not gain from the complexities around batch-processing changes. For those cases, the `SimpleProvider` class supplies a proven foundation that reduces the amount of code necessary to get going.
+
+`SimpleProvider` requires that your type follows some common conventions:
+
+* `name` is the name of your namevar attribute
+* `ensure` attribute is present and has the `Enum[absent, present]` type
+
+To start using `SimpleProvider`, inherit from the class like this:
+
+```ruby
+require 'puppet/resource_api/simple_provider'
+
+# Implementation for the wordarray type using the Resource API.
+class Puppet::Provider::AptKey::AptKey < Puppet::ResourceApi::SimpleProvider
+  # ...
+```
+
+Once all of that is in place, instead of the `set` method, the provider needs to implement the `create`, `update` or `delete` methods:
+
+* `create(context, name, should)`: This is called when a new resource should be created.
+  * `context`: provides utilties from the runtime environment, and is decribed in more detail there.
+  * `name`: the name of the new resource.
+  * `should`: a hash of the attributes for the new instance.
+
+* `update(context, name, should)`: This is called when a resource should be updated.
+  * `context`: provides utilties from the runtime environment, and is decribed in more detail there.
+  * `name`: the name of the resource to change.
+  * `should`: a hash of the desired state of the attributes.
+
+* `delete(context, name)`: This is called when a resource should be deleted.
+  * `context`: provides utilties from the runtime environment, and is decribed in more detail there.
+  * `name`: the name of the resource that should be deleted.
+
+The `SimpleProvider` takes care of basic logging, and error handling.
+
 ## Provider features
 
 There are some use cases where an implementation provides a better experience than the default runtime environment provides. To avoid burdening the simplest providers with that additional complexity, these cases are hidden behind feature flags. To enable the special handling, the resource definition has a `feature` key to list all features implemented by the provider.
