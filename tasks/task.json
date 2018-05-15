@@ -49,6 +49,11 @@
           "type": {
             "description": "A puppet type string that describes a data type that will match the parameter value",
             "type": "string"
+          },
+          "sensitive": {
+            "description": "Whether the task runner should treat the parameter value as sensitive",
+            "type": "boolean",
+            "default": false
           }
         }
       }
