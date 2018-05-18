@@ -29,22 +29,19 @@ Tasks are packaged and distributed in the `/tasks` directory of a Puppet module.
 
 ### Task name and filename
 
-- Task names have the same restriction as puppet type names and must match the regular expression `\A[a-z][a-z0-9\_]*\z`.
-- Filenames not matching the task name regular expression will be ignored.
-- Tasks are referred to as `module_name::task_name`.
-- Tasks must exist at the top level of the tasks directory to be found.
-- Task metadata is stored in `task_name.json` and is optional.
-- The executable for the task must be stored in `task_name` or `task_name.<extension>`(where extension != `json`, `md` or `conf`).
-- The presence or absence of an execute bit should be ignored by the task runner when finding task files and metadata.
-- The name `init` and `init.<extension>` are treated specially and the init task may be referred to by the shorthand `module_name`.
+A task consists of an optional metadata file and one or more implementation files. Files with the `.json` extensions are metadata files, and any other file extension (including files with no extension) is an implementation file. Implementation files do not need the executable bit set.
 
-A task with multiple executable files will be considered invalid.
+An implementation file `<task>.<ext>` without a corresponding metadata file `<task>.json` is a task.
 
-Tools for validating this metadata and making local task execution easier when testing will eventually be added to the PDK.
+A metadata file `<task>.json` also identifies a task. If the metadata specifies an `implementations` array, then the files listed in that array are the implementations for the task. Otherwise, there must be one corresponding implementation file `<task>.<ext>`.
+
+Task names have the same restriction as puppet type names and must match the regular expression `\A[a-z][a-z0-9\_]*\z`. The extensions `.md` and `.conf` are forbidden. Only files at the top level of the `tasks` directory matching the task name regular expression are used; all other files are ignored.
+
+The canonical name of a task is `<module_name>::<task>`. The `init` task is treated specially, and may be referred to by the shorthand `<module_name>`.
 
 ### Task metadata
 
-Task metadata is stored in `/tasks` dir in the module in `task_name.json` with `UTF-8` encoding.
+Task metadata is stored in `/tasks` dir in the module in `<task>.json` with `UTF-8` encoding.
 
 All fields should have reasonable defaults so that writing metadata is optional. Metadata defaults should err towards security.
 
@@ -61,6 +58,8 @@ The preferred style of the keys should be `snake_case`.
 **input_method**: What input method to use to pass parameters to the task. Default varies, see [Input Methods](#input-methods).
 
 **parameters**:  The parameters or input the task accepts listed with a [Puppet data type](../language/types_values_variables.md) string and optional description. Top level params names have the same restrictions as Puppet class param names and must match `\A[a-z][a-z0-9_]*\z`.
+
+**implementations**: A list of implementation files in preference order, along with an optional list of required features for that implementation to be suitable on a target. The available features are defined by the task runner, but task runners should define at least the `shell`, `powershell` and `puppet-agent` features.
 
 #### Example
 
@@ -80,7 +79,11 @@ The preferred style of the keys should be `snake_case`.
       "description": "Description of optional param3",
       "type": "Optional[Integer]"
     }
-  }
+  },
+  "implementations" : [
+    {"name": "foo.sh", "requirements": ["shell"]},
+    {"name": "foo.ps1", "requirements": ["powershell"]}
+  ]
 }
 ```
 
@@ -98,15 +101,23 @@ Any parameter that does not specify a type will accept any value (default type i
 
 If a parameter type accepts `null` the task runner will accept either a `null` value or the absence of the property. Task authors must accept missing properties for nullable parameters. Task authors must not differentiate between absent properties and properties with `null` values.
 
+### Metaparameters
+
+In addition to the tasks parameters, the task runner may inject metaparameters prefixed by '_'. These include `_noop` and `_task`.
+
 ## Task execution
 
-The task file is copied to the target and then executed on the target by the task runner.
+If the task has multiple implementation files, the `implementations` field of the metadata is used to determine which implementation is suitable for the target. Each implementation can specify `requirements`, which is an array of the required "features" to use that implementation.
+
+If the task has a single implementation file and doesn't use the `implementations` field, that implementation will be used on every target.
+
+The task implementation is copied to the target and then executed on the target by the task runner.
 
 No arguments are passed to the task when it is executed.
 
 The task file in the module does not need execute permissions set.
 
-The location of the task file varies based on the transport used by the task runner. Task authors have no control over this path.
+The location of the task file on the target varies based on the transport used by the task runner. Task authors have no control over this path.
 
 The operating environment the task is executed in (such as environment variables set and user privilege) is also controlled by the task runner. Task authors should document any requirements they have.
 
@@ -127,8 +138,6 @@ In the future we may support other formats and methods for passing params to the
 ### Stdin
 
 The parameters are passed to the task in a JSON object on `stdin`.
-
-In addition to the tasks parameters, the task runner may inject metaparameters prefixed by '_', for example `_noop`.
 
 ### Environment Variables
 
