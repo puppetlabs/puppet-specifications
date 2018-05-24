@@ -70,6 +70,75 @@ The `Puppet::ResourceApi.register_type(options)` function takes the following ke
 
 For autoloading work, this code needs to go into `lib/puppet/type/<name>.rb` in your module.
 
+###  Composite Namevars ("title_patterns")
+
+Each resource being managed must be identified by a unique title. Usually this is fairly straightforward and a single attribute can be used to act as an identifier. Sometimes though, you need a composite of two attributes to uniquely identify the resource you want to manage.
+
+If multiple attributes are defined with the `namevar` behaviour, the type SHOULD specify `title_patterns` that will tell Resource API how to get at the attributes from the title. If `title_patterns` is not specified a default pattern is applied, and matches against the first declared `namevar`.
+
+
+> Note: The order of title_patterns is important. You should declare the most specific pattern first and end with the most generic.
+
+Each title pattern contains the:
+  * `pattern`, which is a ruby regex containing named captures. The names of the captures MUST be that of the namevar attributes.
+  * `desc`, a short description of what the pattern matches for.
+
+Example:
+
+```ruby
+Puppet::ResourceApi.register_type(
+  name: 'software',
+  docs: <<-DOC,
+    This type provides Puppet with the capabilities to manage ...
+  DOC
+  title_patterns: [
+    {
+      pattern: %r{^(?<package>.*[^-])-(?<manager>.*)$},
+      desc: 'Where the package and the manager are provided with a hyphen seperator',
+    },
+    {
+      pattern: %r{^(?<package>.*)$},
+      desc: 'Where only the package is provided',
+    },
+  ],
+  attributes:   {
+    ensure:      {
+      type:    'Enum[present, absent]',
+      desc:    'Whether this resource should be present or absent on the target system.',
+      default: 'present',
+    },
+    package:        {
+      type:      'String',
+      desc:      'The name of the package you want to manage.',
+      behaviour: :namevar,
+    },
+    manager:        {
+      type:      'String',
+      desc:      'The system used to install the package.',
+      behaviour: :namevar,
+    },
+  },
+)
+```
+
+Matches the first title pattern:
+```puppet
+software { php-yum:
+  ensure=>'present'
+}
+
+software { php-gem:
+  ensure=>'absent'
+}
+```
+Matches the second title pattern:
+```puppet
+software { php:
+  manager='yum'
+  ensure=>'present'
+}
+```
+
 ## Resource implementation ("provider")
 
 To affect changes, a resource requires an implementation that makes the universe's state available to Puppet, and causes the changes to bring reality to whatever state is requested in the catalog. The two fundamental operations to manage resources are reading and writing system state. These operations are implemented as `get` and `set`. The implementation itself is a basic Ruby class in the `Puppet::Provider` namespace, named after the type using CamelCase.
@@ -183,23 +252,23 @@ The `context` parameter is the same passed to `get` and `set`, which provides ut
 
 > Note: When the provider implements canonicalization, it aims to always log the canonicalized values. As a result of `get` and `set` producing and consuming canonically formatted values, this is not expected to present extra cost.
 
-A side effect of these rules is that the canonicalization of `get`'s return value must not change the processed values. 
+A side effect of these rules is that the canonicalization of `get`'s return value must not change the processed values.
 Runtime environments may have strict or development modes that check this property.
- 
+
 For example, in the Puppet runtime environment this is bound to the `strict` setting, and will follow the established practises there:
 
 ```text
-# puppet resource --strict=error apt_key ensure=present 
+# puppet resource --strict=error apt_key ensure=present
 > runtime exception
 ```
 
 ```text
-# puppet resource --strict=warning apt_key ensure=present 
+# puppet resource --strict=warning apt_key ensure=present
 > warning logged but values changed
 ```
 
 ```text
-# puppet resource --strict=off apt_key ensure=present 
+# puppet resource --strict=off apt_key ensure=present
 > values changed
 ```
 
@@ -450,7 +519,7 @@ The provider can gain insight into the Type definition through `context.type` ut
   * `attributes`
   * `ensurable?`
   * `feature?(feature)`
-  
+
 `attributes` returns a hash containing the type attributes and their properties.
 
 `ensurable?` will return true if the type contains the `ensure` attribute.
@@ -524,10 +593,6 @@ define package (
 ```
 
 Neither of these options are ideal; and are documented as a limitation. Improvement ideas include forward porting the status quo by enabling multiple implementations to register for the same definition, or allowing definitions to declare (partial) equivalence to other definitions (ala "apt::package is a package").
-
-### Composite namevars
-
-The current API does not provide a way to specify composite namevars - types with multiple namevars. [`title_patterns`](https://github.com/puppetlabs/puppet-specifications/blob/master/language/resource_types.md#title-patterns) are already very data driven, and will be easy to add at a later point.
 
 ### Puppet 4 data types
 
