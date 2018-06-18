@@ -57,7 +57,7 @@ The preferred style of the keys should be `snake_case`.
 
 **input_method**: What input method to use to pass parameters to the task. Default varies, see [Input Methods](#input-methods).
 
-**parameters**:  The parameters or input the task accepts listed with a [Puppet data type](../language/types_values_variables.md) string and optional description. Top level params names have the same restrictions as Puppet class param names and must match `\A[a-z][a-z0-9_]*\z`.
+**parameters**:  The parameters or input the task accepts listed with a [Puppet data type](../language/types_values_variables.md) string and optional description. Top level params names have the same restrictions as Puppet class param names and must match `\A[a-z][a-z0-9_]*\z`. Parameters may be `sensitive` in which case the task runner should hide their values in UI where possible.
 
 **implementations**: A list of implementation files in preference order, along with an optional list of required features for that implementation to be suitable on a target. The available features are defined by the task runner, but task runners should define at least the `shell`, `powershell` and `puppet-agent` features.
 
@@ -73,7 +73,8 @@ The preferred style of the keys should be `snake_case`.
     },
     "param2": {
       "description": "Description of what param2 does with an array of non-empty strings",
-      "type": "Array[String[0]]"
+      "type": "Array[String[0]]",
+      "sensitive": true
     },
     "param3": {
       "description": "Description of optional param3",
