@@ -34,16 +34,33 @@
         "required": ["name"],
         "properties": {
           "name": {
-            "type": "string"
+            "type": "string",
+            "description": "Name of task executable file"
           },
           "requirements": {
             "type": "array",
             "additionalItems": {
               "type": "string"
-            }
+            },
+            "description": "Features required on target to execute task"
+          },
+          "files": {
+            "type": "array",
+            "additionalItems": {
+              "type": "string"
+            },
+            "description": "File resources required by task"
           }
         }
-      }
+      },
+      "description": "Rules for selecting implementation resources based on features available on target"
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Path to file resources saved in valid module directory to be provided to task"
     }
   },
   "definitions": {
