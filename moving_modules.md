@@ -5,7 +5,7 @@ Moving Non-Core Types & Providers
 
 * [Goals](#goals)
 * [User Stories](#user-stories)
-* [File Path Changes](#file-path-changes)
+* [Changes](#changes)
 * [Resource Type Taxonomy](#resource-type-taxonomy)
   * [Internal](#internal)
   * [Core](#core)
@@ -24,6 +24,7 @@ Moving Non-Core Types & Providers
 
 * Extract non-core types and providers from the puppet repo and move them to modules. Doing so will reduce the surface area of puppet, decrease puppet CI cycle times, while making the extracted types and providers more accessible to community members and increasing their maintainability.
 * Continue to bundle some modules with puppet-agent during packaging so that users have a batteries-included experience.
+* Decrease the amount of effort required to add new supported platforms.
 
 # User Stories
 
@@ -53,7 +54,7 @@ As an admin, if I update the puppet-agent package, and it updates a preinstalled
 
 ## Environment Isolation
 
-As an admin, I want to be able to use deploy different versions of extracted modules in different environments without breaking environment isolation.
+As an admin, I want to be able to deploy different versions of extracted modules in different environments without breaking environment isolation.
 
 ## Module Contributor
 
@@ -63,16 +64,39 @@ As an experienced puppet user, when I fix a bug in a puppet-maintained provider 
 
 As a puppet community member with expertise in parts of the provider ecosystem, I want to manage the flow of fixes and contributions into the providers I care about, so that contributions and module releases can happen rapidly without requiring puppet core contributors to do a full agent release.
 
-# File Path Changes
+# Changes
 
-Puppet's default `basemodulepath` includes two module directories visible to all environments:
+## puppet repo
 
-    /etc/puppetlabs/code/modules
-    /opt/puppetlabs/puppet/modules
+Add a new puppet setting `vendormoduledir` defaulting to:
 
-The first is where modules are typically installed to via puppet module tool, r10k, codemanager/filesync. The second path typically contains modules that are installed in PE environments, though there is nothing stopping users from manually installing modules there, e.g. `puppet module tool install puppetlabs-apt --target-dir /opt/puppetlabs/puppet/modules`. It is important that preinstalled modules do not use those same locations, otherwise, it will confuse package managers.
+    /opt/puppetlabs/puppet/vendor_modules # On *nix
+    C:\Program Files\Puppet Labs\Puppet\puppet\vendor_modules # On Windows
 
-We propose a new directory `/opt/puppetlabs/puppet/vendor_modules` (which parallels ruby's `vendor_ruby`) to be created at puppet-agent installation time and containing all modules added to puppet-agent at packaging. The directory should be appended to the default `basemodulepath` so that the modules are available during compilation and application.
+The autoloader will include the `vendormoduledir` in its search path with least
+precedence.
+
+It will be possible to set `vendormoduledir = ` so that the autoloader ignores vendored
+modules. For example, if you want to manage all module dependencies via Puppetfile.
+
+All of the modules in the [`External`](#external) section below will be removed from the
+puppet repo and extracted into modules on the forge.
+
+## puppet-agent package
+
+Several of the external modules will be added to the puppet-agent package, e.g.
+`host`, and they will be installed into the `vendormoduledir`.
+
+## puppet gem
+
+When installing puppet as a gem, external modules will not be present. But
+they can be installed using a Puppetfile or `puppet module install` commands
+such as in the provisioning step of a vagrant workflow.
+
+## Forge
+
+We will be publishing extracted modules to the forge using the PDK and following
+modules best practices.
 
 # Resource Type Taxonomy
 
@@ -236,9 +260,25 @@ The following classes are specific to a few different types and providers, which
 
 # Packaging
 
-This section lists which modules will be preinstalled in puppet-agent by platform family:
+This section lists which modules will be vendored in puppet-agent:
 
-TBD
+    augeas
+    cron
+    host
+    mount
+    scheduled_task
+    selinux
+    sshkeys
+    yumrepo
+    zfs
+    zone
+
+The following internal types/providers will remain in puppet:
+
+    group
+    package
+    service
+    user
 
 # Technical Issues
 
@@ -265,8 +305,7 @@ on compiler performance where the timeout is not unlimited.
 ## Environment Isolation
 
 All of the types extracted from puppet and removed from `BUILTIN_TYPE_NAMES`
-above, will be subject to [environment
-isolation](https://puppet.com/docs/puppet/5.4/environment_isolation.html#environment-isolation)
+above, will be subject to [environment isolation](https://puppet.com/docs/puppet/5.4/environment_isolation.html#environment-isolation)
 issues. Users that install newer versions of modules containing types that are
 also vendored, should use `puppet generate types` to ensure types in one
 environment don't affect other environments. This isn't really a new concern,
@@ -276,7 +315,7 @@ before.
 ## Module Dependencies
 
 The autoloader does not rely on module metadata to load types. So any module
-that relies on an type, should just work in Puppet 6 provided the extracted
+that relies on a type, should just work in Puppet 6 provided the extracted
 module is vendored into puppet-agent (eg `augeas`), or the user installs the module
 (eg `nagios`).
 
@@ -290,26 +329,30 @@ apply`). That will require a change to the autoloader to search for types.
 
 ### Pluginsync
 
-All modules visible in the current environment's modulepath should have their
-lib directories copied to the agent during pluginsync. If there are multiple
-versions of the same type installed (one in the `vendor_modules` directory,
-another in `$codedir/environments/production/modules`), then it's important that
-we pluginsync the same type/provider version as was used during compilation. So
-pluginsync and the compiler need to use the same precedence order when resolving
-types.
+It is difficult to make changes to builtin types, because they are not
+pluginsync'ed from the master to agents. As a result, you can have situations
+where compilation succeeds, but catalog application on an older puppet agent
+fails, because the old agent doesn't understand the newer `property`. For
+example, we had that problem when we added the `virtual` property to the
+`package` type.
 
-### Catalog Application
+To eliminate this problem we could pluginsync vendored modules. However, it
+would cause agents to pluginsync types and providers they often already have,
+and it means the vendored modules need to be compatible with all agents that
+connect to the master.
 
-Agents may have different versions of vendored modules than the server used to
-compile the catalog. The agent should always use the pluginsync'ed version of
-the type and providers instead of whatever version is present in the agent's
-puppet-agent package.
+We've decided to make vendored modules visible to the autoloader, but not part
+of the modulepath. That way they are available during compilation, but won't be
+pluginsync'ed.
 
 ## Agent Compatibility
 
-Pre-6.0 agents will always prefer the builtin version over what was
-pluginsynced. If a new property/parameter is added to the type on the master and
-the manifest attempts to use that property/parameter, then old agents will not
-be able to apply the catalog. This is the same issue we had with virtual
-packages in puppet 4.x. Recommend users only deploy updated modules for builtin
-types in environments where there are only Puppet 6+ agents.
+Pre-6.0 agents always prefer pluginsynced types over its builtin and vendored
+versions. One exception is when running the agent via bundler due to the way
+bundler manages the ruby LOAD_PATH.
+
+If a new property/parameter is added to a type on the master and the manifest
+attempts to use that property/parameter, then old agents will not be able to
+apply the catalog. Therefore, it's important that users only deploy modules
+that are compatible with the oldest agents in the fleet, but this proposal
+doesn't change that.
