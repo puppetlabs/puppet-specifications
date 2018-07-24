@@ -140,6 +140,7 @@ The files annotated by an '*' indicate that they are created by package installa
                                           # Example for English:
                                           # /opt/puppetlabs/puppet/share/locale/en_US/LC_MESSAGES/puppet.mo
         ssl *
+        vendor_modules *                  # :vendormoduledir
         VERSION                           # puppet-agent package version
 
     /opt/puppetlabs/pxp-agent *
@@ -311,6 +312,7 @@ create a `puppet` user or group.
                                               # containing the MO files for each project.
                                               # Example for English:
                                               # C:\Program Files\Puppet Labs\Puppet\puppet\locale\en_US\LC_MESSAGES\puppet.mo
+        vendor_modules *                      # :vendormoduledir
 
     C:\Program Files\Puppet Labs\Puppet\pxp-agent *
         bin *
