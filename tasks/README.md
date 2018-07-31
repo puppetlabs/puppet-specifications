@@ -11,7 +11,7 @@ The Puppet Task ecosystem allows users to execute actions on target systems. A *
 
 **Task**: A task is a file and an optional metadata file that will be executed on a target.
 
-**task runner**: The application which executes tasks on target systems. This is the interface for controlling and running tasks, and is assumed to provide some sort of programatic interface (API). In initial releases this is Orchestrator (executing via PXP) and [Bolt] (via ssh/winrm). In the future new task runners may be added. For example the puppet agent may run tasks from resources.
+**task runner**: The application which executes tasks on target systems. This is the interface for controlling and running tasks, and is assumed to provide some sort of programmatic interface (API). In initial releases this is Orchestrator (executing via PXP) and [Bolt] (via ssh/winrm). In the future new task runners may be added. For example the puppet agent may run tasks from resources.
 
 **UI**: User interface, such as CLI tools ([Bolt], `puppet task`) or the Puppet Enterprise Console.
 
@@ -59,9 +59,13 @@ The preferred style of the keys should be `snake_case`.
 
 **parameters**:  The parameters or input the task accepts listed with a [Puppet data type](../language/types_values_variables.md) string and optional description. Top level params names have the same restrictions as Puppet class param names and must match `\A[a-z][a-z0-9_]*\z`. Parameters may be `sensitive` in which case the task runner should hide their values in UI where possible.
 
-**implementations**: A list of implementation files in preference order, along with an optional list of required features for that implementation to be suitable on a target. The available features are defined by the task runner, but task runners should define at least the `shell`, `powershell` and `puppet-agent` features.
+**files**: A list of file resources to be made available to the task executable on the target specified as file paths. Files must be saved in module directories that Puppet makes available via mount points: `files`, `lib`, `tasks`. File specifications ending with `/` will require the entire directory. 
 
-#### Example
+**implementations**: A list of implementation objects. An implementation object describes resources and feature requirements that must be available on a target for specified resources to be utilized. The available features are defined by the task runner; task runners should define at least the `shell`, `powershell` and `puppet-agent` features.
+
+An implementation object has three possible keys `name`, `requirements`, and `files`. The required `name` key is the filename of the task executable. The optional `requirements` key specifies the features that must be present on the target system in order for the task to be run. The optional `files` key specifies file resources to be made available to the task. When `files` are described using both the `files` and `implementations` metadata options the values are joined.   
+
+#### Example Task Metadata
 
 ```json
 {
@@ -83,8 +87,9 @@ The preferred style of the keys should be `snake_case`.
   },
   "implementations" : [
     {"name": "foo.sh", "requirements": ["shell"]},
-    {"name": "foo.ps1", "requirements": ["powershell"]}
-  ]
+    {"name": "foo.ps1", "requirements": ["powershell"], "files": ["my_util/files/util/win_tools.ps1"]}
+  ],
+  "files": ["my_module/lib/puppet_x/helpful_code.rb", "kitchensink/files/task_helpers/"]
 }
 ```
 
@@ -104,8 +109,88 @@ If a parameter type accepts `null` the task runner will accept either a `null` v
 
 ### Metaparameters
 
-In addition to the tasks parameters, the task runner may inject metaparameters prefixed by '_'. These include `_noop` and `_task`.
+In addition to the tasks parameters, the task runner may inject metaparameters prefixed by `_`.
 
+**_noop**: Used to implement logic in tasks to support cases where task should not perform certain actions.
+
+**_task**: Allow multiple task implementations to access the same executable file. The `_task` metaparameter provides the executable the task name to allow task specific logic to be implemented. 
+
+**_installdir**: Tasks with `files` specified in the metadata will be passed the `_installdir` metaparameter to provide the file path to the expected resources. 
+
+#### Metaparameter Examples
+
+When the task runner runs a task with `files` metadata it copies the specified files into a temporary directory on the target. The directory structure of the specified file resources will be preserved such that paths specified with the `files` metadata option will be available to tasks prefixed with `_installdir`. 
+
+##### Python Example
+###### Metadata
+```json
+{
+  "files": ["multi_task/files/py_util/py_helper.py"]
+}
+```
+###### File Resource
+`multi_task/files/py_util/py_helper.py`
+```python
+def useful_python():
+  return dict(helper="python")
+```
+###### Task
+```python
+#!/usr/bin/env python
+import sys
+import os
+import json
+
+params = json.load(sys.stdin)
+sys.path.append(os.path.join(params['_installdir'], 'python_helpers/files'))
+import py_helper
+
+print(json.dumps(py_helper.useful_python()))
+```
+###### Output
+```
+Started on localhost...
+Finished on localhost:
+  {
+    "helper": "python"
+  }
+Successful on 1 node: localhost
+Ran on 1 node in 0.12 seconds
+```
+##### Ruby Example
+###### Metadata
+```json
+{
+  "files": ["multi_task/files/rb_util/rb_helper.rb"]
+}
+```
+###### File Resource
+`multi_task/files/rb_util/rb_helper.rb`
+```ruby
+def useful_ruby
+  { helper: "ruby" }
+end
+```
+###### Task
+```ruby
+#!/usr/bin/env ruby
+require 'json'
+
+params = JSON.parse(STDIN.read)
+require_relative File.join(params['_installdir'], '/ruby_helpers/files/rb_helper.rb')
+
+puts useful_ruby.to_json
+```
+###### Output
+```
+Started on localhost...
+Finished on localhost:
+  {
+    "helper": "ruby"
+  }
+Successful on 1 node: localhost
+Ran on 1 node in 0.12 seconds
+```
 ## Task execution
 
 If the task has multiple implementation files, the `implementations` field of the metadata is used to determine which implementation is suitable for the target. Each implementation can specify `requirements`, which is an array of the required "features" to use that implementation.
@@ -113,6 +198,8 @@ If the task has multiple implementation files, the `implementations` field of th
 If the task has a single implementation file and doesn't use the `implementations` field, that implementation will be used on every target.
 
 The task implementation is copied to the target and then executed on the target by the task runner.
+
+If `files` metadata has been provided those executable resources will be copied to the target and made available to the task via the `_installdir` metaparameter. 
 
 No arguments are passed to the task when it is executed.
 
