@@ -24,22 +24,22 @@ Puppet::ResourceApi.register_type(
     If Puppet is given the location of a key file which looks like an absolute
     path this type will autorequire that file.
   EOS
-  attributes:   {
-    ensure:      {
+  attributes: {
+    ensure: {
       type: 'Enum[present, absent]',
       desc: 'Whether this apt key should be present or absent on the target system.'
     },
-    id:          {
+    id: {
       type:      'Variant[Pattern[/\A(0x)?[0-9a-fA-F]{8}\Z/], Pattern[/\A(0x)?[0-9a-fA-F]{16}\Z/], Pattern[/\A(0x)?[0-9a-fA-F]{40}\Z/]]',
       behaviour: :namevar,
       desc:      'The ID of the key you want to manage.',
     },
-    source:      {
+    source: {
       type: 'String',
       desc: 'Where to retrieve the key from, can be a HTTP(s) URL, or a local file. Files get automatically required.',
     },
     # ...
-    created:     {
+    created: {
       type:      'String',
       behaviour: :read_only,
       desc:      'Date the key was created, in ISO format.',
@@ -101,18 +101,18 @@ Puppet::ResourceApi.register_type(
       desc: 'Where only the package is provided',
     },
   ],
-  attributes:   {
-    ensure:      {
+  attributes: {
+    ensure: {
       type:    'Enum[present, absent]',
       desc:    'Whether this resource should be present or absent on the target system.',
       default: 'present',
     },
-    package:        {
+    package: {
       type:      'String',
       desc:      'The name of the package you want to manage.',
       behaviour: :namevar,
     },
-    manager:        {
+    manager: {
       type:      'String',
       desc:      'The system used to install the package.',
       behaviour: :namevar,
