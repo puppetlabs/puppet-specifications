@@ -61,6 +61,17 @@
         "type": "string"
       },
       "description": "Path to file resources saved in valid module directory to be provided to task"
+    },
+    "private": {
+      "type": "boolean",
+      "description": "Should this task appear by default in UI lists of tasks"
+    },
+    "extensions": {
+      "type": "object",
+      "description": "Task Runner specific metadata extensions",
+      "items": {
+        "type": "object"
+      }
     }
   },
   "definitions": {
