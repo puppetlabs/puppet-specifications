@@ -61,9 +61,9 @@ The preferred style of the keys should be `snake_case`.
 
 **files**: A list of file resources to be made available to the task executable on the target specified as file paths. Files must be saved in module directories that Puppet makes available via mount points: `files`, `lib`, `tasks`. File specifications ending with `/` will require the entire directory. 
 
-**implementations**: A list of implementation objects. An implementation object describes resources and feature requirements that must be available on a target for specified resources to be utilized. The available features are defined by the task runner; task runners should define at least the `shell`, `powershell` and `puppet-agent` features.
+**implementations**: A list of implementation objects in preference order. An implementation object describes resources and feature requirements that must be available on a target for specified resources to be utilized. The available features are defined by the task runner; task runners should define at least the `shell`, `powershell` and `puppet-agent` features.
 
-An implementation object has three possible keys `name`, `requirements`, and `files`. The required `name` key is the filename of the task executable. The optional `requirements` key specifies the features that must be present on the target system in order for the task to be run. The optional `files` key specifies file resources to be made available to the task. When `files` are described using both the `files` and `implementations` metadata options the values are joined.   
+An implementation object has four possible keys: `name`, `requirements`, `input_method`, and `files`. The required `name` key is the filename of the task executable. The optional `requirements` key specifies the features that must be present on the target system in order for the task to be run. The optional `input_method` declares a specific input method for this implementation. The optional `files` key specifies file resources to be made available to the task. When `files` are described using both the `files` and `implementations` metadata options the values are joined.
 
 #### Example Task Metadata
 
@@ -86,7 +86,7 @@ An implementation object has three possible keys `name`, `requirements`, and `fi
     }
   },
   "implementations" : [
-    {"name": "foo.sh", "requirements": ["shell"]},
+    {"name": "foo.sh", "requirements": ["shell"], "input_method": "environment"},
     {"name": "foo.ps1", "requirements": ["powershell"], "files": ["my_util/files/util/win_tools.ps1"]}
   ],
   "files": ["my_module/lib/puppet_x/helpful_code.rb", "kitchensink/files/task_helpers/"]
