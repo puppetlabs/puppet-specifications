@@ -46,15 +46,17 @@ Index
 * [Expressions][7] - specification of all non catalog expressions in the language
 * [Catalog Expressions][8] - specification of all expressions related to catalog production
 * [Expression Precedence][9] - specification of the precedence of expressions / operators
+* [Puppet Functions][14] - functions in the puppet language
 * [Deprecation][10] - specification of deprecated constructs
 * PROPOSALS
-  * [Puppet Functions][14] - functions in the puppet language 
 * API
   * [Function Ruby API][11] - the API for writing functions in Ruby
   * [Plugin Ruby API][12] - the API for plugins in Ruby
   * [Resource Type Ruby API][16] - the API for resource types in Ruby
 * Models
   * [Puppet Extended S-Expression Notation (PN)][17] - specification of the PN format 
+* Plan Extensions
+  * [Apply Expression][18] - an expression to capture a manifest block and apply it on remote nodes
 * General
   * [Settings and Options][13] - specification of settings and options 
   * [Puppet Installation Layout][15] - specification of Puppet related files on disk
@@ -76,5 +78,6 @@ Index
 [15]:file_paths.md
 [16]:language/resource_types.md
 [17]:models/pn.md
+[18]:language/apply.md
 
 [1]:http://www.github.com/puppetlabs/puppet
