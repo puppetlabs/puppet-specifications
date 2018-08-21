@@ -403,6 +403,8 @@ The following keywords are considered reserved for future use and should be avoi
 | ---
 | `private`
 | `attr`
+| `plan`
+| `apply`
 
 These names are reserved for types, and are unsuitable as identifiers for other kinds of
 elements:
