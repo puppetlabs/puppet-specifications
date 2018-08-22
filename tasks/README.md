@@ -17,11 +17,13 @@ The Puppet Task ecosystem allows users to execute actions on target systems. A *
 
 ## Puppet Task Spec Versioning
 
-Orchestrator shipped in PE 2017.3 supports version 1. [Bolt] is planned to support version 1 by 1.0.
+The task spec has a version and a revision. Changes that would break existing tasks will increment the version of the task spec. The revision of the task spec functions as a minor version and will be incremented for new features. The spec will document which revision a feature was added in.
 
-Changes to the task spec that do not bump the version must not break existing tasks. We may add properties to the metadata defined in version 1 without bumping the version.
+Orchestrator shipped in PE 2017.3 supports version 1 rev 1. [Bolt] supports version 1 rev 2.
 
 Older versions of the task runner may not support tasks that rely on newer features of the task spec. The task spec version is not intended to capture this now. Authors should use the `puppet_task_version` field in the module's metadata to document such incompatibilities for users.
+
+Task Runners should document which version and revision of the task spec they support.
 
 ## Task packaging and file
 
@@ -49,21 +51,24 @@ The preferred style of the keys should be `snake_case`.
 
 #### Options
 
-**description**: A description of what the task does.
+**description**: A description of what the task does.(rev 1)
 
-**puppet_task_version**: The version of this spec used.
+**puppet_task_version**: The version of this spec used.(rev 1)
 
-**supports_noop**: Default `false`. This task respects the `_noop` metaparam. If this is not set the task runner will refuse to run the task in noop.
+**supports_noop**: Default `false`. This task respects the `_noop` metaparam. If this is not set the task runner will refuse to run the task in noop.(rev 1)
 
-**input_method**: What input method to use to pass parameters to the task. Default varies, see [Input Methods](#input-methods).
+**input_method**: What input method to use to pass parameters to the task. Default varies, see [Input Methods](#input-methods).(rev 1)
 
-**parameters**:  The parameters or input the task accepts listed with a [Puppet data type](../language/types_values_variables.md) string and optional description. Top level params names have the same restrictions as Puppet class param names and must match `\A[a-z][a-z0-9_]*\z`. Parameters may be `sensitive` in which case the task runner should hide their values in UI where possible.
+**parameters**:  The parameters or input the task accepts listed with a [Puppet data type](../language/types_values_variables.md) string and optional description. Top level params names have the same restrictions as Puppet class param names and must match `\A[a-z][a-z0-9_]*\z`. Parameters may be `sensitive` in which case the task runner should hide their values in UI where possible.(rev 1)
 
-**files**: A list of file resources to be made available to the task executable on the target specified as file paths. Files must be saved in module directories that Puppet makes available via mount points: `files`, `lib`, `tasks`. File specifications ending with `/` will require the entire directory. 
+**files**: A list of file resources to be made available to the task executable on the target specified as file paths. Files must be saved in module directories that Puppet makes available via mount points: `files`, `lib`, `tasks`. File specifications ending with `/` will require the entire directory.(rev 3)
 
-**implementations**: A list of implementation objects in preference order. An implementation object describes resources and feature requirements that must be available on a target for specified resources to be utilized. The available features are defined by the task runner; task runners should define at least the `shell`, `powershell` and `puppet-agent` features.
+**implementations**: A list of implementation objects. An implementation object describes resources and feature requirements that must be available on a target for specified resources to be utilized. The available features are defined by the task runner; task runners should define at least the `shell`, `powershell` and `puppet-agent` features.(rev 2)
 
-An implementation object has four possible keys: `name`, `requirements`, `input_method`, and `files`. The required `name` key is the filename of the task executable. The optional `requirements` key specifies the features that must be present on the target system in order for the task to be run. The optional `input_method` declares a specific input method for this implementation. The optional `files` key specifies file resources to be made available to the task. When `files` are described using both the `files` and `implementations` metadata options the values are joined.
+**private**: A boolean to specify whether a task should be hidden by default in the UI. This is useful if a task has a machine oriented interface or is intended to be used only in the context of one plan. Default is false.(rev 3)
+
+**extensions**: A hash of extensions to the task spec used by a Specific Task Runner. Each key at the top level should be the name of the Task Runner the extension is used by. Task Runners should not read extensions outside of their own namespace.(rev 3)
+
 
 #### Example Task Metadata
 
@@ -86,8 +91,8 @@ An implementation object has four possible keys: `name`, `requirements`, `input_
     }
   },
   "implementations" : [
-    {"name": "foo.sh", "requirements": ["shell"], "input_method": "environment"},
-    {"name": "foo.ps1", "requirements": ["powershell"], "files": ["my_util/files/util/win_tools.ps1"]}
+    {"name": "foo_sh.sh", "requirements": ["shell"], "input_method": "environment"},
+    {"name": "foo_ps1.ps1", "requirements": ["powershell"], "files": ["my_util/files/util/win_tools.ps1"]}
   ],
   "files": ["my_module/lib/puppet_x/helpful_code.rb", "kitchensink/files/task_helpers/"]
 }
@@ -97,7 +102,7 @@ A JSON schema of metadata accepted by task runners is included in [task.json](ta
 
 ## Task parameters
 
-The parameters property is used to validate the parameters to a task and generate UIs.
+The parameters property is used to validate the parameters to a task and generate UIs. The property names in this object are the parameter names and map to a parameters options object.
 
 If the parameters property is missing or `null` any parameter values with be accepted. Authors should not write tasks without specifying parameters.
 
@@ -107,19 +112,41 @@ Any parameter that does not specify a type will accept any value (default type i
 
 If a parameter type accepts `null` the task runner will accept either a `null` value or the absence of the property. Task authors must accept missing properties for nullable parameters. Task authors must not differentiate between absent properties and properties with `null` values.
 
+### Options
+
+**type**: A Puppet Type string describing the type of value the parameter accepts. Default is `Any`.(rev 1)
+
+**description**: A string description of the parameter.(rev 1)
+
+**sensitive**: A Boolean value to identify data as sensitive. Values are masked when they appear in logs and API responses.(rev 1)
+
+## Task implementations
+
+The implementations property is used to describe different implementations for differet targets. The value is an array of implementation options objects. For each target the task is run on the Task Runner must compare the required features of the target to it's list of available features on that target and execute the first implementation where all requirements are statisfied.
+
+### Options
+
+**name**: The file name of the task file that contains the implementation of the task. This must be at the top level of the tasks directory of the module. In order to remain compatible with runners implementing revision 1, task names should be unique. For example, consider the task `foo` with implementations in bash and powershell. Instead of naming the executables `foo.sh` and `foo.ps1` build unique names by including extension information in the base filename: `foo_sh.sh` `foo_ps1.ps1`.(rev 2)
+
+**requirements**: A list of features the target is required to support for the implementation to be used. `shell`, `powershell` and `puppet-agent` features are added by the ssh, winrm, and pcp transports respectively.(rev 2)
+
+**input_method**: The input method to use for this implementation of the task. Default empty `[]` which will make this implementation suitable for all targets.(rev 3)
+
+**files**: files required by this implementation. These will be concatenated with the files array from the top level of the tasks, metadata.(rev 3)
+
 ### Metaparameters
 
 In addition to the tasks parameters, the task runner may inject metaparameters prefixed by `_`.
 
-**_noop**: Used to implement logic in tasks to support cases where task should not perform certain actions.
+**_noop**: Used to implement logic in tasks to support cases where task should not perform certain actions.(rev 1)
 
-**_task**: Allow multiple task implementations to access the same executable file. The `_task` metaparameter provides the executable the task name to allow task specific logic to be implemented. 
+**_task**: Allow multiple task implementations to access the same executable file. The `_task` metaparameter provides the executable the task name to allow task specific logic to be implemented.(rev 2)
 
-**_installdir**: Tasks with `files` specified in the metadata will be passed the `_installdir` metaparameter to provide the file path to the expected resources. 
+**_installdir**: Tasks with `files` specified in the metadata will be passed the `_installdir` metaparameter to provide the file path to the expected resources.(rev 3)
 
 #### Metaparameter Examples
 
-When the task runner runs a task with `files` metadata it copies the specified files into a temporary directory on the target. The directory structure of the specified file resources will be preserved such that paths specified with the `files` metadata option will be available to tasks prefixed with `_installdir`. 
+When the task runner runs a task with `files` metadata it copies the specified files into a temporary directory on the target. The directory structure of the specified file resources will be preserved such that paths specified with the `files` metadata option will be available to tasks prefixed with `_installdir`.
 
 ##### Python Example
 ###### Metadata
@@ -199,7 +226,7 @@ If the task has a single implementation file and doesn't use the `implementation
 
 The task implementation is copied to the target and then executed on the target by the task runner.
 
-If `files` metadata has been provided those executable resources will be copied to the target and made available to the task via the `_installdir` metaparameter. 
+If `files` metadata has been provided those executable resources will be copied to the target and made available to the task via the `_installdir` metaparameter.
 
 No arguments are passed to the task when it is executed.
 
@@ -268,8 +295,8 @@ Task output is consumed on stdout and made available through the task runner API
 If the output cannot be parsed as a JSON object (i.e. `{...}`), one is created by the task runner with the captured stdout stored in the  `_output` key: i.e. `{"_output": "the string of output"}`. Otherwise the parsed JSON object is used.
 
 All '_' prefixed keys are reserved and should only be used as described below:
-- **_output**: A text summary of the job result. If the job does not return a JSON object the contents of stdout will be put in this key.
-- **_error**: Tasks can set this when they fail and the UI can more gracefully display messages from it.
+- **_output**: A text summary of the job result. If the job does not return a JSON object the contents of stdout will be put in this key.(rev 1)
+- **_error**: Tasks can set this when they fail and the UI can more gracefully display messages from it.(rev 1)
 
 ### Stderr
 
