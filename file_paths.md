@@ -1,12 +1,16 @@
 Puppet Installation Layout
 ==========================
 
-This table specifies the file paths in a Puppet installation and the corresponding settings, denoted as `:setting`. The 3.x column shows the difference of the specification vs the 3.x implementation.
+These tables specify the file paths in a Puppet installation and the corresponding settings, denoted as `:setting`.
 
 # Index
 
-* [puppet-agent (*nix)](#puppet-agent-nix)
-* [puppet-agent (Windows)](#puppet-agent-windows)
+ Index
+
+* [puppet-agent 6 (*nix)](#puppet-agent-6-nix)
+* [puppet-agent 6 (Windows)](#puppet-agent-6-windows)
+* [puppet-agent 4, 5 (*nix)](#puppet-agent-4-5-nix)
+* [puppet-agent 4, 5 (Windows)](#puppet-agent-4-5-windows)
 * [puppet-agent (non-root)](#puppet-agent-non-root)
 * [puppetdb](#puppetdb)
 * [puppetserver](#puppetserver)
@@ -14,11 +18,322 @@ This table specifies the file paths in a Puppet installation and the correspondi
 * [razor-server](#razor-server)
 * [Notes](#notes)
 
-# puppet-agent (*nix)
+# puppet-agent 6 (*nix)
 
-The package will create the following services `puppet`, `mcollective`, and `pxp-agent`,
-all running as `root` by default. It will not create a `puppet` user or group.
-The files annotated by an '*' indicate that they are created by package installation.
+The package will create the following services, all running as `root`
+by default:
+
+- `puppet`,
+- `pxp-agent`
+
+It will not create a `puppet` user or group.
+
+The files and directories annotated by an '*' below indicate that they
+are created by package installation.
+
+    Path                                  Setting
+    /etc/puppetlabs *
+
+    /etc/puppetlabs/client-tools *        # default client tool settings
+        puppet-access.conf *
+        puppet-orchestrator.conf *
+        puppetdb.conf *
+
+    /etc/puppetlabs/code *                # :codedir
+        environments *                    # :environmentpath
+          production *
+            hieradata *
+            environment.conf *
+            manifests *
+            modules *
+        hiera.yaml *                      # :hiera_config (deprecated location, puppet and hiera look here first)
+        modules *                         # user modulepath
+
+    /etc/puppetlabs/code-staging          # staging directory
+        environments
+          production
+            hieradata
+            environment.conf
+            manifests
+            modules
+        hiera.yaml                        # only if using deprecated default location
+        modules
+
+    /etc/puppetlabs/puppet *              # :confdir
+        auth.conf *                       # :rest_authconfig
+        autosign.conf                     # :autosign
+        binder_config.yaml                # :binder_config
+        csr_attributes.yaml               # :csr_attributes
+        custom_trusted_oid_mapping.yaml   # :trusted_oid_mapping_file
+        device.conf                       # :deviceconfig
+        fileserver.conf                   # :fileserverconfig
+        hiera.yaml *                      # :hiera_config
+        puppet.conf *                     # :config
+        routes.yaml                       # :route_file
+        ssl                               # :ssldir
+
+    /etc/puppetlabs/pxp-agent *
+        modules *                         # stores configuration files for pxp-agent modules
+            pxp-module-puppet.conf *      # configuration file of the pxp module puppet
+        pxp-agent.conf                    # pxp-agent configuration file
+
+    /opt/puppetlabs/bin *                 # symlink targets of puppet related binaries
+        facter@ *                         -> /opt/puppetlabs/puppet/bin/facter
+        hiera@ *                          -> /opt/puppetlabs/puppet/bin/hiera
+        puppet@ *                         -> /opt/puppetlabs/puppet/bin/puppet
+
+    /opt/puppetlabs/facter *
+        facts.d *                         # external facts directory (not pluginsync'ed)
+
+    /opt/puppetlabs/puppet *              # ruby-puppet root
+        bin *
+            facter *
+            gem *
+            hiera *
+            openssl *
+            puppet *
+            pxp-agent *
+            ruby *
+            virt-what *
+        cache *                           # :vardir
+            bucket                        # :bucketdir
+            client_yaml                   # :clientyamldir
+            client_data                   # :client_datadir
+            clientbucket                  # :clientbucketdir
+            devices                       # :devicedir
+            facts.d                       # :pluginfactdest (pluginsync'ed)
+            lib                           # :libdir
+            facts                         # used to generate :factpath
+            puppet-module                 # :module_working_dir
+            reports                       # :reportdir
+            server_data                   # :server_datadir
+            state                         # :statedir
+            yaml                          # :yamldir
+        include *
+            facter *
+            openssl *
+        lib *
+            libaugeas.so *
+            libcrypto.so *
+            libfacter.so *
+            libruby.so *
+            libssl.so *
+            ruby *
+                vendor_ruby *             # ruby code
+                    facter.rb *
+                    hiera.rb *
+                    puppet.rb *
+            virt-what *
+                virt-what-cpuid-helper *
+        modules *                         # system modulepath
+        share *
+            augeas *
+            man *
+            vim *
+            locale *
+                config.yaml *             # configuration file used by the gettext-setup gem
+                <lang_COUNTRY> *
+                    LC_MESSAGES *
+                        <project>.mo *    # One directory for each supported locale,
+                                          # containing the MO files for each project.
+                                          # Example for English:
+                                          # /opt/puppetlabs/puppet/share/locale/en_US/LC_MESSAGES/puppet.mo
+        ssl *
+        vendor_modules *                  # :vendormoduledir
+        VERSION                           # puppet-agent package version
+
+    /opt/puppetlabs/pxp-agent *
+        modules *
+            pxp-module-puppet *
+        spool *                            # directory containing results of pxp-agent modules
+        tasks-cache *                      # directory containing a cache of files for all downloaded tasks
+
+    /var/log/puppetlabs *
+        puppet *                          # :logdir                      /var/lib/puppet/log
+            puppet.log                    # not enabled by default
+        pxp-agent *
+            pxp-agent.log                 # enabled by default
+            pcp-access.log                # not enabled by default
+
+    /var/run/puppetlabs *                 # :rundir                      /var/lib/puppet/run
+        agent.pid                         # :pidfile
+        pxp-agent.pid
+
+# puppet-agent 6 (windows)
+
+On Windows:
+
+- The installation path defaults to `C:\Program Files\Puppet Labs`.
+    - When installing puppet-agent 32-bit on 64-bit Windows, the default
+      installation path is `C:\Program Files (x86)\Puppet Labs`.
+- The common app data directory defaults to `C:\ProgramData\PuppetLabs`.
+
+The package will create the following services, all running as
+`LocalSystem`, by default:
+
+- `puppet`,
+- `pxp-agent`
+
+It will not create a `puppet` user or group.
+
+The files and directories annotated by an '*' below indicate that they
+are created by package installation.
+
+    Path                                      Setting
+    C:\ProgramData
+
+    C:\ProgramData\PuppetLabs\client-tools    # default client tool settings
+        puppet-access.conf *
+        puppet-orchestrator.conf *
+        puppetdb.conf *
+
+    C:\ProgramData\PuppetLabs\code *          # :codedir
+        environments *                        # :environmentpath
+          production *
+            environment.conf *
+            manifests *
+            modules *
+        hiera.yaml *                          # :hiera_config (deprecated location, puppet and hiera look here first)
+        hieradata *                           # n/a
+        modules *                             # user modulepath
+
+    C:\ProgramData\PuppetLabs\facter *
+        facts.d *                             # external facts directory (not pluginsync'ed)
+
+    C:\ProgramData\PuppetLabs\puppet
+    -------------------------------------------------------------------------------------------------------
+        cache                                 # :vardir
+            bucket                            # :bucketdir
+            client_yaml                       # :clientyamldir
+            client_data                       # :client_datadir
+            clientbucket                      # :clientbucketdir
+            devices                           # :devicedir
+            facts.d                           # :pluginfactdest (pluginsync'ed)
+            lib                               # :libdir
+            facts                             # used to generate :factpath
+            reports                           # :reportdir
+            server_data                       # :server_datadir
+            state                             # :statedir
+            yaml                              # :yamldir
+    -------------------------------------------------------------------------------------------------------
+        etc *                                 # :confdir
+            auth.conf                         # :rest_authconfig
+            autosign.conf                     # :autosign
+            binder_config.yaml                # :binder_config
+            csr_attributes.yaml               # :csr_attributes
+            custom_trusted_oid_mapping.yaml   # :trusted_oid_mapping_file
+            device.conf                       # :deviceconfig
+            fileserver.conf                   # :fileserverconfig
+            hiera.yaml *                      # :hiera_config
+            puppet.conf *                     # :config
+            routes.yaml                       # :route_file
+            ssl                               # :ssldir
+    -------------------------------------------------------------------------------------------------------
+        var *
+            log                               # :logdir
+                puppet.log                    # not enabled by default
+            run                               # :rundir
+                agent.pid                     # :pidfile
+
+    C:\ProgramData\PuppetLabs\pxp-agent *
+        etc *
+            pxp-agent.conf                    # pxp-agent configuration file
+            modules *                         # stores configuration files for pxp-agent modules
+                pxp-module-puppet.conf        # configuration file of the pxp module puppet (optionally, to override puppet.bat location)
+        var *
+            log *
+                pxp-agent.log                 # enabled by default
+                pcp-access.log                # not enabled by default
+            spool *                           # directory containing results of pxp-agent modules
+            run *
+        tasks-cache *                         # directory containing a cache of files for all downloaded tasks
+
+    C:\Program Files\Puppet Labs\Puppet
+        VERSION                               # puppet-agent package version
+
+    C:\Program Files\Puppet Labs\Puppet\bin *
+        environment.bat *                     # setup LOAD_PATH
+        facter.bat *                          # bat file wrappers
+        hiera.bat *
+        puppet.bat *
+        puppet_shell.bat *                    # targets for shortcuts
+        run_facter_interactive.bat *
+        run_puppet_interactive.bat *
+        puppetres.dll *                       # event log message resource dll (in Puppet\misc for releases before puppet-agent 1.6.0)
+
+    C:\Program Files\Puppet Labs\Puppet\facter *
+        bin *                                 # executables and dlls
+            facter.exe *
+            libfacter.so *
+            lib*.dll *                        # gcc, mingw, boost libraries
+        inc *                                 # facter headers
+            facter *
+        lib *
+            facter.rb *                       # ruby bindings
+
+    C:\Program Files\Puppet Labs\Puppet\hiera *
+        bin *
+            hiera *                           # ruby bin wrapper
+        lib *
+            hiera.rb *
+
+    C:\Program Files\Puppet Labs\Puppet\misc *
+        LICENSE.rtf *                         # license
+        puppetlabs.ico *                      # icon for start menu shortcut
+        versions.txt *                        # versions of components
+
+    C:\Program Files\Puppet Labs\Puppet\puppet *
+        bin *
+            puppet *                          # ruby bin wrapper
+        lib *
+            puppet.rb *
+        share *
+            locale *
+                config.yaml *                 # configuration file used by the gettext-setup gem
+                <lang_COUNTRY> *
+                    LC_MESSAGES\<project>.mo *# One directory for each supported locale,
+                                              # containing the MO files for each project.
+                                              # Example for English:
+                                              # C:\Program Files\Puppet Labs\Puppet\puppet\locale\en_US\LC_MESSAGES\puppet.mo
+        vendor_modules *                      # :vendormoduledir
+
+    C:\Program Files\Puppet Labs\Puppet\pxp-agent *
+        bin *
+            pxp-agent.exe *
+            lib*.dll *                        # gcc, mingw, boost libraries
+                                              # pxp-agent also loads openssl libraries (below)
+        modules *
+            pxp-module-puppet *
+            pxp-module-puppet.bat *
+
+    C:\Program Files\Puppet Labs\Puppet\service *
+        daemon.rb *                           # windows service daemon
+        nssm.exe *                            # NSSM used to run pxp-agent
+
+    C:\Program Files\Puppet Labs\Puppet\sys *
+        ruby *
+            bin *
+                ruby.exe *
+                ssleay32.dll *                # openssl dll
+                libeay32.dll *                # openssl dll
+                lib*.dll *                    # yaml, iconv, gdbi & ffi libraries
+            include *
+            lib *
+            share *
+
+        tools *
+            bin *
+              elevate.exe *                   # Used to elevate interactive commands
+
+    C:\Windows\Temp                           # :module_working_dir
+
+# puppet-agent 4, 5 (*nix)
+
+The package will create the following services `puppet`, `mcollective`, and
+`pxp-agent`, all running as `root` by default. It will not create a `puppet`
+user or group. The files annotated by an '*' indicate that they are created by
+package installation. The 3.x column shows the difference of the specification
+vs the 3.x implementation.
 
     Path                                  Setting                        3.x
     /etc/puppetlabs *                                                    n/a
@@ -140,7 +455,6 @@ The files annotated by an '*' indicate that they are created by package installa
                                           # Example for English:
                                           # /opt/puppetlabs/puppet/share/locale/en_US/LC_MESSAGES/puppet.mo
         ssl *
-        vendor_modules *                  # :vendormoduledir
         VERSION                           # puppet-agent package version
 
     /opt/puppetlabs/pxp-agent *
@@ -163,7 +477,7 @@ The files annotated by an '*' indicate that they are created by package installa
         mcollectived.pid
         pxp-agent.pid
 
-# puppet-agent (windows)
+# puppet-agent 4, 5 (windows)
 
 On recent versions of Windows, e.g. 2008 & 2012, the installation path
 defaults to `C:\Program Files\Puppet Labs` and the common app data
@@ -172,6 +486,8 @@ under `C:\Documents and Settings\All Users\Application Data`. Also
 when installing puppet-agent 32-bit on 64-bit windows, the
 installation path defaults to `C:\Program Files (x86)\Puppet
 Labs`. The examples below assume 2008/2012 and puppet-agent (64-bit).
+The 3.x column shows the difference of the specification vs the 3.x
+implementation.
 
 The package will create the following services `puppet`, `mcollective`,
 and `pxp-agent`, all running as `LocalSystem` by default. It will not
@@ -312,7 +628,6 @@ create a `puppet` user or group.
                                               # containing the MO files for each project.
                                               # Example for English:
                                               # C:\Program Files\Puppet Labs\Puppet\puppet\locale\en_US\LC_MESSAGES\puppet.mo
-        vendor_modules *                      # :vendormoduledir
 
     C:\Program Files\Puppet Labs\Puppet\pxp-agent *
         bin *
