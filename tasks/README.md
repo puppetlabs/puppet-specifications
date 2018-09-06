@@ -61,7 +61,7 @@ The preferred style of the keys should be `snake_case`.
 
 **parameters**:  The parameters or input the task accepts listed with a [Puppet data type](../language/types_values_variables.md) string and optional description. Top level params names have the same restrictions as Puppet class param names and must match `\A[a-z][a-z0-9_]*\z`. Parameters may be `sensitive` in which case the task runner should hide their values in UI where possible.(rev 1)
 
-**files**: A list of file resources to be made available to the task executable on the target specified as file paths. Files must be saved in module directories that Puppet makes available via mount points: `files`, `lib`, `tasks`. File specifications ending with `/` will require the entire directory.(rev 3)
+**files**: A list of file resources to be made available to the task executable on the target specified as file paths. Files must be saved in module directories that Puppet makes available via mount points: `files`, `lib`, `tasks`. File specifications ending with `/` will require the entire directory. File separator must be `/`. (rev 3)
 
 **implementations**: A list of implementation objects. An implementation object describes resources and feature requirements that must be available on a target for specified resources to be utilized. The available features are defined by the task runner; task runners should define at least the `shell`, `powershell` and `puppet-agent` features.(rev 2)
 
