@@ -106,6 +106,7 @@ and **Platform Types**:
 * `Sensitive`; a type that represents a data type that have "clear text" restrictions
 * `Type`; the type of types
 * `Undef`; the "no value" type
+* `Deferred`; a type describing a call to be resolved in the future
 
 
 All types are organized into one *Type System*.
@@ -216,6 +217,7 @@ may appear more than once in the hierarchy (e.g. a `ScalarData` is both `Scalar`
        |  |- Undef
        |  |- Array[RichData]
        |  |- Hash[RichData, RichData]
+       |  |- Deferred
        |
        |- Callable[signature...]
        |- Default
@@ -226,6 +228,7 @@ may appear more than once in the hierarchy (e.g. a `ScalarData` is both `Scalar`
        |- TypeSet[specification...]
        |- Binary
        |- URI
+       |- Deferred
 
 In addition to these types, a Qualified Reference that does not represent any of the other types is an alias for `Resource[the_qualified_reference]` (e.g. `File` is shorthand notation for `Resource[File]` / `Resource[file]`).
 
@@ -908,7 +911,7 @@ Example: Positive Integers in Hexadecimal prefixed with '0x', negative in Decima
 
 ~~~ puppet
 
-$format_map = { 
+$format_map = {
   Integer[default, -1] => "%d",
   Integer[0, default] => "%#x"
 }
@@ -1029,19 +1032,19 @@ Defaults to `p`
 
 | Format  | Timespan formats
 | ----    | ------------------
-| s       | formats according to the timespan format string '%D-%H:%M:%S' 
-| p       | programmatic representation - "Timespan(<quoted string>)" where <quoted string> is the result of using '%s' within quotes 
+| s       | formats according to the timespan format string '%D-%H:%M:%S'
+| p       | programmatic representation - "Timespan(<quoted string>)" where <quoted string> is the result of using '%s' within quotes
 | dxXobB  | converts timespan to integer representing seconds and formats using the integer rules
 | eEfgGaA | converts timespan to float representing seconds and fractions of second and formats using the floating point rules
 
-A Timespan can also be formatted using the Puppet function `strftime()` and the format directives listed under **Timespan.new** 
+A Timespan can also be formatted using the Puppet function `strftime()` and the format directives listed under **Timespan.new**
 
 ##### Timestamp to String
 
 | Format  | Timestamp formats
 | ----    | ------------------
-| s       | formats according to the timestamp format string '%FT%T.%L %Z' 
-| p       | programmatic representation - "Timestamp(<quoted string>)" where <quoted string> is the result of using '%s' within quotes 
+| s       | formats according to the timestamp format string '%FT%T.%L %Z'
+| p       | programmatic representation - "Timestamp(<quoted string>)" where <quoted string> is the result of using '%s' within quotes
 | dxXobB  | converts timestamp to integer representing seconds since epoch and formats using the integer rules
 | eEfgGaA | converts timestamp to float representing seconds since epoch and fractions of second and formats using the floating point rules
 
@@ -1052,14 +1055,14 @@ A Timestamp can also be formatted using the Puppet function `strftime()` and the
 | Format  | SemVer formats
 | ----    | ------------------
 | s       | \<major\>.\<minor\>.\<patch\>\[-\<prerelease\>\]\[+\<build\>\]
-| p       | programmatic representation - "SemVer(<quoted string>)" where <quoted string> is the result of using '%s' within quotes 
+| p       | programmatic representation - "SemVer(<quoted string>)" where <quoted string> is the result of using '%s' within quotes
 
 ##### SemVerRange to String
 
 | Format  | SemVerRange formats
 | ----    | ------------------
 | s       | formatted according to [semver range specification](https://github.com/npm/node-semver)
-| p       | programmatic representation - "SemVerRange(<quoted string>)" where <quoted string> is the result of using '%s' within quotes 
+| p       | programmatic representation - "SemVerRange(<quoted string>)" where <quoted string> is the result of using '%s' within quotes
 
 ##### String to String
 
@@ -1159,7 +1162,7 @@ is exceeded, each element will be indented.
 
 | Format    | Hash/Struct Formats
 | ------    | -------------
-| h         | formats with `{ }` delimiters, `,` element separator and ` => ` inner element separator unless overridden by flags 
+| h         | formats with `{ }` delimiters, `,` element separator and ` => ` inner element separator unless overridden by flags
 | s         | same as h
 | p         | same as h
 | a         | converts the hash to an array of [k,v] tuples and formats it using array rule(s)
@@ -1178,7 +1181,7 @@ The alternate form flag `#` will format each hash key/value entry indented on a 
 
 ##### Flags
 
-| Flag     | Effect 
+| Flag     | Effect
 | ------   | ------
 | (space)  | space instead of + for numeric output (- is shown), for containers skips delimiters
 | #        | alternate format; prefix 0x/0x, 0 (octal) and 0b/0B for binary, Floats force decimal '.'. For g/G keep trailing 0.
@@ -1460,7 +1463,7 @@ type ArrayHash = Struct[{value => Array[ByteInteger]}]
 type BinaryArgsHash = Variant[StringHash, ArrayHash]
 
 function Binary.new(
-  String $base64_str, 
+  String $base64_str,
   Optional[Base64Format] $format
 )
 
@@ -1530,13 +1533,13 @@ can be constrained using:
 * A `Regexp` that represents an pattern match
 * A `Type[Pattern]` that may contain one or more regexps
 * A `Type[Enum]` where at least one of the included strings must match
-* A `Type[NotUndef]` representing that the entry must be present 
+* A `Type[NotUndef]` representing that the entry must be present
 * An `undef` or `Type[Undef]` representing that the entry must not be present
 
 The `port` entry can be constrained using:
 
 * A `Type[Integer]` that represents the range of valid port numbers
-* A `Type[NotUndef]` representing that the entry must be present 
+* A `Type[NotUndef]` representing that the entry must be present
 * An `undef` or `Type[Undef]` representing that the entry must not be present
 
 When `V` is a string, it will be parsed into a `Hash` where each contained part will be a `String` except `port` which will be
@@ -1633,7 +1636,7 @@ URI('a/b') =~ $t                      # true
 ### Array[V, from, to]
 
 `Array` represents an ordered collection of elements of type `V`, optionally constrained in
-size by the integer range parameters *from* and *to*. 
+size by the integer range parameters *from* and *to*.
 
 The first index in an array instance is a non negative integer and starts with 0.
 (Operations in the Puppet Language allows negative values to be used to perform different calculations w.r.t index). See Array [] operation (TODO: REFERENCE TO THIS EXPRESSION SPEC).
@@ -1696,7 +1699,7 @@ are inserted at the end of the resulting hash in their RHS order.
 * An unparameterized `Hash` is the same as `Hash[Any, Any]`
 * An empty hash is denoted with `Hash[0, 0]`.
 * It is illegal to specify the key and/or element type for an empty hash.
-* An empty hash is accepted by any typed hash that allows *from* to be 0. 
+* An empty hash is accepted by any typed hash that allows *from* to be 0.
 
 #### Type Algebra on Hash
 
@@ -2184,6 +2187,56 @@ There is no automatic unwrapping of sensitive values. As a consequence it is not
 #### Use of Sensitive values in Resources
 
 Sensitive values can be used in resources. It is not allowed to use a sensitive value as a resource title.
+
+### Deferred Type
+
+The type `Deferred` describes a function call for the purpose of resolving it in the future. It is a data object with
+the attributes `String name` and `Array[Any] attributes`.
+
+* When a deferred value is placed in a catalog an agent applying the catalog will resolve and replace
+  all such values with the result of the resolution prior to applying the catalog.
+* The order in which a catalog resolves the deferred values is undefined except when they appear as arguments
+  to another deferred, in which case they are resolved in the given order from left to right and depth first.
+* If a deferred is wrapped in a `Sensitive`, or if the resolution of the deferred results in a `Sensitive` then
+  the resulting value is handled just as if the catalog entry had been a sensitive value.
+* It is not possible to make a deferred call to a function that requires a lambda.
+* A `Deferred` can be resolved (called) multiple times, each call will return a new value (i.e. there is no
+  "memoization" / cache).
+* `$facts` is set on the agent side when the deferred function is called.
+
+#### Deferred.new
+
+Creates a new instance of the `Deferred` type. It accepts the name of the function to later call, and an array of
+arguments to use when making the call. The arguments are evaluated at the time the deferred value is created, but
+any deferred values among the arguments will be resolved as part of the resolution process (when actually making the call).
+
+    $x = Deferred('some_function', ['argument1', 42])
+
+Will, when the deferred is resolved result in the call:
+
+    some_function('argument1', 42)
+
+#### Type Algebra on Deferred
+
+* Nothing besides `Deferred` is assignable to `Deferred`
+* A deferred value is equal to another only if name and all attribute are equal.
+
+#### Operations on Deferred values
+
+A deferred value can be resolved by calling it without any arguments. (This is what the agent side resolution process does).
+
+    $x = Deferred('new', [Timestamp])
+    $y = $x()
+    $z = $x.call()
+
+Would set `$y` and `$z` to the result of calling the function `new` to create two `Timestamp` objects (the time "now"),
+i.e. one slightly after the other.
+
+#### Limitations
+
+* Deferred values can be used in resources but requires the use of "rich-data=true" setting to make them serialize in a catalog.
+* It is not allowed to use a `Deferred` value as the title of a resource.
+* Functions called by `Deferred` should be written in Ruby and use the 4.x function API.
 
 ### Object Type, TypeSet
 
