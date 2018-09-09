@@ -2200,6 +2200,9 @@ the attributes `String name` and `Array[Any] attributes`.
 * If a deferred is wrapped in a `Sensitive`, or if the resolution of the deferred results in a `Sensitive` then
   the resulting value is handled just as if the catalog entry had been a sensitive value.
 * It is not possible to make a deferred call to a function that requires a lambda.
+* A `Deferred` can be resolved (called) multiple times, each call will return a new value (i.e. there is no
+  "memoization" / cache).
+* `$facts` is set on the agent side when the deferred function is called.
 
 #### Deferred.new
 
@@ -2229,10 +2232,11 @@ A deferred value can be resolved by calling it without any arguments. (This is w
 Would set `$y` and `$z` to the result of calling the function `new` to create two `Timestamp` objects (the time "now"),
 i.e. one slightly after the other.
 
-#### Use of Deferred values in Resources
+#### Limitations
 
-Deferred values can be used in resources but requires the use of "rich-data" to make them serialize in a catalog.
-It is not allowed to use a Deferred value as the title of a resource.
+* Deferred values can be used in resources but requires the use of "rich-data=true" setting to make them serialize in a catalog.
+* It is not allowed to use a `Deferred` value as the title of a resource.
+* Functions called by `Deferred` should be written in Ruby and use the 4.x function API.
 
 ### Object Type, TypeSet
 
