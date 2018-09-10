@@ -17,13 +17,15 @@ the type `type StringTree = Array[Variant[String, StringTree]]` - when this type
 (as opposed to a serialization of a value of this type) it clearly needs to be able to
 refer back to itself recursively.
 
-There are features in Pcore data representation to handle circular definitions. Either:
+There are features in Pcore data representation to handle circular type definitions. Either:
 
-* Avoid the issue all together by:
-  * using "type by reference = true" (a feature that does not include data types in the result)
-  * using data that is not circular (which it typically never is)
-* Use "type by reference = false" if you want to include the type definitions as this will
-  handle recursive type definitions.
+* with "type_by_reference = true" makes references to data types be by name and
+  deserialization resolves names to loadable types available when deserializing.
+* with "type_by_reference = false" the definitions of the referenced types are included
+  in the serialized result and deserialization adds the included type definitions
+  to the set of available types in the deserializing environment.
+* When there is a circular type definition, a reference is used with a "back pointer"
+  expressed as a [JSON path expressions][4].  
 
 See [Pcore Ruby Data API][3] for more information about these features.
 
@@ -56,3 +58,4 @@ The Ruby API for Pcore Serialization typically transforms to/from some kind of I
 [1]:pcore-generic-data.md
 [2]:pcore-serialization.md
 [3]:pcore-ruby-data-api.md
+[4]:http://goessner.net/articles/JsonPath/index.html#e2
