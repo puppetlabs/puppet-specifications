@@ -319,13 +319,13 @@ C:\Program Files\Puppet Labs\Puppet\
         include *                           # library headers for bundled curl, openssl, ruby
         lib *
             *.dll *                         # supporting library dlls
-        ruby *
-            gems *                          # bundled third party gems
-            vendor_gems *                   # bundled third party gems shared between puppet-agent and puppetserver
-            vendor_ruby *                   # puppet ruby source
-                facter.rb *                 # facter ruby bindings
-                hiera.rb *
-                puppet.rb *
+            ruby *
+                gems *                          # bundled third party gems
+                vendor_gems *                   # bundled third party gems shared between puppet-agent and puppetserver
+                vendor_ruby *                   # puppet ruby source
+                    facter.rb *                 # facter ruby bindings
+                    hiera.rb *
+                    puppet.rb *
         modules *
         share *
             doc *
