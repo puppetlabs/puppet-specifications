@@ -209,7 +209,7 @@ Once all of that is in place, instead of the `set` method, the provider needs to
 
 * `update(context, name, should)`: This is called when a resource should be updated.
   * `context`: provides utilties from the runtime environment, and is decribed in more detail there.
-  * `name`: the name or a hash of the resource to change.
+  * `name`: the name or hash of the resource to change.
   * `should`: a hash of the desired state of the attributes.
 
 * `delete(context, name)`: This is called when a resource should be deleted.
