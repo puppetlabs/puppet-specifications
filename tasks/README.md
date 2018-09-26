@@ -246,7 +246,7 @@ Future releases of the task runner may expand this or add configuration options 
 
 ## Input Methods
 
-There are a three input methods available to tasks: [stdin](#stdin), [environment](#environment-variables), and [powershell](#powershell). By default tasks without a `.ps1` extension are passed parameters with both the `stdin` and `environment` input methods. Tasks with a `.ps1` extension are passed parameters with the `powershell` input method by default.
+There are four input methods available to tasks: [stdin](#stdin), [environment](#environment-variables), [positional](#positional) and [powershell](#powershell). By default tasks without a `.ps1` extension are passed parameters with both the `stdin` and `environment` input methods. Tasks with a `.ps1` extension are passed parameters with the `powershell` input method by default.  Positional parameters are passed to the task in the order specified by the parameter definition.
 
 In the future we may support other formats and methods for passing params to the task.
 
@@ -261,6 +261,9 @@ Params are set as environment variables before the task is executed.
 Param names will be prefixed with `PT_` to create the environment variables in the form `PT_<param_name>` (i.e. the value of the `foobar` param is set as `PT_foobar`).
 
 String parameters will not be quoted. Numerical parameters and structured objects will use their JSON representations.
+
+### Positional 
+Positional input is useful for converting existing scripts to tasks.  The parameters are passed to the task as arguments.  The positional/order they are passed should be defined by the parameter.   If the position has not been specified then each parameter will be passed to the task in a unspecified order.
 
 #### Example
 
@@ -280,6 +283,23 @@ PT_a=1
 PT_b=a string
 PT_c=[1, 2, "3"]
 PT_d={"x": {"y": [0]}}
+```
+
+##### Positional
+```bash
+arg1 = $1
+arg2 = $2
+```
+
+```ps
+[CmdletBinding()]
+ param (
+   [Parameter(Position=0)]
+   [string]$arg1,
+
+   [Parameter(Position=1)]
+   [string]$arg2
+ )
 ```
 
 ### Powershell

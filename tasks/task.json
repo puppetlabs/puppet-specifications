@@ -20,7 +20,7 @@
     },
     "input_method": {
       "type": "string",
-      "enum": ["stdin", "environment"],
+      "enum": ["stdin", "environment", "positional" ],
       "description": "What input method should be used to pass params to the task"
     },
     "parameters": {
@@ -100,6 +100,10 @@
             "description": "Whether the task runner should treat the parameter value as sensitive",
             "type": "boolean",
             "default": false
+          },
+          "position": {
+            "description": "The position the parameter should be passed to the script",
+            "type": "integer"
           }
         }
       }
