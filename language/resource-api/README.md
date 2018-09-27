@@ -204,21 +204,21 @@ Once all of that is in place, instead of the `set` method, the provider needs to
 
 * `create(context, name, should)`: This is called when a new resource should be created.
   * `context`: provides utilties from the runtime environment, and is decribed in more detail there.
-  * `name`: the name / hash of the new resource.
+  * `name`: the name or hash of the new resource. 
   * `should`: a hash of the attributes for the new instance.
 
 * `update(context, name, should)`: This is called when a resource should be updated.
   * `context`: provides utilties from the runtime environment, and is decribed in more detail there.
-  * `name`: the name / hash of the resource to change.
+  * `name`: the name or hash of the resource to change.
   * `should`: a hash of the desired state of the attributes.
 
 * `delete(context, name)`: This is called when a resource should be deleted.
   * `context`: provides utilties from the runtime environment, and is decribed in more detail there.
-  * `name`: the name / hash of the resource that should be deleted.
+  * `name`: the name or hash of the resource that should be deleted.
 
 The `SimpleProvider` takes care of basic logging, and error handling.
 
-Where a `type` has only a single namevar defined `SimpleProvider` will pass the value of that attribute as `name` to the `create`, `update` and `delete` methods.  If multiple namevars are defined, `SimpleProvider` will instead pass a hash. The hash contains the composite name as `title` and all the namevars and their values. e.g.
+When a `type` has only a single namevar defined, `SimpleProvider` will pass the value of that attribute as `name` to the `create`, `update` and `delete` methods.  If multiple namevars are defined, `SimpleProvider` will instead pass a hash. The hash contains the composite name of `title`, and all the namevars and their values, for example:
 
 ```
 {
