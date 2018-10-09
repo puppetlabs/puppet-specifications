@@ -148,15 +148,17 @@ In addition to the tasks parameters, the task runner may inject metaparameters p
 
 When the task runner runs a task with `files` metadata it copies the specified files into a temporary directory on the target. The directory structure of the specified file resources will be preserved such that paths specified with the `files` metadata option will be available to tasks prefixed with `_installdir`.
 
+The task executable itself will be located within the `_installdir` at its normal module location, such as `_installdir/mymodule/tasks/init`. This allows writing tasks that can be tested locally from source by requiring dependencies by relative path.
+
 ##### Python Example
 ###### Metadata
 ```json
 {
-  "files": ["multi_task/files/py_util/py_helper.py"]
+  "files": ["multi_task/files/py_helper.py"]
 }
 ```
 ###### File Resource
-`multi_task/files/py_util/py_helper.py`
+`multi_task/files/py_helper.py`
 ```python
 def useful_python():
   return dict(helper="python")
@@ -169,7 +171,9 @@ import os
 import json
 
 params = json.load(sys.stdin)
-sys.path.append(os.path.join(params['_installdir'], 'python_helpers/files'))
+sys.path.append(os.path.join(params['_installdir'], 'multi_task', 'files'))
+# Alternatively use relative path
+# sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'multi_task', 'files'))
 import py_helper
 
 print(json.dumps(py_helper.useful_python()))
@@ -188,11 +192,11 @@ Ran on 1 node in 0.12 seconds
 ###### Metadata
 ```json
 {
-  "files": ["multi_task/files/rb_util/rb_helper.rb"]
+  "files": ["multi_task/files/rb_helper.rb"]
 }
 ```
 ###### File Resource
-`multi_task/files/rb_util/rb_helper.rb`
+`multi_task/files/rb_helper.rb`
 ```ruby
 def useful_ruby
   { helper: "ruby" }
@@ -204,7 +208,9 @@ end
 require 'json'
 
 params = JSON.parse(STDIN.read)
-require_relative File.join(params['_installdir'], '/ruby_helpers/files/rb_helper.rb')
+require_relative File.join(params['_installdir'], 'multi_task', 'files', 'rb_helper.rb')
+# Alternatively use relative path
+# require_relative File.join(__dir__, '..', '..', 'multi_task', 'files', 'rb_helper.rb')
 
 puts useful_ruby.to_json
 ```
