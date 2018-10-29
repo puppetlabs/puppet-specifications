@@ -1,7 +1,7 @@
 Function API
 ===
 In Puppet 4x there is a new API for writing Ruby functions that extend the functionality
-of the Puppet language. This API is *experimental* in 3x (with future parser) in that functions written against this API may need to be changed in minor releases. Functions that comply with the API will be fully functional - it is not the use of the functions that is experimental.
+of the Puppet language. This API was marked *experimental* in Puppet 3x (with future parser), but there were no changes to the regular API.
 
 We are doing this because the 3x API for functions has several issues:
 
@@ -12,7 +12,7 @@ We are doing this because the 3x API for functions has several issues:
 * Functions cannot be private to a module
 * Functions are defined in the `Puppet::Parser::Functions` namespace. Future use of functions
   is to also use them where no parser is available. The concept of "parser function" is just odd.
-* Methods defined in a Function pollute Scope
+* Methods defined in a Function pollute Scope and cause leakage between environments!
 * There are problems with reloading complex functions
 * There is a distinction between function of expression and statement kind and this distinction
   is no longer meaningful.
@@ -39,6 +39,15 @@ and sometimes spectacular failures.
 
 For autoloading information see [Autoloading][1].
 
+It should be noted that it is *illegal* to define methods inside of the 3.x function body, as well as defining them outside of the function.
+The behavior is undefined and will most likely end up polluting the Scope class in such a way that these methods step on each other; one function
+may override another function's methods, or worst case, may overwrite vital methods in Scope itself. Further, such methods end up changing code
+that is cached in memory for an environment - and if different versions of the code is used in different environments, the
+environment loaded last will overwrite what was loaded earlier.
+
+From Puppet 6.0.0 functions using this illegal construct will not work as the extra methods cannot be called.
+Such functions should be converted to the 4.x API (as described in this specification) as this API
+allows additional methods inside of the function definition. Having code outside of the function definition is never allowed.
 
 The 4x API
 ---
