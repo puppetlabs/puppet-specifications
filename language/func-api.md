@@ -5,6 +5,7 @@ of the Puppet language. This API was marked *experimental* in Puppet 3x (with fu
 
 We are doing this because the 3x API for functions has several issues:
 
+* Methods defined in a Function pollute Ruby `Object` and cause leakage between environments!
 * The function runs as a method on `Scope` (and has access to too much non-API)
 * Undefined arguments are given to the function as empty strings
 * There is no automatic type checking
@@ -12,7 +13,6 @@ We are doing this because the 3x API for functions has several issues:
 * Functions cannot be private to a module
 * Functions are defined in the `Puppet::Parser::Functions` namespace. Future use of functions
   is to also use them where no parser is available. The concept of "parser function" is just odd.
-* Methods defined in a Function pollute Scope and cause leakage between environments!
 * There are problems with reloading complex functions
 * There is a distinction between function of expression and statement kind and this distinction
   is no longer meaningful.
@@ -40,9 +40,9 @@ and sometimes spectacular failures.
 For autoloading information see [Autoloading][1].
 
 It should be noted that it is *illegal* to define methods inside of the 3.x function body, as well as defining them outside of the function.
-The behavior is undefined and will most likely end up polluting the Scope class in such a way that these methods step on each other; one function
-may override another function's methods, or worst case, may overwrite vital methods in Scope itself. Further, such methods end up changing code
-that is cached in memory for an environment - and if different versions of the code is used in different environments, the
+The behavior is undefined and will pollute the Ruby `Object` class in such a way that these methods step on each other; one function
+may override another function's methods, or worst case, may overwrite vital methods in Ruby `Object` itself!
+Further, such methods end up changing code that is cached in memory for an environment - and if different versions of the code is used in different environments, the
 environment loaded last will overwrite what was loaded earlier.
 
 From Puppet 6.0.0 functions using this illegal construct will not work as the extra methods cannot be called.
