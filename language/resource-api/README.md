@@ -619,3 +619,11 @@ Previously, the provider could provide log messages for resource instances that 
 ### Automatic relationships constrained to consts and attribute values
 
 The puppet3 type API allows arbitrary code execution for calculating automatic relationship targets. The current approach in the Resource API is more restrained, but allowes understanding the type's needs by inspecting the metadata. This is a tradeoff that can be easily revisited by adding a feature later to allow the provider to implement a custom transformation.
+
+### Commands API
+
+Ruby's native command execution API (`system`, `open3`) is not very user friendly. The first attempt at remediating this failed on getting the necessary dependencies into the puppet-agent package. Follow [PDK-847](https://tickets.puppetlabs.com/browse/PDK-847) for the next try.
+
+### Lazy-loaded attributes
+
+Some attributes are expensive to load, but rarely managed. To ensure responsible (CPU-)resource usage, it should be possible to have those attributes stay dormant, and be loaded only on demand. Currently the API requires all attributes to be loaded at once.
