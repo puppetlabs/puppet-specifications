@@ -18,6 +18,11 @@
       "default": false,
       "description": "This task respects the '_noop' metaparam. If this false or absent the task runner will refuse to run this task if noop is specified."
     },
+    "remote": {
+      "type": "boolean",
+      "default": false,
+      "description": "This task is capable of operating on a remote target using connection information in the '_target' metaparam."
+    },
     "input_method": {
       "type": "string",
       "enum": ["stdin", "environment"],
