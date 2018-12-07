@@ -69,6 +69,8 @@ The preferred style of the keys should be `snake_case`.
 
 **extensions**: A hash of extensions to the task spec used by a Specific Task Runner. Each key at the top level should be the name of the Task Runner the extension is used by. Task Runners should not read extensions outside of their own namespace.(rev 3)
 
+**remote**: Default `false`. All implementation of this task operate on a remote target using the `_target` metaparam.(rev 4)
+
 
 #### Example Task Metadata
 
@@ -134,6 +136,8 @@ The implementations property is used to describe different implementations for d
 
 **files**: files required by this implementation. These will be concatenated with the files array from the top level of the tasks, metadata.(rev 3)
 
+**remote**: This implementation is remote. Set remote on specific implementations if the task supports both normal and remote execution.(rev 4)
+
 ### Metaparameters
 
 In addition to the tasks parameters, the task runner may inject metaparameters prefixed by `_`.
@@ -143,6 +147,8 @@ In addition to the tasks parameters, the task runner may inject metaparameters p
 **_task**: Allow multiple task implementations to access the same executable file. The `_task` metaparameter provides the executable the task name to allow task specific logic to be implemented.(rev 2)
 
 **_installdir**: Tasks with `files` specified in the metadata will be passed the `_installdir` metaparameter to provide the file path to the expected resources.(rev 3)
+
+**_target**: Connection information for connecting to the real target when the task is running on a proxy.
 
 #### Metaparameter Examples
 
@@ -347,3 +353,19 @@ Some examples:
 The JSON schema for errors is included in [error.json](error.json).
 
 [Bolt]: https://github.com/puppetlabs/bolt
+
+## Executing Remote Tasks(rev 4)
+
+Tasks may be written to execute on a proxy target and interact remotely with
+the specified target. This is useful when the target has a limited shell
+environment or only exposes an API.
+
+- The task runner must accept a hash of connection information for remote
+  targets.
+- The task runner must add the `_target` metaparam containing a hash of
+  connection information before executing the task on the proxy target.
+- The task runner should refuse to execute task implementations that do not have
+  `remote` set on remote targets.
+- The task runner should refuse to execute task implementations that do have
+  `remote` set on normal targets.
+- The task runner may have a default proxy target for remote targets.
