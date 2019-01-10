@@ -208,11 +208,6 @@ new line character.
       with. The escaped end of line joins the long line into one.
      | - END
 
-* There is a bug in the current implementation [PUP-3091][2] since
-  trimming of left margin should take place before joining lines.
-
-[2]: https://tickets.puppetlabs.com/browse/PUP-3091
-
 Spaces allowed in the tag
 ---
 
