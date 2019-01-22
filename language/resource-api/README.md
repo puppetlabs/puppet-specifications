@@ -412,10 +412,10 @@ Puppet::ResourceAPI.register_transport(
 
 #  lib/puppet/transport/nexus.rb
 class Puppet::Transport::Nexus
-  def initialize(connection_info); end
-  def verify; end
-  def facts; {}; end
-  def close; end
+  def initialize(context, connection_info); end
+  def verify(context); end
+  def facts(context); {}; end
+  def close(context); end
 end
 ```
 
