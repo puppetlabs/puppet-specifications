@@ -455,7 +455,9 @@ To allow implementors a wide latitude in implementing connection and retry handl
 
 ### Direct Access to Transports
 
-It is possible to use a RSAPI Transport directly using the `connect` method. `Puppet::ResourceApi::Transport.connect(name, config)`
+It is possible to use a RSAPI Transport directly using the `connect` method:
+
+`Puppet::ResourceApi::Transport.connect(name, config)`
 
 1. `register` the Transport schema for the remote resource by
     * directly calling into `Puppet::ResourceApi.register_transport`
@@ -465,6 +467,12 @@ It is possible to use a RSAPI Transport directly using the `connect` method. `Pu
 3. When the transport has been initialized, `connect` will return the `Transport` object
 
 See above for possible exceptions coming from initializing a transport.
+
+To get a list of all registered transports, call the `list` method:
+
+`Puppet::ResourceApi::Transport.list`
+
+It will return a hash of all registered transport schemas keyed by their name. Each entry in the list is the transport schema definition as passed to `register_transport`.
 
 ### Legacy Support
 
