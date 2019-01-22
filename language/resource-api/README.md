@@ -348,6 +348,7 @@ When a resource is marked with `noop => true`, either locally or through a globa
 Puppet::ResourceApi.register_type(
   name: 'nx9k_vlan',
   features: [ 'remote_resource' ],
+  # ...
 )
 
 # lib/puppet/provider/nx9k_vlan/nexus.rb
@@ -411,94 +412,91 @@ Puppet::ResourceAPI.register_transport(
 
 #  lib/puppet/transport/nexus.rb
 class Puppet::Transport::Nexus
-         < Puppet::ResourceApi::Transport::Base
   def initialize(connection_info); end
-  def facts; end
   def verify; end
+  def facts; {}; end
   def close; end
 end
 ```
 
-The transport layer consists of the schema and the implementation. The schema is defined in the same manner as a `Type`, except instead of `attributes`
+A transport connects providers to the remote target. It consists of the schema and the implementation. The schema is defined in the same manner as a `Type`, except instead of `attributes`
 you define `connection_info` which describes the shape of the data which should be passed to the implementation for a connection to be made.
 
 Password attributes should also set `sensitive: true` to ensure that this data is handled securely.
 
-The transport implementation must inherit from `Puppet::ResourceApi::Transport::Base` and implement the following methods:
+The transport implementation must implement the following methods:
 
-  * initialize(connection_info)
+  * `initialize(context, connection_info)`
     * `connection_info` contains validated hash matching schema
-    * after initialize the `transport` is expected to be ready for processing requests.
-  * facts
-    * Access the target and return a facts hash containing a sensible subset of values from [facter](https://puppet.com/docs/facter/latest/core_facts.html) and other facts appropriate for the target.
-  * verify:
-    * Perform a test to check that the transport is connected to the remote resource. Returns a string containing a user-readable error description when the connection fails, or nil if it succeeds.
-  * close
-    * Close the connection
+    * after initialize the transport is expected to be ready for processing requests
+    * any errors to connect to the target (network unreachable, credentials rejected) should be reported by throwing an appropriate exception
+    * in some cases (e.g. when the target is a REST API), no processing needs to happen in initialize at all
+  * `verify(context)`
+    * perform a test to check that the transport can (still) talk to the remote target
+    * raises an exception if the connection check failed
+  * `facts(context)`
+    * access the target and return a facts hash containing a sensible subset of default facts from [facter](https://puppet.com/docs/facter/latest/core_facts.html) and more specific facts appropriate for the target
+  * `close(context)`
+    * close the connection
+    * after calling this method the transport will not be used anymore
+    * this method should free up any caches and operating system resources (e.g. open connections)
+    * this method should never throw an exception
 
-## Direct Access to Transports
+To allow implementors a wide latitude in implementing connection and retry handling, the Resource API does not put a lot of constraints on when and how a transport can fail/error.
+
+1. Retry handling: Transports should implement all low-level retry logic necessary for dealing with network hiccups and service restarts of the target. To avoid cascading low-level issues to other parts of the system, a transport should at most wait 30 seconds for a single target to recover. When the transport has to execute retries, this should be communicated to the operator at the `notice` level to raise awareness of transient problems. The transport is encouraged (but, again, not required) to activate its retry logic in the case of recoverable errors (e.g. "target unreachable").
+
+1. On `initialize`, the transport may apply deeper validation to the passed connection info, like mutual exclusivity of optional values (e.g. `password` OR `key`) and throw an `ArgumentError`
+1. On `initialize`, the transport may (but doesn't have to) try to establish a connection to the remote target. If this fails due to unrecoverable errors (e.g. "password rejected"), an appropriate exception should be thrown.
+
+1. `verify` and `facts`, like `initialize` only needs to throw exceptions when unrecoverable errors are encountered, or when the retry logic times out.
+
+1. On any other operation will primarily be used by providers and tasks talking to this kind of target. Those operations are free to use any error signalling mechanism that is convenient. Providers and tasks will have to provide appropriate error signalling to the runtime.
+
+### Direct Access to Transports
 
 It is possible to use a RSAPI Transport directly using the `connect` method. `Puppet::ResourceApi::Transport.connect(name, config)`
 
-1. `register` the Transport schema for the remote resource
-2. `connect` to the Transport by name, passing the credential values .
-3. When the connection has been made, `connect` will return the `Transport` object
+1. `register` the Transport schema for the remote resource by
+    * directly calling into `Puppet::ResourceApi.register_transport`
+    * loading an existing schema using `require 'puppet/transport/schema/<transportname>`
+    * setting up puppet's autoloader for `'puppet/transport/schema'`
+2. `connect` to the transport by name, passing the connection info
+3. When the transport has been initialized, `connect` will return the `Transport` object
 
-Should a connection be unable to be made, `connect` will throw a `Puppet::DevError` with further information.
+See above for possible exceptions coming from initializing a transport.
 
+### Legacy Support
 
-## Legacy Support
-
-Before puppet 6.2 remote resources were only supported through the `Puppet::Util::NetworkDevice` namespace.
+Before puppet 6.X (TBD) remote resources were only supported through the `Puppet::Util::NetworkDevice` namespace. To make a module useful on these older versions, a shim `Device` class needs to be provided to connect the dots.
 
 ```ruby
 # lib/puppet/type/nx9k_vlan.rb
 Puppet::ResourceApi.register_type(
   name: 'nx9k_vlan',
   features: [ 'remote_resource' ],
+  # ...
 )
 
 # lib/puppet/util/network_device/nexus/device.rb
-require 'puppet/util/network_device/simple/device'
+require 'puppet/resource_api/transport/wrapper'
+# force registering the transport
+require 'puppet/transport/schema/nexus'
 
 module Puppet::Util::NetworkDevice::Nexus
-  class Device < Puppet::Util::NetworkDevice::Simple::Device
-    def facts
-      # access the device and return facts hash
+  class Device < Puppet::ResourceApi::Transport::Wrapper
+    def initialize(url_or_config, _options = {})
+      super('nexus', url_or_config)
     end
   end
 end
-
-# lib/puppet/provider/nx9k_vlan/nexus.rb
-class Puppet::Provider::Nx9k_vlan::Nexus
-  def set(context, changes, noop: false)
-    changes.each do |name, change|
-      is = change.has_key? :is ? change[:is] : get_single(name)
-      should = change[:should]
-      # ...
-      context.device.do_something unless noop
-    end
-  end
 ```
 
-## Reusing existing code
+Inheriting from `Puppet::ResourceApi::Transport::Wrapper` will ensure that the necessary `Device` methods will be implemented using your transport.
 
-To re-use existing device code as a transport, move the class to `Puppet::Transport`, remove mention of the `Puppet::Util::NetworkDevice::Simple::Device` (if it was used) and change the initialisiation to accept and process a `connection_info` hash instead of the previous structures.
+### Porting existing code
 
-## Supporting older puppet versions
-
-Inherit from `Puppet::ResourceApi::Transport::Forwarder` in your device, without any other content there. See example:
-
-```ruby
-# lib/puppet/util/network_device/nexus/device.rb
-require 'puppet/resource_api'
-
-module Puppet::Util::NetworkDevice::Nexus
-  class Device < Puppet::ResourceApi::Transport::Forwarder
-    ...
-  end
-end
-```
+To port your existing device code as a transport, move the class to `Puppet::Transport`, remove mention of the `Puppet::Util::NetworkDevice::Simple::Device` (if it was used) and change the initialisiation to accept and process a `connection_info` hash instead of the previous structures.
 
 ## Runtime environment
 
