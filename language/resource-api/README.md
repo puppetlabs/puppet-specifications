@@ -368,9 +368,9 @@ class Puppet::Provider::Nx9k_vlan::Nexus
   end
 ```
 
-Declaring this feature restricts the resource from being run "locally". It is expected to execute all external interactions through the `context.transport` instance. The way that instance is set up is runtime specific. In Puppet, it is configured through the [`device.conf`](https://puppet.com/docs/puppet/5.3/config_file_device.html) file, and only available when running under [`puppet device`](https://puppet.com/docs/puppet/5.3/man/device.html).
+Declaring this feature restricts the resource from being run "locally". It executes all external interactions through the `context.transport` instance. The way the instance is set up is runtime specific. In Puppet, it is configured through the [`device.conf`](https://puppet.com/docs/puppet/5.3/config_file_device.html) file, and only available when running under [`puppet device`](https://puppet.com/docs/puppet/5.3/man/device.html).
 
-To support puppet versions prior to 6, please see the [Legacy Support](#legacy-support) section below.
+To support Puppet versions prior to 6, see the [Legacy Support](#legacy-support) section below.
 
 ### Transport
 
@@ -419,37 +419,36 @@ class Puppet::Transport::Nexus
 end
 ```
 
-A transport connects providers to the remote target. It consists of the schema and the implementation. The schema is defined in the same manner as a `Type`, except instead of `attributes`
-you define `connection_info` which describes the shape of the data which should be passed to the implementation for a connection to be made.
+A transport connects providers to the remote target. It consists of the schema and the implementation. The schema is defined in the same manner as a `Type`, except instead of `attributes` you define `connection_info` which describes the shape of the data which is passed to the implementation for a connection to be made.
 
-Password attributes should also set `sensitive: true` to ensure that this data is handled securely. Attributes marked with this flag will allow any UI based off this schema to make appropriate presentation choices. The value will be passed to the transport wrapped in a `Puppet::Pops::Types::PSensitiveType::Sensitive`. This will keep the value from being logged or saved inadvertently while it is being transmitted between components.
+Password attributes should also set `sensitive: true` to ensure that the data is handled securely. Attributes marked with this flag allow any UI based off this schema to make appropriate presentation choices. The value will be passed to the transport wrapped in a `Puppet::Pops::Types::PSensitiveType::Sensitive`. This will keep the value from being logged or saved inadvertently while it is being transmitted between components.
 
 The transport implementation must implement the following methods:
 
   * `initialize(context, connection_info)`
     * `connection_info` contains validated hash matching schema
-    * after initialize the transport is expected to be ready for processing requests
-    * any errors to connect to the target (network unreachable, credentials rejected) should be reported by throwing an appropriate exception
-    * in some cases (e.g. when the target is a REST API), no processing needs to happen in initialize at all
+    * After initialize the transport is expected to be ready for processing requests
+    * Any errors to connect to the target (network unreachable, credentials rejected) should be reported by throwing an appropriate exception
+    * In some cases (e.g. when the target is a REST API), no processing needs to happen in initialize at all
   * `verify(context)`
-    * perform a test to check that the transport can (still) talk to the remote target
-    * raises an exception if the connection check failed
+    * Perform a test to check that the transport can (still) talk to the remote target
+    * Raises an exception if the connection check failed
   * `facts(context)`
-    * access the target and return a facts hash containing a sensible subset of default facts from [facter](https://puppet.com/docs/facter/latest/core_facts.html) and more specific facts appropriate for the target
+    * Access the target and return a facts hash containing a sensible subset of default facts from [Facter](https://puppet.com/docs/facter/latest/core_facts.html) and more specific facts appropriate for the target
   * `close(context)`
-    * close the connection
-    * after calling this method the transport will not be used anymore
-    * this method should free up any caches and operating system resources (e.g. open connections)
-    * this method should never throw an exception
+    * Close the connection
+    * After calling this method the transport will not be used anymore
+    * This method should free up any caches and operating system resources (e.g. open connections)
+    * This method should never throw an exception
 
 To allow implementors a wide latitude in implementing connection and retry handling, the Resource API does not put a lot of constraints on when and how a transport can fail/error.
 
-1. Retry handling: Transports should implement all low-level retry logic necessary for dealing with network hiccups and service restarts of the target. To avoid cascading low-level issues to other parts of the system, a transport should at most wait 30 seconds for a single target to recover. When the transport has to execute retries, this should be communicated to the operator at the `notice` level to raise awareness of transient problems. The transport is encouraged (but, again, not required) to activate its retry logic in the case of recoverable errors (e.g. "target unreachable").
+1. Retry handling: Transports should implement all low-level retry logic necessary for dealing with network hiccups and service restarts of the target. To avoid cascading low-level issues to other parts of the system, a transport should at most wait 30 seconds for a single target to recover. When the transport has to execute retries, it is communicated to the operator at the `notice` level to raise awareness of transient problems. The transport is encouraged (but, again, not required) to activate its retry logic in the case of recoverable errors (e.g. "target unreachable").
 
-1. On `initialize`, the transport may apply deeper validation to the passed connection info, like mutual exclusivity of optional values (e.g. `password` OR `key`) and throw an `ArgumentError`
-1. On `initialize`, the transport may (but doesn't have to) try to establish a connection to the remote target. If this fails due to unrecoverable errors (e.g. "password rejected"), an appropriate exception should be thrown.
+1. On `initialize`, the transport may apply deeper validation to the passed connection information, like mutual exclusivity of optional values (e.g. `password` OR `key`) and throw an `ArgumentError`
+1. On `initialize`, the transport may (but doesn't have to) try to establish a connection to the remote target. If this fails due to unrecoverable errors (e.g. "password rejected"), an appropriate exception will be thrown.
 
-1. `verify` and `facts`, like `initialize` only needs to throw exceptions when unrecoverable errors are encountered, or when the retry logic times out.
+1. `verify` and `facts`, like `initialize`, only needs to throw exceptions when unrecoverable errors are encountered, or when the retry logic times out.
 
 1. On any other operation will primarily be used by providers and tasks talking to this kind of target. Those operations are free to use any error signalling mechanism that is convenient. Providers and tasks will have to provide appropriate error signalling to the runtime.
 
@@ -459,10 +458,10 @@ It is possible to use a RSAPI Transport directly using the `connect` method:
 
 `Puppet::ResourceApi::Transport.connect(name, config)`
 
-1. `register` the Transport schema for the remote resource by
-    * directly calling into `Puppet::ResourceApi.register_transport`
-    * loading an existing schema using `require 'puppet/transport/schema/<transportname>`
-    * setting up puppet's autoloader for `'puppet/transport/schema'`
+1. `register` the transport schema for the remote resource by:
+    * Directly calling into `Puppet::ResourceApi.register_transport`
+    * Loading an existing schema using `require 'puppet/transport/schema/<transportname>`
+    * Setting up Puppet's autoloader for `'puppet/transport/schema'`
 2. `connect` to the transport by name, passing the connection info
 3. When the transport has been initialized, `connect` will return the `Transport` object
 
@@ -476,7 +475,7 @@ It will return a hash of all registered transport schemas keyed by their name. E
 
 ### Legacy Support
 
-Before puppet 6.X (TBD) remote resources were only supported through the `Puppet::Util::NetworkDevice` namespace. To make a module useful on these older versions, a shim `Device` class needs to be provided to connect the dots.
+Before Puppet 6.X (TBD), remote resources were only supported through the `Puppet::Util::NetworkDevice` namespace. To make a module useful on these older versions, a shim `Device` class needs to be provided to connect the dots:
 
 ```ruby
 # lib/puppet/type/nx9k_vlan.rb
