@@ -505,6 +505,15 @@ Inheriting from `Puppet::ResourceApi::Transport::Wrapper` will ensure that the n
 
 To port your existing device code as a transport, move the class to `Puppet::Transport`, remove mention of the `Puppet::Util::NetworkDevice::Simple::Device` (if it was used) and change the initialisiation to accept and process a `connection_info` hash instead of the previous structures.
 
+The following replacements have provided a good starting point for these changes:
+
+* `Util::NetworkDevice::NAME::Device` -> `ResourceApi::Transport::NAME`
+* `puppet/util/network_device/NAME/device` -> `puppet/transport/NAME`
+* `device` -> `transport`
+
+Of course this list can't be exhaustive and will depend on the specifics of your codebase.
+
+
 ## Runtime environment
 
 The primary runtime environment for the provider is the Puppet agent, a long-running daemon process. The provider can also be used in the Puppet apply command, a one-shot version of the agent, or the Puppet resource command, a short-lived command line interface (CLI) process for listing or managing a single resource type. Other callers who want to access the provider will have to imitate these environments.
