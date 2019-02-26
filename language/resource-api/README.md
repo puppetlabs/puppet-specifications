@@ -357,13 +357,8 @@ class Puppet::Provider::Nx9k_vlan::Nexus
     changes.each do |name, change|
       is = change.has_key? :is ? change[:is] : get_single(name)
       should = change[:should]
-
-      established = context.transport.verify
-      if established.nil?
-        context.transport.do_something unless noop
-      else
-        raise Puppet::Transport::Error('Connection to remote target is not available: #{established}')
-      end
+      # ...
+      context.transport.do_something unless noop
     end
   end
 ```
