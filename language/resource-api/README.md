@@ -9,6 +9,7 @@ A *resource* is the basic unit that is managed by Puppet. Each resource has a se
 To make the resource known to the Puppet ecosystem, its definition ("type") needs to be registered with Puppet:
 
 ```ruby
+# lib/puppet/type/apt_key.rb
 Puppet::ResourceApi.register_type(
   name: 'apt_key',
   desc: <<-EOS,
@@ -86,6 +87,7 @@ Each title pattern contains the:
 Example:
 
 ```ruby
+# lib/puppet/type/software.rb
 Puppet::ResourceApi.register_type(
   name: 'software',
   docs: <<-DOC,
@@ -123,6 +125,7 @@ Puppet::ResourceApi.register_type(
 
 Matches the first title pattern:
 ```puppet
+# /etc/puppetlabs/code/environments/production/manifests/site.pp
 software { php-yum:
   ensure=>'present'
 }
@@ -133,6 +136,7 @@ software { php-gem:
 ```
 Matches the second title pattern:
 ```puppet
+# /etc/puppetlabs/code/environments/production/manifests/site.pp
 software { php:
   manager='yum'
   ensure=>'present'
@@ -148,6 +152,7 @@ To affect changes, a resource requires an implementation that makes the universe
 At runtime, the current and intended system states for a specific resource. These are always represented as Ruby hashes of the resource's attributes and applicable operational parameters.
 
 ```ruby
+# lib/puppet/provider/apt_key/apt_key.rb
 class Puppet::Provider::AptKey::AptKey
   def get(context)
     [
@@ -204,7 +209,7 @@ Once all of that is in place, instead of the `set` method, the provider needs to
 
 * `create(context, name, should)`: This is called when a new resource should be created.
   * `context`: provides utilties from the runtime environment, and is decribed in more detail there.
-  * `name`: the name or hash of the new resource. 
+  * `name`: the name or hash of the new resource.
   * `should`: a hash of the attributes for the new instance.
 
 * `update(context, name, should)`: This is called when a resource should be updated.
@@ -237,11 +242,13 @@ There are some use cases where an implementation provides a better experience th
 Allows the provider to accept a wide range of formats for values without confusing the user.
 
 ```ruby
+# lib/puppet/type/apt_key.rb
 Puppet::ResourceApi.register_type(
   name: 'apt_key',
   features: [ 'canonicalize' ],
 )
 
+# lib/puppet/provider/apt_key/apt_key.rb
 class Puppet::Provider::AptKey::AptKey
   def canonicalize(context, resources)
     resources.each do |r|
@@ -288,11 +295,13 @@ For example, in the Puppet runtime environment this is bound to the `strict` set
 Allows for more efficient querying of the system state when only specific parts are required.
 
 ```ruby
+# lib/puppet/type/apt_key.rb
 Puppet::ResourceApi.register_type(
   name: 'apt_key',
   features: [ 'simple_get_filter' ],
 )
 
+# lib/puppet/provider/apt_key/apt_key.rb
 class Puppet::Provider::AptKey::AptKey
   def get(context, names = nil)
     [
@@ -311,11 +320,13 @@ The runtime environment calls `get` with a minimal set of names, and keeps track
 ### Provider feature: `supports_noop`
 
 ```ruby
+# lib/puppet/type/apt_key.rb
 Puppet::ResourceApi.register_type(
   name: 'apt_key',
   features: [ 'supports_noop' ],
 )
 
+# lib/puppet/provider/apt_key/apt_key.rb
 class Puppet::Provider::AptKey::AptKey
   def set(context, changes, noop: false)
     changes.each do |name, change|
@@ -333,33 +344,183 @@ When a resource is marked with `noop => true`, either locally or through a globa
 ### Provider feature: `remote_resource`
 
 ```ruby
+# lib/puppet/type/nx9k_vlan.rb
 Puppet::ResourceApi.register_type(
   name: 'nx9k_vlan',
   features: [ 'remote_resource' ],
+  # ...
 )
 
-require 'puppet/util/network_device/simple/device'
-module Puppet::Util::NetworkDevice::Nexus
-  class Device < Puppet::Util::NetworkDevice::Simple::Device
-    def facts
-      # access the device and return facts hash
-    end
-  end
-end
-
-class Puppet::Provider::Nx9k_vlan::Nx9k_vlan
+# lib/puppet/provider/nx9k_vlan/nexus.rb
+class Puppet::Provider::Nx9k_vlan::Nexus
   def set(context, changes, noop: false)
     changes.each do |name, change|
       is = change.has_key? :is ? change[:is] : get_single(name)
       should = change[:should]
       # ...
-      context.device.do_something unless noop
+      context.transport.do_something unless noop
+    end
+  end
+```
+
+Declaring this feature restricts the resource from being run "locally". It executes all external interactions through the `context.transport` instance. The way the instance is set up is runtime specific. In Puppet, it is configured through the [`device.conf`](https://puppet.com/docs/puppet/5.3/config_file_device.html) file, and only available when running under [`puppet device`](https://puppet.com/docs/puppet/5.3/man/device.html).
+
+To support Puppet versions prior to 6, see the [Legacy Support](#legacy-support) section below.
+
+### Transport
+
+```ruby
+# lib/puppet/transport/nexus_schema.rb
+Puppet::ResourceAPI.register_transport(
+  name: 'nexus', # points at class Puppet::Transport::Nexus
+  desc: 'Connects to a Cisco Nexus device',
+  # features: [], # future extension points
+  connection_info: {
+    connector_type: {
+      type: 'Enum[nxapi, ssh, grpc, pidgeon]',
+      desc: 'Which method to use to connect to the host'
+    },
+    hostname: {
+      type: 'String',
+      desc: 'The host to connect to.',
+    },
+    username: {
+      type: 'String',
+      desc: 'The user.',
+    },
+    password: {
+      type: 'String',
+      sensitive: true,
+      desc: 'The password to connect.',
+    },
+    enable_password: {
+      type: 'String',
+      sensitive: true,
+      desc: 'The password escalate to enable access.',
+    },
+    port: {
+      type: 'Integer',
+      desc: 'The port to connect to.',
+    },
+  },
+)
+
+#  lib/puppet/transport/nexus.rb
+class Puppet::Transport::Nexus
+  def initialize(context, connection_info); end
+  def verify(context); end
+  def facts(context); {}; end
+  def close(context); end
+end
+```
+
+A transport connects providers to the remote target. It consists of the schema and the implementation. The schema is defined in the same manner as a `Type`, except instead of `attributes` you define `connection_info` which describes the shape of the data which is passed to the implementation for a connection to be made.
+
+Password attributes should also set `sensitive: true` to ensure that the data is handled securely. Attributes marked with this flag allow any UI based off this schema to make appropriate presentation choices. The value will be passed to the transport wrapped in a `Puppet::Pops::Types::PSensitiveType::Sensitive`. This will keep the value from being logged or saved inadvertently while it is being transmitted between components. To access the value within the Transport use the `unwrap` method. e.g. `connection_info[:password].unwrap`.
+
+The transport implementation must implement the following methods:
+
+  * `initialize(context, connection_info)`
+    * `connection_info` contains validated hash matching schema
+    * After initialize the transport is expected to be ready for processing requests
+    * Any errors to connect to the target (network unreachable, credentials rejected) should be reported by throwing an appropriate exception
+    * In some cases (e.g. when the target is a REST API), no processing needs to happen in initialize at all
+  * `verify(context)`
+    * Perform a test to check that the transport can (still) talk to the remote target
+    * Raises an exception if the connection check failed
+  * `facts(context)`
+    * Access the target and return a facts hash containing a sensible subset of default facts from [Facter](https://puppet.com/docs/facter/latest/core_facts.html) and more specific facts appropriate for the target
+  * `close(context)`
+    * Close the connection
+    * After calling this method the transport will not be used anymore
+    * This method should free up any caches and operating system resources (e.g. open connections)
+    * This method should never throw an exception
+
+To allow implementors a wide latitude in implementing connection and retry handling, the Resource API does not put a lot of constraints on when and how a transport can fail/error.
+
+1. Retry handling: Transports should implement all low-level retry logic necessary for dealing with network hiccups and service restarts of the target. To avoid cascading low-level issues to other parts of the system, a transport should at most wait 30 seconds for a single target to recover. When the transport has to execute retries, it is communicated to the operator at the `notice` level to raise awareness of transient problems. The transport is encouraged (but, again, not required) to activate its retry logic in the case of recoverable errors (e.g. "target unreachable").
+
+1. On `initialize`, the transport may apply deeper validation to the passed connection information, like mutual exclusivity of optional values (e.g. `password` OR `key`) and throw an `ArgumentError`
+1. On `initialize`, the transport may (but doesn't have to) try to establish a connection to the remote target. If this fails due to unrecoverable errors (e.g. "password rejected"), an appropriate exception will be thrown.
+
+1. `verify` and `facts`, like `initialize`, only needs to throw exceptions when unrecoverable errors are encountered, or when the retry logic times out.
+
+1. Any other methods on the transport are to be used by providers and tasks talking to this kind of target. Those operations are free to use any error signalling mechanism that is convenient. Providers and tasks will have to provide appropriate error signalling to the runtime.
+
+### Direct Access to Transports
+
+It is possible to use a RSAPI Transport directly using the `connect` method:
+
+`Puppet::ResourceApi::Transport.connect(name, config)`
+
+1. `register` the transport schema for the remote resource by:
+    * Directly calling into `Puppet::ResourceApi.register_transport`
+    * Loading an existing schema using `require 'puppet/transport/schema/<transportname>`
+    * Setting up Puppet's autoloader for `'puppet/transport/schema'`
+2. `connect` to the transport by name, passing the connection info
+3. When the transport has been initialized, `connect` will return the `Transport` object
+
+See above for possible exceptions coming from initializing a transport.
+
+To get a list of all registered transports, call the `list` method:
+
+`Puppet::ResourceApi::Transport.list`
+
+It will return a hash of all registered transport schemas keyed by their name. Each entry in the list is the transport schema definition as passed to `register_transport`:
+
+
+```ruby
+{
+  'nexus' => {
+    name: 'nexus',
+    desc: 'Connects to a Cisco Nexus device',
+    # ...
+    # the rest of the transport schema definition here
+  },
+}
+```
+
+### Legacy Support
+
+Before Puppet 6.X (TBD), remote resources were only supported through the `Puppet::Util::NetworkDevice` namespace. To make a module useful on these older versions, a shim `Device` class needs to be provided to connect the dots:
+
+```ruby
+# lib/puppet/type/nx9k_vlan.rb
+Puppet::ResourceApi.register_type(
+  name: 'nx9k_vlan',
+  features: [ 'remote_resource' ],
+  # ...
+)
+
+# lib/puppet/util/network_device/nexus/device.rb
+require 'puppet/resource_api/transport/wrapper'
+# force registering the transport
+require 'puppet/transport/schema/nexus'
+
+module Puppet::Util::NetworkDevice::Nexus
+  class Device < Puppet::ResourceApi::Transport::Wrapper
+    def initialize(url_or_config, _options = {})
+      super('nexus', url_or_config)
     end
   end
 end
 ```
 
-Declaring this feature restricts the resource from being run "locally". It is expected to execute all external interactions through the `context.device` instance. The way that instance is set up is runtime specific. In Puppet, it is configured through the [`device.conf`](https://puppet.com/docs/puppet/5.3/config_file_device.html) file, and only available when running under [`puppet device`](https://puppet.com/docs/puppet/5.3/man/device.html). It is recommended to use `Puppet::Util::NetworkDevice::Simple::Device` as the base class for all devices, which automatically loads a configuration from the local filesystem of the proxy node where it is running on.
+Inheriting from `Puppet::ResourceApi::Transport::Wrapper` will ensure that the necessary `Device` methods will be implemented using your transport.
+
+### Porting existing code
+
+To port your existing device code as a transport, move the class to `Puppet::Transport`, remove mention of the `Puppet::Util::NetworkDevice::Simple::Device` (if it was used) and change the initialisation to accept and process a `connection_info` hash instead of the previous structures. When accessing the `connection_info` in your new transport, change all string keys to symbols (e.g. `'foo'` to `:foo`). Add `context` as first argument to your `initialize` and `facts` method.
+
+The following replacements have provided a good starting point for these changes:
+
+* `Util::NetworkDevice::NAME::Device` -> `ResourceApi::Transport::NAME`
+* `puppet/util/network_device/NAME/device` -> `puppet/transport/NAME`
+* `device` -> `transport`
+* Replace all direct calls to puppet logging with calls into the `context` logger, potentially getting the context instance from the provider.
+
+Of course this list can't be exhaustive and will depend on the specifics of your codebase.
+
 
 ## Runtime environment
 
@@ -536,7 +697,7 @@ The provider can gain insight into the Type definition through `context.type` ut
 
 `feature?` will return true if the type supports a given [Provider Feature](#provider-features).
 
-```
+```ruby
 # example from simple_provider.rb
 
 def set(context, changes)
