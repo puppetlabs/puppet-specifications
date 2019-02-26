@@ -378,8 +378,8 @@ To support Puppet versions prior to 6, see the [Legacy Support](#legacy-support)
 # lib/puppet/transport/nexus_schema.rb
 Puppet::ResourceAPI.register_transport(
   name: 'nexus', # points at class Puppet::Transport::Nexus
-  desc: 'Connects to a Cisco Nexus device'
-  features: [], # TODO
+  desc: 'Connects to a Cisco Nexus device',
+  # features: [], # future extension points
   connection_info: {
     connector_type: {
       type: 'Enum[nxapi, ssh, grpc, pidgeon]',
@@ -450,7 +450,7 @@ To allow implementors a wide latitude in implementing connection and retry handl
 
 1. `verify` and `facts`, like `initialize`, only needs to throw exceptions when unrecoverable errors are encountered, or when the retry logic times out.
 
-1. On any other operation will primarily be used by providers and tasks talking to this kind of target. Those operations are free to use any error signalling mechanism that is convenient. Providers and tasks will have to provide appropriate error signalling to the runtime.
+1. Any other methods on the transport are to be used by providers and tasks talking to this kind of target. Those operations are free to use any error signalling mechanism that is convenient. Providers and tasks will have to provide appropriate error signalling to the runtime.
 
 ### Direct Access to Transports
 
@@ -471,7 +471,19 @@ To get a list of all registered transports, call the `list` method:
 
 `Puppet::ResourceApi::Transport.list`
 
-It will return a hash of all registered transport schemas keyed by their name. Each entry in the list is the transport schema definition as passed to `register_transport`.
+It will return a hash of all registered transport schemas keyed by their name. Each entry in the list is the transport schema definition as passed to `register_transport`:
+
+
+```ruby
+{
+  'nexus' => {
+    name: 'nexus',
+    desc: 'Connects to a Cisco Nexus device',
+    # ...
+    # the rest of the transport schema definition here
+  },
+}
+```
 
 ### Legacy Support
 
@@ -503,13 +515,14 @@ Inheriting from `Puppet::ResourceApi::Transport::Wrapper` will ensure that the n
 
 ### Porting existing code
 
-To port your existing device code as a transport, move the class to `Puppet::Transport`, remove mention of the `Puppet::Util::NetworkDevice::Simple::Device` (if it was used) and change the initialisiation to accept and process a `connection_info` hash instead of the previous structures.
+To port your existing device code as a transport, move the class to `Puppet::Transport`, remove mention of the `Puppet::Util::NetworkDevice::Simple::Device` (if it was used) and change the initialisation to accept and process a `connection_info` hash instead of the previous structures. When accessing the `connection_info` in your new transport, change all string keys to symbols (e.g. `'foo'` to `:foo`). Add `context` as first argument to your `initialize` and `facts` method.
 
 The following replacements have provided a good starting point for these changes:
 
 * `Util::NetworkDevice::NAME::Device` -> `ResourceApi::Transport::NAME`
 * `puppet/util/network_device/NAME/device` -> `puppet/transport/NAME`
 * `device` -> `transport`
+* Replace all direct calls to puppet logging with calls into the `context` logger, potentially getting the context instance from the provider.
 
 Of course this list can't be exhaustive and will depend on the specifics of your codebase.
 
