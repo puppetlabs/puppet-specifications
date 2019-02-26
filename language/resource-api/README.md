@@ -416,7 +416,7 @@ end
 
 A transport connects providers to the remote target. It consists of the schema and the implementation. The schema is defined in the same manner as a `Type`, except instead of `attributes` you define `connection_info` which describes the shape of the data which is passed to the implementation for a connection to be made.
 
-Password attributes should also set `sensitive: true` to ensure that the data is handled securely. Attributes marked with this flag allow any UI based off this schema to make appropriate presentation choices. The value will be passed to the transport wrapped in a `Puppet::Pops::Types::PSensitiveType::Sensitive`. This will keep the value from being logged or saved inadvertently while it is being transmitted between components.
+Password attributes should also set `sensitive: true` to ensure that the data is handled securely. Attributes marked with this flag allow any UI based off this schema to make appropriate presentation choices. The value will be passed to the transport wrapped in a `Puppet::Pops::Types::PSensitiveType::Sensitive`. This will keep the value from being logged or saved inadvertently while it is being transmitted between components. To access the value within the Transport use the `unwrap` method. e.g. `connection_info[:password].unwrap`.
 
 The transport implementation must implement the following methods:
 
