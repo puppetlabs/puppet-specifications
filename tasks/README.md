@@ -27,7 +27,7 @@ Task Runners should document which version and revision of the task spec they su
 
 These are the revisions to this version of the task spec. 
 
-**Note**: Bolt generally uses the latest version and revision of the task spec. Puppet Enterprise versions use a specific version and revision of the task spec, indicated below.
+**Note**: Bolt generally uses the latest version and revision of the task spec. Puppet Enterprise versions use a specific version and revision of the task spec, indicated in the PE documentation.
 
 | Revision | Changes                  |
 |----------|--------------------------|
