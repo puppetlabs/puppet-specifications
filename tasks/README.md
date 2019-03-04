@@ -1,4 +1,4 @@
-# Puppet Task Spec (Version 1)
+# Puppet Task Spec (version 1, revision 4)
 
 The Puppet Task ecosystem allows users to execute actions on target systems. A **Task** is the smallest component of this system capturing a single action that can be taken on a target and is - in its simplest form - an executable file. It is packaged and distributed as Puppet modules which are made available to the task runner.
 
@@ -17,13 +17,24 @@ The Puppet Task ecosystem allows users to execute actions on target systems. A *
 
 ## Puppet Task Spec Versioning
 
-The task spec has a version and a revision. Changes that would break existing tasks will increment the version of the task spec. The revision of the task spec functions as a minor version and will be incremented for new features. The spec will document which revision a feature was added in.
-
-Orchestrator shipped in PE 2017.3 supports version 1 rev 1. [Bolt] supports version 1 rev 2.
+The task spec has a version and a revision. Changes that break existing tasks increment the version of the task spec. Revisions function as a minor version and are incremented for new features. This spec indicates in parentheticals the revision number for new features, for example "Running remote tasks (rev 4)."
 
 Older versions of the task runner may not support tasks that rely on newer features of the task spec. The task spec version is not intended to capture this now. Authors should use the `puppet_task_version` field in the module's metadata to document such incompatibilities for users.
 
 Task Runners should document which version and revision of the task spec they support.
+
+### Revision history
+
+These are the revisions to this version of the task spec. 
+
+**Note**: Bolt generally uses the latest version and revision of the task spec. Puppet Enterprise versions use a specific version and revision of the task spec, indicated below.
+
+| Revision | Changes                  |
+|----------|--------------------------|
+| 1        |                          |
+| 2        | Cross-platform tasks.    |
+| 3        | Multiple files per task. |
+| 4        | Hide private tasks.      |
 
 ## Task packaging and file
 
