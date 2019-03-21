@@ -434,9 +434,7 @@ The following keywords must not be used by the transport schema:
 * `run-on` - This is used by bolt to determine which target to proxy to. Transports should not rely on this key.
 * `remote-transport` - This is used to determine which transport to load. It should always be the transport class name "declassified".
 * `remote-*` Any key starting with `remote-` is reserved for future use.
-* `implementations`: reserved by boltThere are some reserved keywords that cannot be used as connection info attributes:
-
-
+* `implementations`: reserved by bolt
 
 The transport implementation must implement the following methods:
 
