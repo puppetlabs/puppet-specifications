@@ -370,7 +370,7 @@ To support Puppet versions prior to 6, see the [Legacy Support](#legacy-support)
 ### Transport
 
 ```ruby
-# lib/puppet/transport/nexus_schema.rb
+# lib/puppet/transport/schema/nexus.rb
 Puppet::ResourceAPI.register_transport(
   name: 'nexus', # points at class Puppet::Transport::Nexus
   desc: 'Connects to a Cisco Nexus device',
@@ -417,6 +417,26 @@ end
 A transport connects providers to the remote target. It consists of the schema and the implementation. The schema is defined in the same manner as a `Type`, except instead of `attributes` you define `connection_info` which describes the shape of the data which is passed to the implementation for a connection to be made.
 
 Password attributes should also set `sensitive: true` to ensure that the data is handled securely. Attributes marked with this flag allow any UI based off this schema to make appropriate presentation choices. The value will be passed to the transport wrapped in a `Puppet::Pops::Types::PSensitiveType::Sensitive`. This will keep the value from being logged or saved inadvertently while it is being transmitted between components. To access the value within the Transport use the `unwrap` method. e.g. `connection_info[:password].unwrap`.
+
+The following keywords are encouraged within the transport schema:
+
+* `uri` - Use when you need to specify a specific URL to connect to. All of the following keys will be computed from the `uri` if possible. In the future more url parts may be computed from the URI as well.
+* `host` - Use to specify and IP or address to connect to.
+* `protocol` - Use to specify which protocol the transport should use for example `http`, `https`, `ssh` or `tcp`
+* `user` - The user the transport should connect as.
+* `port` - The port the transport should connect to.
+
+The following keywords must not be used by the transport schema:
+
+* `name` - transports should use `uri` instead of name.
+* `path` - reserved as a uri part
+* `query` - reserved as a uri part
+* `run-on` - This is used by bolt to determine which target to proxy to. Transports should not rely on this key.
+* `remote-transport` - This is used to determine which transport to load. It should always be the transport class name "declassified".
+* `remote-*` Any key starting with `remote-` is reserved for future use.
+* `implementations`: reserved by boltThere are some reserved keywords that cannot be used as connection info attributes:
+
+
 
 The transport implementation must implement the following methods:
 
