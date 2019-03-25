@@ -418,23 +418,23 @@ A transport connects providers to the remote target. It consists of the schema a
 
 Password attributes should also set `sensitive: true` to ensure that the data is handled securely. Attributes marked with this flag allow any UI based off this schema to make appropriate presentation choices. The value will be passed to the transport wrapped in a `Puppet::Pops::Types::PSensitiveType::Sensitive`. This will keep the value from being logged or saved inadvertently while it is being transmitted between components. To access the value within the Transport use the `unwrap` method. e.g. `connection_info[:password].unwrap`.
 
-The following keywords are encouraged within the transport schema:
+A transport schema accepts the following keywords:
 
-* `uri` - Use when you need to specify a specific URL to connect to. All of the following keys will be computed from the `uri` if possible. In the future more url parts may be computed from the URI as well.
-* `host` - Use to specify and IP or address to connect to.
-* `protocol` - Use to specify which protocol the transport should use for example `http`, `https`, `ssh` or `tcp`
-* `user` - The user the transport should connect as.
-* `port` - The port the transport should connect to.
+* `uri`: use when you need to specify a specific URL to connect to. All of the following keys will be computed from the `uri` when possible. In the future more url parts may be computed from the URI.
+* `host`: use to specify an IP or address to connect to.
+* `protocol`: use to specify which protocol the transport should use for example `http`, `https`, `ssh` or `tcp`.
+* `user`: the user the transport should connect as.
+* `port`: the port the transport should connect to.
 
-The following keywords must not be used by the transport schema:
+Do not use the following keywords when writing a schema:
 
-* `name` - transports should use `uri` instead of name.
-* `path` - reserved as a uri part
-* `query` - reserved as a uri part
-* `run-on` - This is used by bolt to determine which target to proxy to. Transports should not rely on this key.
-* `remote-transport` - This is used to determine which transport to load. It should always be the transport class name "declassified".
-* `remote-*` Any key starting with `remote-` is reserved for future use.
-* `implementations`: reserved by bolt
+* `name`: transports should use `uri` instead of name.
+* `path`: reserved as a uri part.
+* `query`: reserved as a uri part.
+* `run-on`: This is used by Bolt to determine which target to proxy to. Transports should not rely on this key.
+* `remote-transport`: This is used to determine which transport to load. It should always be the transport class named "declassified".
+* `remote-*`: any key starting with `remote-` is reserved for future use.
+* `implementations`: reserved by Bolt.
 
 The transport implementation must implement the following methods:
 
