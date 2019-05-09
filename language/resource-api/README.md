@@ -483,7 +483,7 @@ To allow implementors a wide latitude in implementing connection and retry handl
 
 #### Bridging into Puppet
 
-Before Resource API remote resources were only supported through the `Puppet::Util::NetworkDevice` namespace. To connect your Transport to what puppet expects, a shim `Device` class needs to be provided.
+Before the Resource API, remote resources were only supported through the `Puppet::Util::NetworkDevice` namespace. To connect your transport to what Puppet expects, you need to provide a shim `Device` class.
 
 ```ruby
 # lib/puppet/type/nx9k_vlan.rb
@@ -507,9 +507,9 @@ module Puppet::Util::NetworkDevice::Nexus
 end
 ```
 
-Inheriting from `Puppet::ResourceApi::Transport::Wrapper` will ensure that the necessary `Device` methods will be implemented using your transport. Specify the transport name in the `super` call to make the connection.
+Inheriting from `Puppet::ResourceApi::Transport::Wrapper` ensures that the necessary `Device` methods are implemented using your transport. Specify the transport name in the `super` call to make the connection.
 
-> Note that because of the way Resource API is bundled with puppet agent packages, agent versions 6.0 through 6.3 will be incompatible with this way of executing remote content. Those versions go out of commercial support with [PE 2019.0 in August 2019](https://puppet.com/misc/puppet-enterprise-lifecycle).
+> Note that because of the way the Resource API is bundled with Puppet agent packages, agent versions 6.0 through 6.3 are incompatible with this way of executing remote content. These versions will not be supported after [PE 2019.0 in August 2019](https://puppet.com/misc/puppet-enterprise-lifecycle).
 
 #### Porting existing code
 
