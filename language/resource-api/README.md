@@ -363,11 +363,11 @@ class Puppet::Provider::Nx9k_vlan::Nexus
   end
 ```
 
-Declaring this feature restricts the resource from being run "locally". It executes all external interactions through the `context.transport` instance. The way the instance is set up is runtime specific. In Puppet, it is configured through the [`device.conf`](https://puppet.com/docs/puppet/5.3/config_file_device.html) file, and only available when running under [`puppet device`](https://puppet.com/docs/puppet/5.3/man/device.html).
+Declaring this feature restricts the resource from being run "locally". It executes all external interactions through the `context.transport` instance. The way the instance is set up is runtime specific. In Puppet, it is configured through the [`device.conf`](https://puppet.com/docs/puppet/5.3/config_file_device.html) file, and only available when running under [`puppet device`](https://puppet.com/docs/puppet/5.3/man/device.html). We recommend using the [device_manager module](https://forge.puppet.com/puppetlabs/device_manager) to deploy device configuration and credentials. In Bolt, credentials are passed in through the [`inventory.yaml`](https://puppet.com/docs/bolt/latest/inventory_file.html#remote-targets).
 
-To support Puppet versions prior to 6, see the [Legacy Support](#legacy-support) section below.
+To use remote resources, you need a transport. See below for how they are defined and implemented.
 
-### Transport
+### Transports
 
 ```ruby
 # lib/puppet/transport/schema/nexus.rb
@@ -412,11 +412,25 @@ class Puppet::Transport::Nexus
   def facts(context); {}; end
   def close(context); end
 end
+
+# lib/puppet/util/network_device/nexus/device.rb
+require 'puppet/resource_api/transport/wrapper'
+require 'puppet/transport/schema/nexus'
+
+module Puppet::Util::NetworkDevice::Nexus
+  class Device < Puppet::ResourceApi::Transport::Wrapper
+    def initialize(url_or_config, _options = {})
+      super('nexus', url_or_config)
+    end
+  end
+end
 ```
 
 A transport connects providers to the remote target. It consists of the schema and the implementation. The schema is defined in the same manner as a `Type`, except instead of `attributes` you define `connection_info` which describes the shape of the data which is passed to the implementation for a connection to be made.
 
 Password attributes should also set `sensitive: true` to ensure that the data is handled securely. Attributes marked with this flag allow any UI based off this schema to make appropriate presentation choices. The value will be passed to the transport wrapped in a `Puppet::Pops::Types::PSensitiveType::Sensitive`. This will keep the value from being logged or saved inadvertently while it is being transmitted between components. To access the value within the Transport use the `unwrap` method. e.g. `connection_info[:password].unwrap`.
+
+#### Schema
 
 A transport schema accepts the following keywords:
 
@@ -435,6 +449,8 @@ Do not use the following keywords when writing a schema:
 * `remote-transport`: This is used to determine which transport to load. It should always be the transport class named "declassified".
 * `remote-*`: any key starting with `remote-` is reserved for future use.
 * `implementations`: reserved by Bolt.
+
+#### Implementation
 
 The transport implementation must implement the following methods:
 
@@ -465,7 +481,50 @@ To allow implementors a wide latitude in implementing connection and retry handl
 
 1. Any other methods on the transport are to be used by providers and tasks talking to this kind of target. Those operations are free to use any error signalling mechanism that is convenient. Providers and tasks will have to provide appropriate error signalling to the runtime.
 
-### Direct Access to Transports
+#### Bridging into Puppet
+
+Before Resource API remote resources were only supported through the `Puppet::Util::NetworkDevice` namespace. To connect your Transport to what puppet expects, a shim `Device` class needs to be provided.
+
+```ruby
+# lib/puppet/type/nx9k_vlan.rb
+Puppet::ResourceApi.register_type(
+  name: 'nx9k_vlan',
+  features: [ 'remote_resource' ],
+  # ...
+)
+
+# lib/puppet/util/network_device/nexus/device.rb
+require 'puppet/resource_api/transport/wrapper'
+# force registering the transport
+require 'puppet/transport/schema/nexus'
+
+module Puppet::Util::NetworkDevice::Nexus
+  class Device < Puppet::ResourceApi::Transport::Wrapper
+    def initialize(url_or_config, _options = {})
+      super('nexus', url_or_config)
+    end
+  end
+end
+```
+
+Inheriting from `Puppet::ResourceApi::Transport::Wrapper` will ensure that the necessary `Device` methods will be implemented using your transport. Specify the transport name in the `super` call to make the connection.
+
+> Note that because of the way Resource API is bundled with puppet agent packages, agent versions 6.0 through 6.3 will be incompatible with this way of executing remote content. Those versions go out of commercial support with [PE 2019.0 in August 2019](https://puppet.com/misc/puppet-enterprise-lifecycle).
+
+#### Porting existing code
+
+To port your existing device code as a transport, move the class to `Puppet::Transport`, remove mention of the `Puppet::Util::NetworkDevice::Simple::Device` (if it was used) and change the initialisation to accept and process a `connection_info` hash instead of the previous structures. When accessing the `connection_info` in your new transport, change all string keys to symbols (e.g. `'foo'` to `:foo`). Add `context` as first argument to your `initialize` and `facts` method.
+
+The following replacements have provided a good starting point for these changes:
+
+* `Util::NetworkDevice::NAME::Device` -> `ResourceApi::Transport::NAME`
+* `puppet/util/network_device/NAME/device` -> `puppet/transport/NAME`
+* `device` -> `transport`
+* Replace all direct calls to puppet logging with calls into the `context` logger, potentially getting the context instance from the provider.
+
+Of course this list can't be exhaustive and will depend on the specifics of your codebase.
+
+#### Direct Access to Transports
 
 It is possible to use a RSAPI Transport directly using the `connect` method:
 
@@ -497,47 +556,6 @@ It will return a hash of all registered transport schemas keyed by their name. E
   },
 }
 ```
-
-### Legacy Support
-
-Before Puppet 6.X (TBD), remote resources were only supported through the `Puppet::Util::NetworkDevice` namespace. To make a module useful on these older versions, a shim `Device` class needs to be provided to connect the dots:
-
-```ruby
-# lib/puppet/type/nx9k_vlan.rb
-Puppet::ResourceApi.register_type(
-  name: 'nx9k_vlan',
-  features: [ 'remote_resource' ],
-  # ...
-)
-
-# lib/puppet/util/network_device/nexus/device.rb
-require 'puppet/resource_api/transport/wrapper'
-# force registering the transport
-require 'puppet/transport/schema/nexus'
-
-module Puppet::Util::NetworkDevice::Nexus
-  class Device < Puppet::ResourceApi::Transport::Wrapper
-    def initialize(url_or_config, _options = {})
-      super('nexus', url_or_config)
-    end
-  end
-end
-```
-
-Inheriting from `Puppet::ResourceApi::Transport::Wrapper` will ensure that the necessary `Device` methods will be implemented using your transport.
-
-### Porting existing code
-
-To port your existing device code as a transport, move the class to `Puppet::Transport`, remove mention of the `Puppet::Util::NetworkDevice::Simple::Device` (if it was used) and change the initialisation to accept and process a `connection_info` hash instead of the previous structures. When accessing the `connection_info` in your new transport, change all string keys to symbols (e.g. `'foo'` to `:foo`). Add `context` as first argument to your `initialize` and `facts` method.
-
-The following replacements have provided a good starting point for these changes:
-
-* `Util::NetworkDevice::NAME::Device` -> `ResourceApi::Transport::NAME`
-* `puppet/util/network_device/NAME/device` -> `puppet/transport/NAME`
-* `device` -> `transport`
-* Replace all direct calls to puppet logging with calls into the `context` logger, potentially getting the context instance from the provider.
-
-Of course this list can't be exhaustive and will depend on the specifics of your codebase.
 
 
 ## Runtime environment
