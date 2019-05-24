@@ -69,14 +69,13 @@ The `Puppet::ResourceApi.register_type(options)` function takes the following ke
 * `autorequire`, `autobefore`, `autosubscribe`, and `autonotify`: a hash mapping resource types to titles. The titles must either be constants, or, if the value starts with a dollar sign, a reference to the value of an attribute. If the specified resources exist in the catalog, Puppet will create the relationsships requested here.
 * `features`: a list of API feature names, specifying which optional parts of this spec the provider supports. Currently defined features: `canonicalize`, `simple_get_filter`, and `supports_noop`. See below for details.
 
-For autoloading work, this code needs to go into `lib/puppet/type/<name>.rb` in your module.
+For autoloading to work, this code needs to go into `lib/puppet/type/<name>.rb` in your module.
 
 ###  Composite Namevars ("title_patterns")
 
 Each resource being managed must be identified by a unique title. Usually this is fairly straightforward and a single attribute can be used to act as an identifier. Sometimes though, you need a composite of two attributes to uniquely identify the resource you want to manage.
 
 If multiple attributes are defined with the `namevar` behaviour, the type SHOULD specify `title_patterns` that will tell Resource API how to get at the attributes from the title. If `title_patterns` is not specified a default pattern is applied, and matches against the first declared `namevar`.
-
 
 > Note: The order of title_patterns is important. You should declare the most specific pattern first and end with the most generic.
 
@@ -184,7 +183,7 @@ A missing `:should` entry indicates that a resource should be removed from the s
 
 The `set` method should always return `nil`. Any progress signaling should be done through the logging utilities described below. If the `set` method throws an exception, all resources that should change in this call and haven't already been marked with a definite state, will be marked as failed. The runtime will only call the `set` method if there are changes to be made, especially in the case of resources marked with `noop => true` (either locally or through a global flag). The runtime will not pass them to `set`. See `supports_noop` below for changing this behaviour if required.
 
-Both methods take a `context` parameter which provides utilties from the runtime environment, and is decribed in more detail there.
+Both methods take a `context` parameter which provides utilities from the runtime environment, and is described in more detail in its own section below.
 
 ## Implementing simple providers
 
@@ -208,17 +207,17 @@ class Puppet::Provider::AptKey::AptKey < Puppet::ResourceApi::SimpleProvider
 Once all of that is in place, instead of the `set` method, the provider needs to implement the `create`, `update` or `delete` methods:
 
 * `create(context, name, should)`: This is called when a new resource should be created.
-  * `context`: provides utilties from the runtime environment, and is decribed in more detail there.
+  * `context`: provides utilities from the runtime environment, and is described in more detail in its own section below.
   * `name`: the name or hash of the new resource.
   * `should`: a hash of the attributes for the new instance.
 
 * `update(context, name, should)`: This is called when a resource should be updated.
-  * `context`: provides utilties from the runtime environment, and is decribed in more detail there.
+  * `context`: provides utilities from the runtime environment, and is described in more detail in its own section below.
   * `name`: the name or hash of the resource to change.
   * `should`: a hash of the desired state of the attributes.
 
 * `delete(context, name)`: This is called when a resource should be deleted.
-  * `context`: provides utilties from the runtime environment, and is decribed in more detail there.
+  * `context`: provides utilities from the runtime environment, and is described in more detail in its own section below.
   * `name`: the name or hash of the resource that should be deleted.
 
 The `SimpleProvider` takes care of basic logging, and error handling.
@@ -265,7 +264,7 @@ The runtime environment needs to compare user input from the manifest (the desir
 
 The `canonicalize` method transforms its `resources` argument into the standard format required by the rest of the provider. The `resources` argument to `canonicalize` is an enumerable of resource hashes matching the structure returned by `get`. It returns all passed values in the same structure with the required transformations applied. It is free to reuse or recreate the data structures passed in as arguments. The runtime environment must use `canonicalize` before comparing user input values with values returned from `get`. The runtime environment always passes canonicalized values into `set`. If the runtime environment requires the original values for later processing, it protects itself from modifications to the objects passed into `canonicalize`, for example through creating a deep copy of the objects.
 
-The `context` parameter is the same passed to `get` and `set`, which provides utilties from the runtime environment, and is decribed in more detail there.
+The `context` parameter is the same passed to `get` and `set`, which provides utilities from the runtime environment, and is described in more detail there.
 
 > Note: When the provider implements canonicalization, it aims to always log the canonicalized values. As a result of `get` and `set` producing and consuming canonically formatted values, this is not expected to present extra cost.
 
