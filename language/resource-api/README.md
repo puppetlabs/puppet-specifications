@@ -448,7 +448,7 @@ Do not use the following keywords when writing a schema:
 * `path`: reserved as a uri part.
 * `query`: reserved as a uri part.
 * `remote-*`: any key starting with `remote-` is reserved for future use.
-* `remote-transport`: determines which transport to load. It is always the transport class named "declassified".
+* `remote-transport`: determines which transport to load. Uses the transport name.
 * `run-on`: Bolt uses this keyword to determine which target to proxy to. Transports should not rely on this key.
 
 > Note: Bolt inventory requires you to set a name for every target and always use it for the URI. This means that there is no way to specify `host` separately from the host section of the `name` when parsed as a URI.
