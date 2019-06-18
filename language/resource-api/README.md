@@ -184,6 +184,24 @@ The `get` method reports the current state of the managed resources. It returns 
 
 The `set` method updates resources to a new state. The `changes` parameter gets passed a hash of change requests, keyed by the resource's name. Each value is another hash with the optional `:is` and `:should` keys. At least one of the two has to be specified. The values will be of the same shape as those returned by `get`. After the `set`, all resources should be in the state defined by the `:should` values.
 
+> Example for a `changes` request:
+> ```
+> changes = {
+>   'name' => {
+>     is: {
+>       name: 'name',
+>       ensure: 'present',
+>       value: 'original value,
+>     },
+>     should: {
+>       name: 'name',
+>       ensure: 'present',
+>       value: 'new value,
+>     },
+>   },
+> }
+> ```
+
 A missing `:should` entry indicates that a resource should be removed from the system. Even a type implementing the `ensure => [present, absent]` attribute pattern still has to react correctly on a missing `:should` entry. `:is` may contain the last available system state from a prior `get` call. If the `:is` value is `nil`, the resources were not found by `get`. If there is no `:is` key, the runtime did not have a cached state available.
 
 The `set` method should always return `nil`. Any progress signaling should be done through the logging utilities described below. If the `set` method throws an exception, all resources that should change in this call and haven't already been marked with a definite state, will be marked as failed. The runtime will only call the `set` method if there are changes to be made, especially in the case of resources marked with `noop => true` (either locally or through a global flag). The runtime will not pass them to `set`. See `supports_noop` below for changing this behaviour if required.
