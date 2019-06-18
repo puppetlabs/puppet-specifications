@@ -230,18 +230,14 @@ class Puppet::Provider::AptKey::AptKey < Puppet::ResourceApi::SimpleProvider
 Once all of that is in place, instead of the `set` method, the provider needs to implement the `create`, `update` or `delete` methods:
 
 * `create(context, name, should)`: This is called when a new resource should be created.
-  * `context`: provides utilities from the runtime environment, and is described in more detail in its own section below.
-  * `name`: the name or hash of the new resource.
-  * `should`: a hash of the attributes for the new instance.
-
 * `update(context, name, should)`: This is called when a resource should be updated.
-  * `context`: provides utilities from the runtime environment, and is described in more detail in its own section below.
-  * `name`: the name or hash of the resource to change.
-  * `should`: a hash of the desired state of the attributes.
-
 * `delete(context, name)`: This is called when a resource should be deleted.
-  * `context`: provides utilities from the runtime environment, and is described in more detail in its own section below.
-  * `name`: the name or hash of the resource that should be deleted.
+
+The parameters of these methods always carry the same values:
+
+* `context`: provides utilities from the runtime environment, and is described in more detail in its own section below.
+* `name`: the name (if there is only one namevar) or hash of namevars (if there are multiple) of the new resource.
+* `should`: a hash of the desired state of the attributes. This is not passed to the delete method.
 
 The `SimpleProvider` takes care of basic logging, and error handling.
 
