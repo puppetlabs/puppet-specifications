@@ -270,11 +270,11 @@ Puppet::ResourceApi.register_type(
 class Puppet::Provider::AptKey::AptKey
   def canonicalize(context, resources)
     resources.each do |r|
-      r[:name] = if r[:name].start_with?('0x')
-                   r[:name][2..-1].upcase
-                 else
-                   r[:name].upcase
-                 end
+      r[:id] = if r[:id].start_with?('0x')
+                 r[:id][2..-1].upcase
+               else
+                 r[:id].upcase
+               end
     end
   end
 ```
@@ -284,6 +284,20 @@ The runtime environment needs to compare user input from the manifest (the desir
 The `canonicalize` method transforms its `resources` argument into the standard format required by the rest of the provider. The `resources` argument to `canonicalize` is an enumerable of resource hashes matching the structure returned by `get`. It returns all passed values in the same structure with the required transformations applied. It is free to reuse or recreate the data structures passed in as arguments. The runtime environment must use `canonicalize` before comparing user input values with values returned from `get`. The runtime environment always passes canonicalized values into `set`. If the runtime environment requires the original values for later processing, it protects itself from modifications to the objects passed into `canonicalize`, for example through creating a deep copy of the objects.
 
 The `context` parameter is the same passed to `get` and `set`, which provides utilities from the runtime environment, and is described in more detail there.
+
+> Example: The `resources` parameter is an array of resources hashes:
+> ```ruby
+> resources = [
+>   {
+>     id: '0x12345678',
+>     source: '/net/gold/example.com/www/key1.gpg',
+>   },
+>   {
+>     id: '1234567812345678123456781234567812345678',
+>     source: '/net/gold/example.com/www/key2.gpg',
+>   },
+> ]
+> ```
 
 > Note: When the provider implements canonicalization, it aims to always log the canonicalized values. As a result of `get` and `set` producing and consuming canonically formatted values, this is not expected to present extra cost.
 
