@@ -425,12 +425,12 @@ Puppet::ResourceApi.register_type(
 
 # lib/puppet/provider/nx9k_vlan/nexus.rb
 class Puppet::Provider::Nx9k_vlan::Nexus
-  def set(context, changes, noop: false)
+  def set(context, changes)
     changes.each do |name, change|
       is = change.has_key? :is ? change[:is] : get_single(name)
       should = change[:should]
       # ...
-      context.transport.do_something unless noop
+      context.transport.do_something
     end
   end
 ```
