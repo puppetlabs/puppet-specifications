@@ -56,7 +56,7 @@ Puppet::ResourceApi.register_type(
 The `Puppet::ResourceApi.register_type(options)` function takes the following keyword arguments:
 
 * `name`: the name of the resource type.
-* `desc`: a doc string that describes the overall working of the resource type, provides examples, and explains prerequisites and known issues.
+* `desc`: a doc string that describes the overall working of the resource type, provides examples, and explains prerequisites and known issues. You can also write `desc` as `docs` for backwards compatibility. This compatibility option will no longer be available in the next major revision of the library.
 * `attributes`: a hash mapping attribute names to their details. Each attribute is described by a hash containing the Puppet 4 data `type`, a `desc` string, a `default` value, and the `behaviour` of the attribute: `namevar`, `read_only`, `init_only`, or a `parameter`.
   * `type`: the Puppet 4 data type allowed in this attribute.
   * `desc`: a string describing this attribute. This is used in creating the automated API docs with [puppet-strings](https://github.com/puppetlabs/puppet-strings).
@@ -90,7 +90,7 @@ Example:
 # lib/puppet/type/software.rb
 Puppet::ResourceApi.register_type(
   name: 'software',
-  docs: <<-DOC,
+  desc: <<-DOC,
     This type provides Puppet with the capabilities to manage ...
   DOC
   title_patterns: [
