@@ -205,12 +205,12 @@ The `set` method updates resources to a new state. The `changes` parameter gets 
 >     is: {
 >       name: 'name',
 >       ensure: 'present',
->       value: 'original value,
+>       value: 'original value',
 >     },
 >     should: {
 >       name: 'name',
 >       ensure: 'present',
->       value: 'new value,
+>       value: 'new value',
 >     },
 >   },
 > }
@@ -228,13 +228,13 @@ If a type has more than one namevar, the resource's name key is replaced by a ha
 >       package: 'php',
 >       manager: 'yum',
 >       ensure: 'present',
->       value: 'original value,
+>       value: 'original value',
 >     },
 >     should: {
 >       package: 'php',
 >       manager: 'yum',
 >       ensure: 'present',
->       value: 'new value,
+>       value: 'new value',
 >     },
 >   },
 > }
@@ -250,7 +250,7 @@ In many cases, the resource type follows the conventional patterns of puppet, an
 
 `SimpleProvider` requires that your type follows some common conventions:
 
-* the single namevar attribute is called `name` or the type has more than one namevar
+* if the type has a single namevar attribute, it must be called `name`
 * `ensure` attribute is present and has the `Enum[absent, present]` type
 
 To start using `SimpleProvider`, inherit from the class like this:
@@ -272,7 +272,7 @@ Once all of that is in place, instead of the `set` method, the provider needs to
 The parameters of these methods always carry the same values:
 
 * `context`: provides utilities from the runtime environment, and is described in more detail in its own section below.
-* `name`: the name (if there is only one namevar) or hash of namevars (if there are multiple) of the new resource.
+* `name`: the name (if there is only one namevar) or hash of namevars (if there are multiple) of the resource.
 * `should`: a hash of the desired state of the attributes. This is not passed to the delete method.
 
 The `SimpleProvider` takes care of basic logging, and error handling.
@@ -318,7 +318,7 @@ The runtime environment needs to compare user input from the manifest (the desir
 
 The `canonicalize` method transforms its `resources` argument into the standard format required by the rest of the provider. The `resources` argument to `canonicalize` is an enumerable of resource hashes matching the structure returned by `get`. It returns all passed values in the same structure with the required transformations applied. It is free to reuse or recreate the data structures passed in as arguments. The runtime environment must use `canonicalize` before comparing user input values with values returned from `get`. The runtime environment always passes canonicalized values into `set`. If the runtime environment requires the original values for later processing, it protects itself from modifications to the objects passed into `canonicalize`, for example through creating a deep copy of the objects.
 
-The `context` parameter is the same passed to `get` and `set`, which provides utilities from the runtime environment, and is described in more detail there.
+The `context` parameter provides utilities from the runtime environment, and is described in more detail there. It is the same as is passed to `get` and `set`.
 
 > Example: The `resources` parameter is an array of resources hashes:
 > ```ruby
@@ -381,7 +381,7 @@ class Puppet::Provider::AptKey::AptKey
 
 Some resources are very expensive to enumerate. The provider can implement `simple_get_filter` to signal extended capabilities of the `get` method to address this. The provider's `get` method will be called with an array of resource names, or `nil`. The `get` method must at least return the resources mentioned in the `names` array, but may return more than those. If the `names` parameter is `nil`, all existing resources should be returned. The `names` parameter defaults to `nil` to allow simple runtimes to ignore this feature.
 
-For types with multiple namevars, the `names` array will consist of hashes of the namevars and their variables instead of simple values:
+For types with multiple namevars, the `names` array will consist of hashes of the namevars and their values instead of simple values:
 
 ```ruby
 [ { package: 'php', manager: 'yum' }, {package: 'mysql', manager: 'yum'} ]
