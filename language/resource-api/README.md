@@ -76,10 +76,9 @@ For autoloading to work, this code needs to go into `lib/puppet/type/<name>.rb` 
 
 Each resource being managed must be identified by a unique title. Usually this is fairly straightforward and a single attribute can be used to act as an identifier. Sometimes though, you need a composite of two or more attributes to uniquely identify the resource you want to manage.
 
-If multiple attributes are defined with the `namevar` behaviour, the type SHOULD specify `title_patterns` that will tell Resource API how to get at the attributes from the title. If `title_patterns` is not specified a default pattern is applied, and matches the entire title against the first declared `namevar`.
-> Note: Not supplying a title_pattern that assigns values to all namevars will severely restrict the usability of the provider.
+If multiple attributes are defined with the `namevar` behaviour, the type must specify `title_patterns` that will tell Resource API how to get at the attributes from the title.
 
-The title_patterns are evaluated in the order they are specified. Evaluation stops after the first match is achieved.
+The `title_patterns` are evaluated in the order they are specified. Evaluation stops after the first match is achieved.
 
 Each title pattern contains the:
   * `pattern`, which is a ruby regex containing named captures. The names of the captures MUST be that of the namevar attributes.
