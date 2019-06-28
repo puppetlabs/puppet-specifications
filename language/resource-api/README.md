@@ -37,6 +37,7 @@ Puppet::ResourceApi.register_type(
     },
     source: {
       type: 'String',
+      behaviour: :parameter,
       desc: 'Where to retrieve the key from, can be a HTTP(s) URL, or a local file. Files get automatically required.',
     },
     # ...
@@ -69,16 +70,15 @@ The `Puppet::ResourceApi.register_type(options)` function takes the following ke
 * `autorequire`, `autobefore`, `autosubscribe`, and `autonotify`: a hash mapping resource types to titles. The titles must either be constants, or, if the value starts with a dollar sign, a reference to the value of an attribute. If the specified resources exist in the catalog, Puppet will create the relationsships requested here.
 * `features`: a list of API feature names, specifying which optional parts of this spec the provider supports. Currently defined features: `canonicalize`, `simple_get_filter`, and `supports_noop`. See below for details.
 
-For autoloading work, this code needs to go into `lib/puppet/type/<name>.rb` in your module.
+For autoloading to work, this code needs to go into `lib/puppet/type/<name>.rb` in your module.
 
 ###  Composite Namevars ("title_patterns")
 
-Each resource being managed must be identified by a unique title. Usually this is fairly straightforward and a single attribute can be used to act as an identifier. Sometimes though, you need a composite of two attributes to uniquely identify the resource you want to manage.
+Each resource being managed must be identified by a unique title. Usually this is fairly straightforward and a single attribute can be used to act as an identifier. Sometimes though, you need a composite of two or more attributes to uniquely identify the resource you want to manage.
 
-If multiple attributes are defined with the `namevar` behaviour, the type SHOULD specify `title_patterns` that will tell Resource API how to get at the attributes from the title. If `title_patterns` is not specified a default pattern is applied, and matches against the first declared `namevar`.
+If multiple attributes are defined with the `namevar` behaviour, the type must specify `title_patterns` that will tell Resource API how to get at the attributes from the title.
 
-
-> Note: The order of title_patterns is important. You should declare the most specific pattern first and end with the most generic.
+The `title_patterns` are evaluated in the order they are specified. Evaluation stops after the first match is achieved.
 
 Each title pattern contains the:
   * `pattern`, which is a ruby regex containing named captures. The names of the captures MUST be that of the namevar attributes.
@@ -96,7 +96,7 @@ Puppet::ResourceApi.register_type(
   title_patterns: [
     {
       pattern: %r{^(?<package>.*[^-])-(?<manager>.*)$},
-      desc: 'Where the package and the manager are provided with a hyphen separator',
+      desc: 'Where the package and the manager are separated by a hyphen',
     },
     {
       pattern: %r{^(?<package>.*)$},
@@ -127,19 +127,20 @@ Matches the first title pattern:
 ```puppet
 # /etc/puppetlabs/code/environments/production/manifests/site.pp
 software { php-yum:
-  ensure=>'present'
+  ensure => 'present',
 }
 
 software { php-gem:
-  ensure=>'absent'
+  ensure => 'absent',
 }
 ```
+
 Matches the second title pattern:
 ```puppet
 # /etc/puppetlabs/code/environments/production/manifests/site.pp
 software { php:
-  manager='yum'
-  ensure=>'present'
+  ensure  => 'present',
+  manager => 'yum',
 }
 ```
 
@@ -176,15 +177,71 @@ class Puppet::Provider::AptKey::AptKey
 end
 ```
 
-The `get` method reports the current state of the managed resources. It returns an enumerable of all existing resources. Each resource is a hash with attribute names as keys, and their respective values as values. It is an error to return values not matching the type specified in the resource type. If a requested resource is not listed in the result, it is considered to not exist on the system. If the `get` method raises an exception, the provider is marked as unavailable during the current run, and all resources of this type will fail in the current transaction. The exception message will be reported to the user.
+The `get` method reports the current state of the managed resources. It returns an enumerable of all existing resources. Each resource is a hash with attribute names as keys, and their respective values as values.
+
+* It is an error to return values not matching the type specified in the resource type.
+* If a requested resource is not listed in the result, it is considered to not exist on the system.
+* If the `get` method raises an exception, the provider is marked as unavailable during the current run, and all resources of this type will fail in the current transaction. The exception message will be reported to the user.
+* If the type has more than one namevar, each resource hash must have a `:title` key with a single formatted string representing all namevar values. The title must match one of the title patterns. The namevar values computed from that pattern must match their counterparts in the hash.
+  > Note: This value allows the runtime environment to present resources in a way familiar to the user.
+
+  > Example: Referring back to the `software` example above, resources returned from the `get` method require a `title:` value matching the `package:` and `manager:` values:
+  > ```
+  > {
+  >     title: 'php-yum',
+  >     package: 'php',
+  >     manager: 'yum',
+  >     ensure: 'present',
+  > }
+  > ```
 
 The `set` method updates resources to a new state. The `changes` parameter gets passed a hash of change requests, keyed by the resource's name. Each value is another hash with the optional `:is` and `:should` keys. At least one of the two has to be specified. The values will be of the same shape as those returned by `get`. After the `set`, all resources should be in the state defined by the `:should` values.
 
+> Example for a `changes` request:
+> ```
+> changes = {
+>   'foo' => {
+>     is: {
+>       name: 'foo',
+>       ensure: 'present',
+>       value: 'original value',
+>     },
+>     should: {
+>       name: 'foo',
+>       ensure: 'present',
+>       value: 'new value',
+>     },
+>   },
+> }
+> ```
+
 A missing `:should` entry indicates that a resource should be removed from the system. Even a type implementing the `ensure => [present, absent]` attribute pattern still has to react correctly on a missing `:should` entry. `:is` may contain the last available system state from a prior `get` call. If the `:is` value is `nil`, the resources were not found by `get`. If there is no `:is` key, the runtime did not have a cached state available.
+
+If a type has more than one namevar, the resource's name key is replaced by a hash of the namevars and their values:
+
+> Example for a `changes` request with multiple namevars:
+> ```
+> changes = {
+>   { package: 'php', manager: 'yum' } => {
+>     is: {
+>       package: 'php',
+>       manager: 'yum',
+>       ensure: 'present',
+>       value: 'original value',
+>     },
+>     should: {
+>       package: 'php',
+>       manager: 'yum',
+>       ensure: 'present',
+>       value: 'new value',
+>     },
+>   },
+> }
+> ```
 
 The `set` method should always return `nil`. Any progress signaling should be done through the logging utilities described below. If the `set` method throws an exception, all resources that should change in this call and haven't already been marked with a definite state, will be marked as failed. The runtime will only call the `set` method if there are changes to be made, especially in the case of resources marked with `noop => true` (either locally or through a global flag). The runtime will not pass them to `set`. See `supports_noop` below for changing this behaviour if required.
 
-Both methods take a `context` parameter which provides utilties from the runtime environment, and is decribed in more detail there.
+Both methods take a `context` parameter which provides utilities from the runtime environment, and is described in more detail in its own section below.
 
 ## Implementing simple providers
 
@@ -192,7 +249,7 @@ In many cases, the resource type follows the conventional patterns of puppet, an
 
 `SimpleProvider` requires that your type follows some common conventions:
 
-* `name` is the name of your namevar attribute
+* if the type has a single namevar attribute, it must be called `name`
 * `ensure` attribute is present and has the `Enum[absent, present]` type
 
 To start using `SimpleProvider`, inherit from the class like this:
@@ -200,7 +257,7 @@ To start using `SimpleProvider`, inherit from the class like this:
 ```ruby
 require 'puppet/resource_api/simple_provider'
 
-# Implementation for the wordarray type using the Resource API.
+# Implementation for the apt_key type using the Resource API.
 class Puppet::Provider::AptKey::AptKey < Puppet::ResourceApi::SimpleProvider
   # ...
 ```
@@ -208,26 +265,21 @@ class Puppet::Provider::AptKey::AptKey < Puppet::ResourceApi::SimpleProvider
 Once all of that is in place, instead of the `set` method, the provider needs to implement the `create`, `update` or `delete` methods:
 
 * `create(context, name, should)`: This is called when a new resource should be created.
-  * `context`: provides utilties from the runtime environment, and is decribed in more detail there.
-  * `name`: the name or hash of the new resource.
-  * `should`: a hash of the attributes for the new instance.
-
 * `update(context, name, should)`: This is called when a resource should be updated.
-  * `context`: provides utilties from the runtime environment, and is decribed in more detail there.
-  * `name`: the name or hash of the resource to change.
-  * `should`: a hash of the desired state of the attributes.
-
 * `delete(context, name)`: This is called when a resource should be deleted.
-  * `context`: provides utilties from the runtime environment, and is decribed in more detail there.
-  * `name`: the name or hash of the resource that should be deleted.
+
+The parameters of these methods always carry the same values:
+
+* `context`: provides utilities from the runtime environment, and is described in more detail in its own section below.
+* `name`: the name (if there is only one namevar) or hash of namevars (if there are multiple) of the resource.
+* `should`: a hash of the desired state of the attributes. This is not passed to the delete method.
 
 The `SimpleProvider` takes care of basic logging, and error handling.
 
-When a `type` has only a single namevar defined, `SimpleProvider` will pass the value of that attribute as `name` to the `create`, `update` and `delete` methods.  If multiple namevars are defined, `SimpleProvider` will instead pass a hash. The hash contains the composite name of `title`, and all the namevars and their values, for example:
+When a `type` has only a single namevar defined, `SimpleProvider` will pass the value of that attribute as `name` to the `create`, `update` and `delete` methods.  If multiple namevars are defined, `SimpleProvider` will instead pass a hash. The hash contains all the namevars and their values, for example:
 
 ```
 {
-  title: 'foo/bar',
   name: 'bar',
   group: 'foo',
 }
@@ -252,11 +304,11 @@ Puppet::ResourceApi.register_type(
 class Puppet::Provider::AptKey::AptKey
   def canonicalize(context, resources)
     resources.each do |r|
-      r[:name] = if r[:name].start_with?('0x')
-                   r[:name][2..-1].upcase
-                 else
-                   r[:name].upcase
-                 end
+      r[:id] = if r[:id].start_with?('0x')
+                 r[:id][2..-1].upcase
+               else
+                 r[:id].upcase
+               end
     end
   end
 ```
@@ -265,7 +317,21 @@ The runtime environment needs to compare user input from the manifest (the desir
 
 The `canonicalize` method transforms its `resources` argument into the standard format required by the rest of the provider. The `resources` argument to `canonicalize` is an enumerable of resource hashes matching the structure returned by `get`. It returns all passed values in the same structure with the required transformations applied. It is free to reuse or recreate the data structures passed in as arguments. The runtime environment must use `canonicalize` before comparing user input values with values returned from `get`. The runtime environment always passes canonicalized values into `set`. If the runtime environment requires the original values for later processing, it protects itself from modifications to the objects passed into `canonicalize`, for example through creating a deep copy of the objects.
 
-The `context` parameter is the same passed to `get` and `set`, which provides utilties from the runtime environment, and is decribed in more detail there.
+The `context` parameter provides utilities from the runtime environment, and is described in more detail there. It is the same as is passed to `get` and `set`.
+
+> Example: The `resources` parameter is an array of resources hashes:
+> ```ruby
+> resources = [
+>   {
+>     id: '0x12345678',
+>     source: '/net/gold/example.com/www/key1.gpg',
+>   },
+>   {
+>     id: '1234567812345678123456781234567812345678',
+>     source: '/net/gold/example.com/www/key2.gpg',
+>   },
+> ]
+> ```
 
 > Note: When the provider implements canonicalization, it aims to always log the canonicalized values. As a result of `get` and `set` producing and consuming canonically formatted values, this is not expected to present extra cost.
 
@@ -304,16 +370,21 @@ Puppet::ResourceApi.register_type(
 # lib/puppet/provider/apt_key/apt_key.rb
 class Puppet::Provider::AptKey::AptKey
   def get(context, names = nil)
-    [
-      {
-        name: 'name',
-        # ...
-      },
-    ]
+    if names == nil
+      return all_instances
+    else
+      names.collect { |n| find_instance(n) }
+    end
   end
 ```
 
 Some resources are very expensive to enumerate. The provider can implement `simple_get_filter` to signal extended capabilities of the `get` method to address this. The provider's `get` method will be called with an array of resource names, or `nil`. The `get` method must at least return the resources mentioned in the `names` array, but may return more than those. If the `names` parameter is `nil`, all existing resources should be returned. The `names` parameter defaults to `nil` to allow simple runtimes to ignore this feature.
+
+For types with multiple namevars, the `names` array will consist of hashes of the namevars and their values instead of simple values:
+
+```ruby
+[ { package: 'php', manager: 'yum' }, {package: 'mysql', manager: 'yum'} ]
+```
 
 The runtime environment calls `get` with a minimal set of names, and keeps track of additional instances returned to avoid double querying. To gain the most benefits from batching implementations, the runtime minimizes the number of calls into `get`.
 
@@ -353,12 +424,12 @@ Puppet::ResourceApi.register_type(
 
 # lib/puppet/provider/nx9k_vlan/nexus.rb
 class Puppet::Provider::Nx9k_vlan::Nexus
-  def set(context, changes, noop: false)
+  def set(context, changes)
     changes.each do |name, change|
       is = change.has_key? :is ? change[:is] : get_single(name)
       should = change[:should]
       # ...
-      context.transport.do_something unless noop
+      context.transport.do_something
     end
   end
 ```
