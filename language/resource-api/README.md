@@ -200,14 +200,14 @@ The `set` method updates resources to a new state. The `changes` parameter gets 
 > Example for a `changes` request:
 > ```
 > changes = {
->   'name' => {
+>   'foo' => {
 >     is: {
->       name: 'name',
+>       name: 'foo',
 >       ensure: 'present',
 >       value: 'original value',
 >     },
 >     should: {
->       name: 'name',
+>       name: 'foo',
 >       ensure: 'present',
 >       value: 'new value',
 >     },
