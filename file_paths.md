@@ -77,6 +77,7 @@ Path                                  Setting
     hiera.yaml *                      # :hiera_config
     puppet.conf *                     # :config
     routes.yaml                       # :route_file
+    devices                           # :deviceconfdir
     ssl                               # :ssldir
 
 /etc/puppetlabs/pxp-agent *
@@ -256,6 +257,7 @@ C:\ProgramData\PuppetLabs *
             hiera.yaml *                    # :hiera_config
             puppet.conf *                   # :config
             routes.yaml                     # :route_file
+            devices                         # :deviceconfdir
             ssl *                           # :ssldir
         var *
             log *                           # :logdir
