@@ -25,7 +25,7 @@
     },
     "input_method": {
       "type": "string",
-      "enum": ["stdin", "environment"],
+      "enum": ["stdin", "environment", "both", "powershell"],
       "description": "What input method should be used to pass params to the task"
     },
     "parameters": {
