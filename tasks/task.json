@@ -105,6 +105,10 @@
             "description": "Whether the task runner should treat the parameter value as sensitive",
             "type": "boolean",
             "default": false
+          },
+          "default": {
+            "description": "The default value to pass to the task implementation if the parameter isn't provided",
+            "type": "string"
           }
         }
       }
