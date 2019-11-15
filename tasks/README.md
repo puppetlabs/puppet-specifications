@@ -29,12 +29,13 @@ These are the revisions to this version of the task spec.
 
 **Note**: Bolt generally uses the latest version and revision of the task spec. Puppet Enterprise versions use a specific version and revision of the task spec, indicated in the PE documentation.
 
-| Revision | Changes                  |
-|----------|--------------------------|
-| 1        |                          |
-| 2        | Cross-platform tasks.    |
-| 3        | Multiple files per task. |
-| 4        | Hide private tasks.      |
+| Revision | Changes                   |
+|----------|---------------------------|
+| 1        |                           |
+| 2        | Cross-platform tasks.     |
+| 3        | Multiple files per task.  |
+| 4        | Hide private tasks.       |
+| 5        | Default parameter values. |
 
 ## Task packaging and file
 
@@ -101,6 +102,11 @@ The preferred style of the keys should be `snake_case`.
     "param3": {
       "description": "Description of optional param3",
       "type": "Optional[Integer]"
+    },
+    "param4": {
+      "description": "Description of param4 which has a default value",
+      "type": "String",
+      "default": "hello"
     }
   },
   "implementations" : [
@@ -132,6 +138,8 @@ If a parameter type accepts `null` the task runner will accept either a `null` v
 **description**: A string description of the parameter.(rev 1)
 
 **sensitive**: A Boolean value to identify data as sensitive. Values are masked when they appear in logs and API responses.(rev 1)
+
+**default**: A value to use if no value is passed for the parameter. This value must conform to the `type` specified for the parameter.(rev 5)
 
 ## Task implementations
 
@@ -251,7 +259,7 @@ The task implementation is copied to the target and then executed on the target 
 
 If `files` metadata has been provided those executable resources will be copied to the target and made available to the task via the `_installdir` metaparameter.
 
-No arguments are passed to the task when it is executed.
+No command-line arguments are passed to the task when it is executed.
 
 The task file in the module does not need execute permissions set.
 
@@ -267,7 +275,9 @@ Task runners will handle execution on Microsoft Windows specially based on the f
 
 Future releases of the task runner may expand this or add configuration options to the task runner around interpreter choice.
 
-## Input Methods
+## Task Input
+
+Parameters are passed according to the specified input method. If no value is specified for a parameter and the parameter has a `default` defined in the task metadata, the task runner will use the `default` value in place of the parameter.
 
 There are a three input methods available to tasks: [stdin](#stdin), [environment](#environment-variables), and [powershell](#powershell). By default tasks without a `.ps1` extension are passed parameters with both the `stdin` and `environment` input methods. Tasks with a `.ps1` extension are passed parameters with the `powershell` input method by default.
 
