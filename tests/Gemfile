@@ -1,0 +1,7 @@
+source 'https://rubygems.org'
+
+# Requires Ruby 2.4+
+group :development do
+  gem 'json_schemer', require: false
+  gem 'rspec', require: false
+end

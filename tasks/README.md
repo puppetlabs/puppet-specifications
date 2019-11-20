@@ -25,7 +25,7 @@ Task Runners should document which version and revision of the task spec they su
 
 ### Revision history
 
-These are the revisions to this version of the task spec. 
+These are the revisions to this version of the task spec.
 
 **Note**: Bolt generally uses the latest version and revision of the task spec. Puppet Enterprise versions use a specific version and revision of the task spec, indicated in the PE documentation.
 
@@ -117,7 +117,7 @@ The preferred style of the keys should be `snake_case`.
 }
 ```
 
-A JSON schema of metadata accepted by task runners is included in [task.json](task.json). The Puppet Forge also hosts https://forgeapi.puppet.com/schemas/task.json describing requirements for metadata in published modules; the schema for publishing may be more restrictive to ensure published modules are easy to use without reading their implementation.
+A JSON schema of metadata accepted by task runners is included in [task.json](task.json). The Puppet Forge hosts a mirror at https://forgeapi.puppet.com/schemas/task.json.
 
 ## Task parameters
 
