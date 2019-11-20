@@ -1,5 +1,5 @@
 {
-  "$schema": "http://json-schema.org/schema#",  
+  "$schema": "http://json-schema.org/draft-06/schema#",
   "description": "The format for errors in puppet",
   "type": "object",
   "properties" : {
@@ -16,6 +16,6 @@
       "description": "kind specific data about the error.",
       "type": "object"
     }
-  }
+  },
   "requiredProperties": ["type", "msg"]
 }
