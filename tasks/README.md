@@ -77,7 +77,7 @@ The preferred style of the keys should be `snake_case`.
 
 **implementations**: A list of implementation objects. An implementation object describes resources and feature requirements that must be available on a target for specified resources to be utilized. The available features are defined by the task runner; task runners should define at least the `shell`, `powershell` and `puppet-agent` features.(rev 2)
 
-**private**: A boolean to specify whether a task should be hidden by default in the UI. This is useful if a task has a machine oriented interface or is intended to be used only in the context of one plan. Default is false.(rev 3)
+**private**: A boolean to specify whether user facing tools should hide a task by default. This is useful if a task has a machine oriented interface or is intended to be used only in the context of one plan. Default is false.(rev 3)
 
 **extensions**: A hash of extensions to the task spec used by a Specific Task Runner. Each key at the top level should be the name of the Task Runner the extension is used by. Task Runners should not read extensions outside of their own namespace.(rev 3)
 
