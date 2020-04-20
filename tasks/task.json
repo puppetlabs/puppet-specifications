@@ -107,8 +107,7 @@
             "default": false
           },
           "default": {
-            "description": "The default value to pass to the task implementation if the parameter isn't provided",
-            "type": "string"
+            "description": "The default value to pass to the task implementation if the parameter isn't provided"
           }
         }
       }
