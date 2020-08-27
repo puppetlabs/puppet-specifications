@@ -36,6 +36,7 @@ These are the revisions to this version of the task spec.
 | 3        | Multiple files per task.  |
 | 4        | Hide private tasks.       |
 | 5        | Default parameter values. |
+| 6        | Sensitive task output     |
 
 ## Task packaging and file
 
@@ -330,6 +331,7 @@ If the output cannot be parsed as a JSON object (i.e. `{...}`), one is created b
 All '_' prefixed keys are reserved and should only be used as described below:
 - **_output**: A text summary of the job result. If the job does not return a JSON object the contents of stdout will be put in this key.(rev 1)
 - **_error**: Tasks can set this when they fail and the UI can more gracefully display messages from it.(rev 1)
+- **_sensitive**: The value of this key should be treated as sensitive by the task runner.(rev 6)
 
 ### Stderr
 
