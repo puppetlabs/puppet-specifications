@@ -378,7 +378,8 @@ Examples:
     # LHS must evaluate to an Array or a Hash (or it is a form of arithmetic expression)
     [1,2,3,4,5,6] - [4,5,6]         # => [1,2,3]
     [1,2,3] - 3                     # => [1,2]
-    [1,2,b] - {a => 1, b => 20}     # => [2]
+    [1,2,b] - {a => 1, b => 20}     # => [1, 2, b]
+    [1,2,[b,20]] - {b => 20}        # => [1, 2]
 
     {a => 10, b => 20} - {b => 30}  # => {a => 10}
     {a => 10, b => 20} - a          # => {b => 20}
