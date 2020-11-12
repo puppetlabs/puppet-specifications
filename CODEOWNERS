@@ -2,6 +2,3 @@
 
 # Notify bolt team about proposed changes to the task spec
 /tasks @puppetlabs/bolt
-
-# Resource API specification handled by the Network Automation Team
-/language/resource-api @puppetlabs/networking
