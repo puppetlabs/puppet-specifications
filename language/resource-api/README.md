@@ -740,14 +740,14 @@ begin
   result = @apt_key_cmd.run(...)
 
   if result.exitstatus != 0
-    context.error(title, "Failed executing apt-key #{...}")
+    context.err(title, "Failed executing apt-key #{...}")
   else
     context.attribute_changed(title, 'content', nil, content_hash,
       message: "Replaced with content hash #{content_hash}")
   end
   context.changed(title)
 rescue Exception => e
-  context.error(title, e, message: 'Updating failed')
+  context.err(title, e, message: 'Updating failed')
   raise unless e.is_a? StandardError
 end
 ```
