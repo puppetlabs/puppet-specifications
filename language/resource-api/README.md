@@ -667,7 +667,7 @@ Warning: apt_key: Unexpected state detected, continuing in degraded mode.
 * err: signal error conditions that have caused normal operations to fail.
 * critical/alert/emerg: should not be used by resource providers.
 
-See [RFC424](https://tools.ietf.org/html/rfc5424) for more details.
+See [RFC 5424](https://tools.ietf.org/html/rfc5424) for more details.
 
 ##### Signalling resource status
 
