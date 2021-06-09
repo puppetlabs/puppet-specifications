@@ -2,7 +2,7 @@
 
 This library provides a simple way to write new native resources for [Puppet](https://puppet.com).
 
-A *resource* is the basic unit that is managed by Puppet. Each resource has a set of attributes describing its current state. Some attributes can be changed throughout the lifetime of the resource, whereas others are only reported back but cannot be changed (see `read_only`), and some can only be set once during initial creation (see `init_only`). To gather information about those resources and to enact changes, Puppet requires a *provider* to implement this interaction. The provider can have parameters that influence its mode of operation (see `parameter`). To describe all these parts to the infrastructure and the consumers, the resource *type* defines all the metadata, including the list of the attributes. The *provider* contains the code to *get* and *set* the system state.
+A _resource_ is the basic unit that is managed by Puppet. Each resource has a set of attributes describing its current state. Some attributes can be changed throughout the lifetime of the resource, whereas others are only reported back but cannot be changed (see `read_only`), and some can only be set once during initial creation (see `init_only`). To gather information about those resources and to enact changes, Puppet requires a _provider_ to implement this interaction. The provider can have parameters that influence its mode of operation (see `parameter`). To describe all these parts to the infrastructure and the consumers, the resource _type_ defines all the metadata, including the list of the attributes. The _provider_ contains the code to _get_ and _set_ the system state.
 
 ## Resource definition ("type")
 
@@ -56,23 +56,23 @@ Puppet::ResourceApi.register_type(
 
 The `Puppet::ResourceApi.register_type(options)` function takes the following keyword arguments:
 
-* `name`: the name of the resource type.
-* `desc`: a doc string that describes the overall working of the resource type, provides examples, and explains prerequisites and known issues. You can also write `desc` as `docs` for backwards compatibility. This compatibility option will no longer be available in the next major revision of the library.
-* `attributes`: a hash mapping attribute names to their details. Each attribute is described by a hash containing the Puppet 4 data `type`, a `desc` string, a `default` value, and the `behaviour` of the attribute: `namevar`, `read_only`, `init_only`, or a `parameter`.
-  * `type`: the Puppet 4 data type allowed in this attribute.
-  * `desc`: a string describing this attribute. This is used in creating the automated API docs with [puppet-strings](https://github.com/puppetlabs/puppet-strings).
-  * `default`: a default value that will be used by the runtime environment when the caller does not specify a value for this attribute.
-  * `behaviour`/`behavior`: how the attribute behaves. Currently available values:
-    * `namevar`: marks an attribute as part of the "primary key" or "identity" of the resource. A given set of `namevar` values needs to distinctively identify an instance.
-    * `init_only`: this attribute can only be set during the creation of the resource. Its value will be reported going forward, but trying to change it later will lead to an error. For example, the base image for a VM or the UID of a user.
-    * `read_only`: values for this attribute will be returned by `get()`, but `set()` is not able to change them. Values for this should never be specified in a manifest. For example, the checksum of a file or the MAC address of a network interface.
-    * `parameter`: these attributes influence how the provider behaves and cannot be read from the target system. For example, the target file on inifile or credentials to access an API.
-* `autorequire`, `autobefore`, `autosubscribe`, and `autonotify`: a hash mapping resource types to titles. The titles must either be constants, or, if the value starts with a dollar sign, a reference to the value of an attribute. If the specified resources exist in the catalog, Puppet will create the relationsships requested here.
-* `features`: a list of API feature names, specifying which optional parts of this spec the provider supports. Currently defined features: `canonicalize`, `simple_get_filter`, and `supports_noop`. See below for details.
+- `name`: the name of the resource type.
+- `desc`: a doc string that describes the overall working of the resource type, provides examples, and explains prerequisites and known issues. You can also write `desc` as `docs` for backwards compatibility. This compatibility option will no longer be available in the next major revision of the library.
+- `attributes`: a hash mapping attribute names to their details. Each attribute is described by a hash containing the Puppet 4 data `type`, a `desc` string, a `default` value, and the `behaviour` of the attribute: `namevar`, `read_only`, `init_only`, or a `parameter`.
+  - `type`: the Puppet 4 data type allowed in this attribute.
+  - `desc`: a string describing this attribute. This is used in creating the automated API docs with [puppet-strings](https://github.com/puppetlabs/puppet-strings).
+  - `default`: a default value that will be used by the runtime environment when the caller does not specify a value for this attribute.
+  - `behaviour`/`behavior`: how the attribute behaves. Currently available values:
+    - `namevar`: marks an attribute as part of the "primary key" or "identity" of the resource. A given set of `namevar` values needs to distinctively identify an instance.
+    - `init_only`: this attribute can only be set during the creation of the resource. Its value will be reported going forward, but trying to change it later will lead to an error. For example, the base image for a VM or the UID of a user.
+    - `read_only`: values for this attribute will be returned by `get()`, but `set()` is not able to change them. Values for this should never be specified in a manifest. For example, the checksum of a file or the MAC address of a network interface.
+    - `parameter`: these attributes influence how the provider behaves and cannot be read from the target system. For example, the target file on inifile or credentials to access an API.
+- `autorequire`, `autobefore`, `autosubscribe`, and `autonotify`: a hash mapping resource types to titles. The titles must either be constants, or, if the value starts with a dollar sign, a reference to the value of an attribute. If the specified resources exist in the catalog, Puppet will create the relationsships requested here.
+- `features`: a list of API feature names, specifying which optional parts of this spec the provider supports. Currently defined features: `canonicalize`, `custom_insync`, `simple_get_filter`, and `supports_noop`. See below for details.
 
 For autoloading to work, this code needs to go into `lib/puppet/type/<name>.rb` in your module.
 
-###  Composite Namevars ("title_patterns")
+### Composite Namevars ("title_patterns")
 
 Each resource being managed must be identified by a unique title. Usually this is fairly straightforward and a single attribute can be used to act as an identifier. Sometimes though, you need a composite of two or more attributes to uniquely identify the resource you want to manage.
 
@@ -81,8 +81,9 @@ If multiple attributes are defined with the `namevar` behaviour, the type must s
 The `title_patterns` are evaluated in the order they are specified. Evaluation stops after the first match is achieved.
 
 Each title pattern contains the:
-  * `pattern`, which is a ruby regex containing named captures. The names of the captures MUST be that of the namevar attributes.
-  * `desc`, a short description of what the pattern matches for.
+
+- `pattern`, which is a ruby regex containing named captures. The names of the captures MUST be that of the namevar attributes.
+- `desc`, a short description of what the pattern matches for.
 
 Example:
 
@@ -124,6 +125,7 @@ Puppet::ResourceApi.register_type(
 ```
 
 Matches the first title pattern:
+
 ```puppet
 # /etc/puppetlabs/code/environments/production/manifests/site.pp
 software { php-yum:
@@ -136,6 +138,7 @@ software { php-gem:
 ```
 
 Matches the second title pattern:
+
 ```puppet
 # /etc/puppetlabs/code/environments/production/manifests/site.pp
 software { php:
@@ -179,13 +182,15 @@ end
 
 The `get` method reports the current state of the managed resources. It returns an enumerable of all existing resources. Each resource is a hash with attribute names as keys, and their respective values as values.
 
-* It is an error to return values not matching the type specified in the resource type.
-* If a requested resource is not listed in the result, it is considered to not exist on the system.
-* If the `get` method raises an exception, the provider is marked as unavailable during the current run, and all resources of this type will fail in the current transaction. The exception message will be reported to the user.
-* If the type has more than one namevar, each resource hash must have a `:title` key with a single formatted string representing all namevar values. The title must match one of the title patterns. The namevar values computed from that pattern must match their counterparts in the hash.
+- It is an error to return values not matching the type specified in the resource type.
+- If a requested resource is not listed in the result, it is considered to not exist on the system.
+- If the `get` method raises an exception, the provider is marked as unavailable during the current run, and all resources of this type will fail in the current transaction. The exception message will be reported to the user.
+- If the type has more than one namevar, each resource hash must have a `:title` key with a single formatted string representing all namevar values. The title must match one of the title patterns. The namevar values computed from that pattern must match their counterparts in the hash.
+
   > Note: This value allows the runtime environment to present resources in a way familiar to the user.
 
   > Example: Referring back to the `software` example above, resources returned from the `get` method require a `title:` value matching the `package:` and `manager:` values:
+  >
   > ```
   > {
   >     title: 'php-yum',
@@ -198,6 +203,7 @@ The `get` method reports the current state of the managed resources. It returns 
 The `set` method updates resources to a new state. The `changes` parameter gets passed a hash of change requests, keyed by the resource's name. Each value is another hash with the optional `:is` and `:should` keys. At least one of the two has to be specified. The values will be of the same shape as those returned by `get`. After the `set`, all resources should be in the state defined by the `:should` values.
 
 > Example for a `changes` request:
+>
 > ```
 > changes = {
 >   'foo' => {
@@ -220,6 +226,7 @@ A missing `:should` entry indicates that a resource should be removed from the s
 If a type has more than one namevar, the resource's name key is replaced by a hash of the namevars and their values:
 
 > Example for a `changes` request with multiple namevars:
+>
 > ```
 > changes = {
 >   { package: 'php', manager: 'yum' } => {
@@ -249,8 +256,8 @@ In many cases, the resource type follows the conventional patterns of puppet, an
 
 `SimpleProvider` requires that your type follows some common conventions:
 
-* if the type has a single namevar attribute, it must be called `name`
-* `ensure` attribute is present and has the `Enum[absent, present]` type
+- if the type has a single namevar attribute, it must be called `name`
+- `ensure` attribute is present and has the `Enum[absent, present]` type
 
 To start using `SimpleProvider`, inherit from the class like this:
 
@@ -264,19 +271,19 @@ class Puppet::Provider::AptKey::AptKey < Puppet::ResourceApi::SimpleProvider
 
 Once all of that is in place, instead of the `set` method, the provider needs to implement the `create`, `update` or `delete` methods:
 
-* `create(context, name, should)`: This is called when a new resource should be created.
-* `update(context, name, should)`: This is called when a resource should be updated.
-* `delete(context, name)`: This is called when a resource should be deleted.
+- `create(context, name, should)`: This is called when a new resource should be created.
+- `update(context, name, should)`: This is called when a resource should be updated.
+- `delete(context, name)`: This is called when a resource should be deleted.
 
 The parameters of these methods always carry the same values:
 
-* `context`: provides utilities from the runtime environment, and is described in more detail in its own section below.
-* `name`: the name (if there is only one namevar) or hash of namevars (if there are multiple) of the resource.
-* `should`: a hash of the desired state of the attributes. This is not passed to the delete method.
+- `context`: provides utilities from the runtime environment, and is described in more detail in its own section below.
+- `name`: the name (if there is only one namevar) or hash of namevars (if there are multiple) of the resource.
+- `should`: a hash of the desired state of the attributes. This is not passed to the delete method.
 
 The `SimpleProvider` takes care of basic logging, and error handling.
 
-When a `type` has only a single namevar defined, `SimpleProvider` will pass the value of that attribute as `name` to the `create`, `update` and `delete` methods.  If multiple namevars are defined, `SimpleProvider` will instead pass a hash. The hash contains all the namevars and their values, for example:
+When a `type` has only a single namevar defined, `SimpleProvider` will pass the value of that attribute as `name` to the `create`, `update` and `delete` methods. If multiple namevars are defined, `SimpleProvider` will instead pass a hash. The hash contains all the namevars and their values, for example:
 
 ```
 {
@@ -320,6 +327,7 @@ The `canonicalize` method transforms its `resources` argument into the standard 
 The `context` parameter provides utilities from the runtime environment, and is described in more detail there. It is the same as is passed to `get` and `set`.
 
 > Example: The `resources` parameter is an array of resources hashes:
+>
 > ```ruby
 > resources = [
 >   {
@@ -355,6 +363,155 @@ For example, in the Puppet runtime environment this is bound to the `strict` set
 > values changed
 ```
 
+### Provider feature: `custom_insync`
+
+Allows for overriding default property `insync?` checking using custom logic in the provider.
+
+```ruby
+# lib/puppet/type/test_custom_insync.rb
+Puppet::ResourceApi.register_type(
+  name: 'test_custom_insync',
+  docs: <<-EOS,
+      This type provides Puppet with the capabilities to manage ...
+    EOS
+  features: ['custom_insync'],
+  attributes:   {
+    ensure:      {
+      type:    'Enum[present, absent]',
+      desc:    'Whether this resource should be present or absent on the target system.',
+      default: 'present',
+    },
+    name:        {
+      type:      'String',
+      desc:      'The name of the resource you want to manage.',
+      behaviour: :namevar,
+    },
+    some_array:  {
+      type: 'Optional[Array[String]]',
+      desc: 'An array aiding array attestation',
+    },
+    force: {
+      type:      'Boolean',
+      desc:      'If true, the specified array is inclusive and must match the existing state exactly.',
+      behaviour: :parameter,
+      default:   false,
+    },
+  },
+)
+
+# lib/puppet/provider/test_custom_insync/test_custom_insync.rb
+class Puppet::Provider::TestCustomInsync::TestCustomInsync < Puppet::ResourceApi::SimpleProvider
+  def insync?(context, name, property_name, is_hash, should_hash)
+    context.debug("Checking whether #{property_name} is out of sync")
+    case property_name
+    when :some_array
+      if should_hash[:force]
+        context.debug("Checking an order independent array")
+        return is_hash[property_name].sort == should_hash[property_name].sort
+      else
+        context.debug("Checking a subset match array")
+        found_members = (is_hash[property_name] & should_hash[property_name]).sort
+        missing_members = should_hash[property_name].reject { |member| found_members.include?(member) }
+        return missing_members.empty? ? true : [false, "Adding missing members #{missing_members}"]
+      end
+    end
+end
+```
+
+When you do not specify the `custom_insync` feature flag, the runtime environment uses strict value equality to determine if a resource instance needs to be state-enforced.
+
+When you **do** specify the `custom_insync` feature flag, `insync?` is called once for each of the properties.
+You can use `custom_insync` to implement custom state comparisons when the default value-equality is not sufficient.
+
+The `insync?` method is executed once for each of the **properties** (not parameters, read-only, or init attributes) of the type per resource instance.
+If no properties were specified in the instance of a resource, `insync?` is not called.
+The call happens during application of the catalog when the runtime environment decides whether or not it needs to enforce state on a specific resource.
+
+The `insync?` method **must** return `nil`, `true` or `false` as the result of the property comparison:
+
+- If `insync?` returns `nil`, property comparison is handed back to the runtime environment's built-in property value equality checking.
+  - This means that the provider _only_ needs to deal with properties which actually need custom insync logic. All other properties can be ignored, which will return Ruby's default `nil` return value and use default comparison logic.
+- If `insync?` returns `true`, the property is treated as insync.
+- If `insync?` returns `false`, the property is treated as out of sync and will cause the runtime environment to report a change.
+- If `insync?` returns anything other than `nil`, `true`, or `false` for the result an error will be raised explaining that the value returned is invalid.
+
+When the result is `false`, the `insync?` method **may** also return a string to override the default change report messaging:
+
+- If `insync?` returns `false` without a string, the default change report messaging is triggered:
+  - e.g. `Notice: /Stage[main]/Main/File[/tmp/foo]/mode: mode changed <is value> to <should value>`
+- If `insync?` returns `false` with a string, the string will be passed as the change report message:
+  - In the `test_custom_insync` provider example above, if `SomeValue` was specified as a member of `some_array` but not found in the actual state returned from `get`, this change report message would be written:
+    ```
+    Notice: /Stage[main]/Main/Test_custom_insync[something]/some_array: Adding missing members ['SomeValue']`
+    ```
+  - This enables more accurate and useful change reporting than the default is-to-should reporting surfaced by Puppet.
+
+The `insync?(context, name, property_name, is_hash, should_hash)` method receives the following arguments:
+
+- a `context` to access the runtime environment,
+- the `name` of the resource being checked,
+- the `property_name` that is currently being inspected for insync status,
+- the current state of the resource in `is_hash`, and
+- the desired state (canonicalized) in `should_hash`.
+
+#### Using `custom_insync` in a resource without properties
+
+For resources which specify the `custom_insync` feature flag but have _no_ defined properties, the Resource API adds a spectial hidden property —`rsapi_custom_insync_trigger` — which ensures that `insync?` is still called for the resource.
+This hidden property is not used or seen anywhere else in the provider, only in the `insync?` method.
+
+As with all calls to `insync?`, a custom change reporting message can be surfaced by returning a string instead of `true` or `false`.
+If no custom change reporting message is returned as a string, the change reporting in Puppet (if `false` is returned) will always be:
+
+> Custom insync logic determined that this resource is out of sync
+
+```ruby
+# lib/puppet/type/test_custom_insync_hidden_property.rb
+Puppet::ResourceApi.register_type(
+  name: 'test_custom_insync_hidden_property',
+  docs: <<-EOS,
+      This type provides Puppet with the capabilities to manage ...
+    EOS
+  features: ['custom_insync'],
+  attributes:   {
+    name:        {
+      type:      'String',
+      desc:      'The name of the resource you want to manage.',
+      behaviour: :namevar,
+    },
+    force: {
+      type:      'Boolean',
+      desc:      'If true, the resource will be treated as not being insync.',
+      behaviour: :parameter,
+      default:   false,
+    },
+  },
+)
+
+# lib/puppet/provider/test_custom_insync_hidden_property/test_custom_insync_hidden_property.rb
+class Puppet::Provider::TestCustomInsyncHiddenProperty::TestCustomInsyncHiddenProperty
+  def get(_context)
+    [
+      {
+        name: 'example'
+      }
+    ]
+  end
+
+  def set(context, changes)
+    changes.each do |_name, is_and_should|
+      context.notice("Setting with #{is_and_should[:should].inspect}")
+    end
+  end
+
+  def insync?(context, name, _property_name, is_hash, should_hash)
+    context.debug("Checking whether #{name} is out of sync")
+
+    return true unless should_hash[:force]
+    context.debug("Out of sync!")
+    false
+  end
+end
+```
 
 ### Provider feature: `simple_get_filter`
 
@@ -505,22 +662,22 @@ Password attributes should also set `sensitive: true` to ensure that the data is
 
 To align with [Bolt's inventory file](https://puppet.com/docs/bolt/latest/inventory_file.html), a transport schema prefers the following keywords (when relevant):
 
-* `uri`: use when you need to specify a specific URL to connect to. Bolt will compute the following keys from the `uri` when possible. In the future more url parts may be computed from the URI.
-* `protocol`: use to specify which protocol the transport should use for example `http`, `https`, `ssh` or `tcp`.
-* `host`: use to specify an IP or address to connect to.
-* `port`: the port the transport should connect to.
-* `user`: the user the transport should connect as.
-* `password`: the password for the specified user.
+- `uri`: use when you need to specify a specific URL to connect to. Bolt will compute the following keys from the `uri` when possible. In the future more url parts may be computed from the URI.
+- `protocol`: use to specify which protocol the transport should use for example `http`, `https`, `ssh` or `tcp`.
+- `host`: use to specify an IP or address to connect to.
+- `port`: the port the transport should connect to.
+- `user`: the user the transport should connect as.
+- `password`: the password for the specified user.
 
 Do not use the following keywords when writing a schema:
 
-* `implementations`: reserved by Bolt.
-* `name`: transports should use `uri` instead of name.
-* `path`: reserved as a uri part.
-* `query`: reserved as a uri part.
-* `remote-*`: any key starting with `remote-` is reserved for future use.
-* `remote-transport`: determines which transport to load. Uses the transport name.
-* `run-on`: Bolt uses this keyword to determine which target to proxy to. Transports should not rely on this key.
+- `implementations`: reserved by Bolt.
+- `name`: transports should use `uri` instead of name.
+- `path`: reserved as a uri part.
+- `query`: reserved as a uri part.
+- `remote-*`: any key starting with `remote-` is reserved for future use.
+- `remote-transport`: determines which transport to load. Uses the transport name.
+- `run-on`: Bolt uses this keyword to determine which target to proxy to. Transports should not rely on this key.
 
 > Note: Bolt inventory requires you to set a name for every target and always use it for the URI. This means that there is no way to specify `host` separately from the host section of the `name` when parsed as a URI.
 
@@ -528,21 +685,21 @@ Do not use the following keywords when writing a schema:
 
 The transport implementation must implement the following methods:
 
-  * `initialize(context, connection_info)`
-    * `connection_info` contains validated hash matching schema
-    * After initialize the transport is expected to be ready for processing requests
-    * Any errors to connect to the target (network unreachable, credentials rejected) should be reported by throwing an appropriate exception
-    * In some cases (e.g. when the target is a REST API), no processing needs to happen in initialize at all
-  * `verify(context)`
-    * Perform a test to check that the transport can (still) talk to the remote target
-    * Raises an exception if the connection check failed
-  * `facts(context)`
-    * Access the target and return a facts hash containing a sensible subset of default facts from [Facter](https://puppet.com/docs/facter/latest/core_facts.html) and more specific facts appropriate for the target
-  * `close(context)`
-    * Close the connection
-    * After calling this method the transport will not be used anymore
-    * This method should free up any caches and operating system resources (e.g. open connections)
-    * This method should never throw an exception
+- `initialize(context, connection_info)`
+  - `connection_info` contains validated hash matching schema
+  - After initialize the transport is expected to be ready for processing requests
+  - Any errors to connect to the target (network unreachable, credentials rejected) should be reported by throwing an appropriate exception
+  - In some cases (e.g. when the target is a REST API), no processing needs to happen in initialize at all
+- `verify(context)`
+  - Perform a test to check that the transport can (still) talk to the remote target
+  - Raises an exception if the connection check failed
+- `facts(context)`
+  - Access the target and return a facts hash containing a sensible subset of default facts from [Facter](https://puppet.com/docs/facter/latest/core_facts.html) and more specific facts appropriate for the target
+- `close(context)`
+  - Close the connection
+  - After calling this method the transport will not be used anymore
+  - This method should free up any caches and operating system resources (e.g. open connections)
+  - This method should never throw an exception
 
 To allow implementors a wide latitude in implementing connection and retry handling, the Resource API does not put a lot of constraints on when and how a transport can fail/error.
 
@@ -591,10 +748,10 @@ To port your existing device code as a transport, move the class to `Puppet::Tra
 
 The following replacements have provided a good starting point for these changes:
 
-* `Util::NetworkDevice::NAME::Device` -> `ResourceApi::Transport::NAME`
-* `puppet/util/network_device/NAME/device` -> `puppet/transport/NAME`
-* `device` -> `transport`
-* Replace all direct calls to puppet logging with calls into the `context` logger, potentially getting the context instance from the provider.
+- `Util::NetworkDevice::NAME::Device` -> `ResourceApi::Transport::NAME`
+- `puppet/util/network_device/NAME/device` -> `puppet/transport/NAME`
+- `device` -> `transport`
+- Replace all direct calls to puppet logging with calls into the `context` logger, potentially getting the context instance from the provider.
 
 Of course this list can't be exhaustive and will depend on the specifics of your codebase.
 
@@ -605,9 +762,9 @@ It is possible to use a RSAPI Transport directly using the `connect` method:
 `Puppet::ResourceApi::Transport.connect(name, config)`
 
 1. `register` the transport schema for the remote resource by:
-    * Directly calling into `Puppet::ResourceApi.register_transport`
-    * Loading an existing schema using `require 'puppet/transport/schema/<transportname>`
-    * Setting up Puppet's autoloader for `'puppet/transport/schema'`
+   - Directly calling into `Puppet::ResourceApi.register_transport`
+   - Loading an existing schema using `require 'puppet/transport/schema/<transportname>`
+   - Setting up Puppet's autoloader for `'puppet/transport/schema'`
 2. `connect` to the transport by name, passing the connection info
 3. When the transport has been initialized, `connect` will return the `Transport` object
 
@@ -619,7 +776,6 @@ To get a list of all registered transports, call the `list` method:
 
 It will return a hash of all registered transport schemas keyed by their name. Each entry in the list is the transport schema definition as passed to `register_transport`:
 
-
 ```ruby
 {
   'nexus' => {
@@ -630,7 +786,6 @@ It will return a hash of all registered transport schemas keyed by their name. E
   },
 }
 ```
-
 
 ## Runtime environment
 
@@ -660,12 +815,12 @@ results in the following message:
 Warning: apt_key: Unexpected state detected, continuing in degraded mode.
 ```
 
-* debug: detailed messages to understand everything that is happening at runtime; shown on request.
-* info: regular progress and status messages; especially useful before long-running operations, or before operations that can fail, to provide context to interactive users.
-* notice: indicates state changes and other events of notice from the regular operations of the provider.
-* warning: signals error conditions that do not (yet) prohibit execution of the main part of the provider; for example, deprecation warnings, temporary errors.
-* err: signal error conditions that have caused normal operations to fail.
-* critical/alert/emerg: should not be used by resource providers.
+- debug: detailed messages to understand everything that is happening at runtime; shown on request.
+- info: regular progress and status messages; especially useful before long-running operations, or before operations that can fail, to provide context to interactive users.
+- notice: indicates state changes and other events of notice from the regular operations of the provider.
+- warning: signals error conditions that do not (yet) prohibit execution of the main part of the provider; for example, deprecation warnings, temporary errors.
+- err: signal error conditions that have caused normal operations to fail.
+- critical/alert/emerg: should not be used by resource providers.
 
 See [RFC 5424](https://tools.ietf.org/html/rfc5424) for more details.
 
@@ -684,7 +839,7 @@ Providers that want to have more control over the logging throughout the process
 
 ##### Logging contexts
 
-Most of those messages are expected to be relative to a specific resource instance, and a specific operation on that instance. To enable detailed logging without repeating key arguments, and to provide consistent error logging, the context provides *logging context* methods to capture the current action and resource instance:
+Most of those messages are expected to be relative to a specific resource instance, and a specific operation on that instance. To enable detailed logging without repeating key arguments, and to provide consistent error logging, the context provides _logging context_ methods to capture the current action and resource instance:
 
 ```ruby
 context.updating(title) do
@@ -758,34 +913,37 @@ This example is only for demonstration purposes. In the normal course of operati
 
 The following action/block methods are available:
 
-* Block functions: these functions provide logging and timing around a provider's core actions. If the the passed `&block` returns, the action is recorded as successful. To signal a failure, the block should raise an exception explaining the problem.
-  * `creating(titles, message: 'Creating', &block)`
-  * `updating(titles, message: 'Updating', &block)`
-  * `deleting(titles, message: 'Deleting', &block)`
-  * `processing(title, is, should, message: 'Processing', &block)`: generic processing of a resource, produces default change messages for the difference between `is:` and `should:`.
-  * `failing(titles, message: 'Failing', &block)`: unlikely to be used often, but provided for completeness - always records a failure.
+- Block functions: these functions provide logging and timing around a provider's core actions. If the the passed `&block` returns, the action is recorded as successful. To signal a failure, the block should raise an exception explaining the problem.
 
-* Action functions
-  * `created(titles, message: 'Created')`
-  * `updated(titles, message: 'Updated')`
-  * `deleted(titles, message: 'Deleted')`
-  * `processed(title, is, should)`: the resource has been processed - produces default logging for the resource and each attribute
-  * `failed(titles, message:)`: the resource has not been updated successfully
+  - `creating(titles, message: 'Creating', &block)`
+  - `updating(titles, message: 'Updating', &block)`
+  - `deleting(titles, message: 'Deleting', &block)`
+  - `processing(title, is, should, message: 'Processing', &block)`: generic processing of a resource, produces default change messages for the difference between `is:` and `should:`.
+  - `failing(titles, message: 'Failing', &block)`: unlikely to be used often, but provided for completeness - always records a failure.
 
-* Attribute Change notifications
-  * `attribute_changed(title, attribute, is, should, message: nil)`: notify the runtime environment that a specific attribute for a specific resource has changed. `is` and `should` are the original and the new value of the attribute. Either can be `nil`.
+- Action functions
 
-* Plain messages
-  * `debug(message)`
-  * `debug(titles, message:)`
-  * `info(message)`
-  * `info(titles, message:)`
-  * `notice(message)`
-  * `notice(titles, message:)`
-  * `warning(message)`
-  * `warning(titles, message:)`
-  * `err(message)`
-  * `err(titles, message:)`
+  - `created(titles, message: 'Created')`
+  - `updated(titles, message: 'Updated')`
+  - `deleted(titles, message: 'Deleted')`
+  - `processed(title, is, should)`: the resource has been processed - produces default logging for the resource and each attribute
+  - `failed(titles, message:)`: the resource has not been updated successfully
+
+- Attribute Change notifications
+
+  - `attribute_changed(title, attribute, is, should, message: nil)`: notify the runtime environment that a specific attribute for a specific resource has changed. `is` and `should` are the original and the new value of the attribute. Either can be `nil`.
+
+- Plain messages
+  - `debug(message)`
+  - `debug(titles, message:)`
+  - `info(message)`
+  - `info(titles, message:)`
+  - `notice(message)`
+  - `notice(titles, message:)`
+  - `warning(message)`
+  - `warning(titles, message:)`
+  - `err(message)`
+  - `err(titles, message:)`
 
 `titles` can be a single identifier for a resource or an array of values, if the following block batch processes multiple resources in one pass. If that processing is not atomic, providers should instead use the non-block forms of logging, and provide accurate status reporting on the individual parts of update operations.
 
@@ -797,9 +955,9 @@ The provider is free to call different logging methods for different resources i
 
 The provider can gain insight into the Type definition through `context.type` utility methods:
 
-  * `attributes`
-  * `ensurable?`
-  * `feature?(feature)`
+- `attributes`
+- `ensurable?`
+- `feature?(feature)`
 
 `attributes` returns a hash containing the type attributes and their properties.
 
