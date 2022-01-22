@@ -1,4 +1,4 @@
-* @puppetlabs/phoenix  @puppetlabs/skeletor @puppetlabs/night-s-watch
+* @puppetlabs/phoenix  @puppetlabs/skeletor 
 
 # Notify bolt team about proposed changes to the task spec
 /tasks @puppetlabs/bolt
