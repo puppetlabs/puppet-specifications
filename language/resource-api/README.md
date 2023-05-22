@@ -526,8 +526,8 @@ Puppet::ResourceApi.register_type(
 
 # lib/puppet/provider/apt_key/apt_key.rb
 class Puppet::Provider::AptKey::AptKey
-  def get(context, names = nil)
-    if names == nil
+  def get(context, names = [])
+    if names.empty?
       return all_instances
     else
       names.collect { |n| find_instance(n) }
@@ -535,7 +535,7 @@ class Puppet::Provider::AptKey::AptKey
   end
 ```
 
-Some resources are very expensive to enumerate. The provider can implement `simple_get_filter` to signal extended capabilities of the `get` method to address this. The provider's `get` method will be called with an array of resource names, or `nil`. The `get` method must at least return the resources mentioned in the `names` array, but may return more than those. If the `names` parameter is `nil`, all existing resources should be returned. The `names` parameter defaults to `nil` to allow simple runtimes to ignore this feature.
+Some resources are very expensive to enumerate. The provider can implement `simple_get_filter` to signal extended capabilities of the `get` method to address this. The provider's `get` method will be called with an array of resource names. The `get` method must at least return the resources mentioned in the `names` array, but may return more than those. If the `names` parameter is an empty array, all existing resources should be returned. The `names` parameter defaults to `[]` to allow simple runtimes to ignore this feature.
 
 For types with multiple namevars, the `names` array will consist of hashes of the namevars and their values instead of simple values:
 
