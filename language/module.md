@@ -48,7 +48,7 @@ already explains what a module is and what it can contain.
 | `/lib/puppet/parser/functions/` | Legacy functions in Ruby |
 | `/lib/puppet_x/`      | Custom Ruby modules to extend types, providers, functions or facts |
 | `/lib/augeas/lenses/` | Custom [Augeas](https://augeas.net/) lenses |
-| `/functions/`         | Can contain [functions written in Puppet DSL](https://www.puppet.com/docs/puppet/latest/lang_write_functions_in_puppet.html) |
+| `/functions/`         | MAY contain [functions written in Puppet DSL](https://www.puppet.com/docs/puppet/latest/lang_write_functions_in_puppet.html) |
 | `/metadata.json`      | The `metadata.json` file MUST be present and MUST adhere to [Puppet's metadata](https://www.puppet.com/docs/puppet/latest/modules_metadata.html). [metadata-json-lint](https://github.com/voxpupuli/metadata-json-lint#metadata-json-lint) can be used to validate your file. |
 | `/README`             | A README that describes what the module does. It's best practice to add a file extension like `.md`, `.rst` when a markup language is used |
 | `/LICENSE`            | The `/LICENSE` file, with an optional file extension, SHOULD be included in the module. If the file is present, it MUST match `/metadata.json`'s license field. |
