@@ -311,65 +311,42 @@ Syntax Checking of Heredoc Text
 Syntax checking of a heredoc text is made possible by allowing the heredoc to be tagged with the name
 of a syntax/language. Here are some examples:
 
-    @(END:javascript)
-    @(END:ruby)
-    @(END:property_file)
-    @(END:yaml)
+    @(END:base64)
+    @(END:epp)
+    @(END:pp)
     @(END:json)
     @(END:myschema+json)
-    @("END":epp)
 
-This way, the checking can take place server side before the content
-is (much later) used with possibly very hard to detect problems as a
-result.
+If a puppet runtime has a syntax checker for the given syntax then puppet will validate the heredoc
+text if the heredoc text, but only if the heredoc is static text (i.e. does not contain any interpolations).
+If there is no syntax checker available for the given syntax, puppet language validation silently
+ignores the syntax tag.
 
-The given syntax name is given to a syntax checker implementation that is selected
-based on the name. The syntax name characters `+` and `.` are translated to two and one underscore
-character respectively. (See more about `+` below). A period is allowed since many mime types
-have this in their names .
+The intended use cases for the syntax specification feature are:
+* for CI - allow static syntax checking at time of checkin rather than at time of compilation
+* for Deferred functions sending heredoc text to agent side EPP evaluation where it is of value to fail
+  compilation rather than much later failing with syntax error on the agent.
+* for external tooling - tolls can make use of the information for syntax coloring, code completion etc.
 
-
-A `+` character is allowed as a name separator (in the style of RFC2046-Mime Media Types).
-The intent is to describe syntax that is encoded in formats such as xml or json where the content
-must be valid json, xml etc. *and* be valid in the specified dialect/"schema" (e.g. xslt+xml).
-Mime media types includes the use of `.` (e.g. vnd.apple.installer+xml).
+The syntax naming is based on mime media type naming. The given syntax name is given to a syntax checker
+implementation that is selected based on the name. A `+` character is allowed as a name
+separator (in the style of RFC2046-Mime Media Types).
+The intent is to describe syntax that is encoded in formats such as `xml` or `json` where the content
+must be valid json, xml etc. *and* be valid in the specified dialect/"schema" (e.g. `xslt+xml`).
+Mime media types includes the use of `.` (e.g. vnd.apple.installer+xml) which is allowed in the heredoc
+syntax name as well (has no special meaning).
 
 By convention, the most specific syntax should be placed first.
 When mapping syntax to a checker, each `+` defines a name segment.
-An attempt is first made with the full name (e.g. 'xslt+xml'), and if no
-such function exists, the leftmost
-name segment is dropped, and a new attempt is made to find a checker (e.g. 'xml').
-The first found checker is given the
-task of validating the string. If no checker is found, the string is not validated.
+An attempt is first made with the full name (e.g. `xslt+xml`), and if no
+such function exists, the leftmost name segment is dropped, and a new attempt is made to find a checker (e.g. 'xml').
+The first found checker is given the task of validating the string. If no checker is found, the string is not validated.
 
 The full syntax string is passed to the validation function to allow
 mapping of segments to schema names, thus allowing once checker to check many more
 specific syntaxes without having to explicitly specify this.
 
-Checkers are wired into the Puppet runtime by using the binder. Puppet comes bundled
-with a syntax checker for 'json'.
+Checkers are defined in the Puppet runtime, and it comes bundled with a set of checkers.
+(In Puppet 6.4, these are `base64`, `epp`, `pp` and `json`). There is no extension mechanism
+although one could be added as the internal implementation is made with this in mind.
 
-The API for extending puppet with additional checkers is currently experimental. See
-the source of `puppetx/syntax_checker.rb`, and `puppets/puppetlabs/syntax_checkers/json.rb` for
-reference.
-
-The implementation should inherit from the `Puppetx::Puppet::SyntaxChecker` and be placed
-in a module under `lib/puppetx/mymodule/syntax_checkers/`. A binding that wires it and makes
-it available for a given syntax should be placed in the module's directory
-`lib/puppet/bindings/<modulename>/default.rb` with the following content:
-
-    Puppet::Bindings::newbindings('<modulename>::default' do
-      bind {
-        name 'mysyntax'
-        instance_of  'Puppetx::Puppet::SyntaxChecker'
-        in_multibind 'puppetx::puppet::syntaxcheckers'
-        to_instance  'Puppetx::<MyModule>::SyntaxCheckers::MySyntax'
-      }
-    end
-    
-This binding is automatically included, and can then be used in a heredoc:
-
-    @(END:mysyntax)
-    Oh, my syntax, my beautiful syntax,
-    please tell me when you find an errr.
-    END
