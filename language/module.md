@@ -42,9 +42,15 @@ already explains what a module is and what it can contain.
 | `/examples/`          | Example Puppet snippets that explain how to use the module. They can be used within acceptance tests |
 | `/facts.d/`           | [External facts](https://www.puppet.com/docs/puppet/latest/external_facts.html) that are synced via [pluginsync](https://www.puppet.com/docs/puppet/latest/plugins_in_modules.html) |
 | `/lib/facter/`        | MAY contain custom facts |
-| `/lib/puppet/type/`   | Custom types |
-| `/lib/puppet/provider/` | Custom provider for one or multiple types |
+| `/lib/puppet/type/`   | Custom Resource types |
+| `/lib/puppet/provider/` | Custom provider for one or multiple Resource types |
 | `/lib/puppet/functions/` | Modern functions in Ruby for the new API |
+| `/lib/puppet/datatypes/` | Custom Puppet Data types |
+| `/lib/puppet/face/`   | Custom Puppet Faces |
+| `/lib/puppet/feature/` | Custom Puppet Features for providers |
+| `/lib/puppet/property/` | Custom Puppet Properties for Types/Providers |
+| `/lib/puppet/transport/` | Puppet Device Transports for the Resource API |
+| `/lib/puppet/util/network_device` | Puppet Device Transports |
 | `/lib/puppet/parser/functions/` | Legacy functions in Ruby |
 | `/lib/puppet_x/`      | Custom Ruby modules to extend types, providers, functions or facts |
 | `/lib/augeas/lenses/` | Custom [Augeas](https://augeas.net/) lenses |
