@@ -84,6 +84,7 @@ The preferred style of the keys should be `snake_case`.
 
 **remote**: Default `false`. All implementation of this task operate on a remote target using the `_target` metaparam.(rev 4)
 
+**tags**: An array of strings used for arbitrary tags without inherent, semantic meaning to Bolt. Useful for categorizing tasks.
 
 #### Example Task Metadata
 
@@ -114,7 +115,8 @@ The preferred style of the keys should be `snake_case`.
     {"name": "foo_sh.sh", "requirements": ["shell"], "input_method": "environment"},
     {"name": "foo_ps1.ps1", "requirements": ["powershell"], "files": ["my_util/files/util/win_tools.ps1"]}
   ],
-  "files": ["my_module/lib/puppet_x/helpful_code.rb", "kitchensink/files/task_helpers/"]
+  "files": ["my_module/lib/puppet_x/helpful_code.rb", "kitchensink/files/task_helpers/"],
+  "tags": ["tag1", "Tag 2", "Three"]
 }
 ```
 
