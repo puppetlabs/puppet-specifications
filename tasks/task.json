@@ -77,6 +77,10 @@
       "items": {
         "type": "object"
       }
+    },
+    "identifiers": {
+      "type": "object",
+      "description": "An arbitrary map of key-value pairs without inherent, semantic meaning to a Task Runner"
     }
   },
   "definitions": {

@@ -84,6 +84,7 @@ The preferred style of the keys should be `snake_case`.
 
 **remote**: Default `false`. All implementation of this task operate on a remote target using the `_target` metaparam.(rev 4)
 
+**identifiers**: An arbitrary map of key-value pairs without inherent, semantic meaning to a task runner. Intended to provide identification and / or categorization of tasks that can be consumed by custom or third-party tooling.
 
 #### Example Task Metadata
 
@@ -114,7 +115,15 @@ The preferred style of the keys should be `snake_case`.
     {"name": "foo_sh.sh", "requirements": ["shell"], "input_method": "environment"},
     {"name": "foo_ps1.ps1", "requirements": ["powershell"], "files": ["my_util/files/util/win_tools.ps1"]}
   ],
-  "files": ["my_module/lib/puppet_x/helpful_code.rb", "kitchensink/files/task_helpers/"]
+  "files": ["my_module/lib/puppet_x/helpful_code.rb", "kitchensink/files/task_helpers/"],
+  "identifiers": {
+    "tags": ["tag1", "Tag 2", "Three"],
+    "id": "id1",
+    "is_special": true,
+    "nested_hash": {
+        "also": "works"
+    }
+  }
 }
 ```
 
